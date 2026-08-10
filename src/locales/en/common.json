@@ -240,7 +240,9 @@
     "notifications": "Notifications",
     "logout": "Log out",
     "roleCarrier": "Carrier",
-    "roleShipper": "Shipper"
+    "roleShipper": "Shipper",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
   },
   "dashboard": {
     "postLoad": "Post a load",
@@ -279,7 +281,7 @@
     "viewDetails": "View Details",
     "acceptLoad": "Accept Load",
     "totalPrice": "Total Price",
-    "recentBookings": "Recent Bookings",
+    "recentBookings": "Recent Truck Postings",
     "recentLoads": "Recent Loads",
     "tableLoadId": "Load ID",
     "tableRoute": "Route",

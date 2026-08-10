@@ -240,7 +240,9 @@
     "notifications": "सूचनाएं",
     "logout": "लॉग आउट",
     "roleCarrier": "कैरियर",
-    "roleShipper": "शिपर"
+    "roleShipper": "शिपर",
+    "openMenu": "मेनू खोलें",
+    "closeMenu": "मेनू बंद करें"
   },
   "dashboard": {
     "postLoad": "लोड पोस्ट करें",
@@ -279,7 +281,7 @@
     "viewDetails": "विवरण देखें",
     "acceptLoad": "लोड स्वीकार करें",
     "totalPrice": "कुल मूल्य",
-    "recentBookings": "हाल की बुकिंग",
+    "recentBookings": "हाल की ट्रक पोस्टिंग",
     "recentLoads": "हाल के लोड",
     "tableLoadId": "लोड आईडी",
     "tableRoute": "मार्ग",

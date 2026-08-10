@@ -17,6 +17,8 @@ import {
   Settings,
   LogOut,
   ChevronDown,
+  Menu,
+  X,
 } from 'lucide-react';
 import { useSession } from '@/lib/session-context';
 import { cn } from '@/lib/utils';
@@ -53,6 +55,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   const displayName = useDisplayName();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
     if (!session) return;
@@ -61,6 +64,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       .then((all) => setUnreadCount(all.filter((n) => !n.readAt).length))
       .catch(() => undefined);
   }, [session]);
+
+  // Close the mobile drawer automatically on navigation — otherwise it'd
+  // stay open over the new page after tapping a nav link.
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [pathname]);
 
   if (!session) return null;
 
@@ -83,12 +92,46 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex flex-1 bg-background">
-      <aside className="flex w-64 flex-col border-r border-sidebar-border bg-sidebar p-4">
-        <div className="mb-6 flex items-center gap-2 px-2">
-          <div className="flex size-8 items-center justify-center rounded-lg bg-primary font-heading text-base font-bold text-primary-foreground">
-            R
+      {/* Hamburger button — the sidebar below is a fixed-width, always-visible
+          block on desktop, but becomes a slide-in drawer on mobile (see the
+          aside's responsive classes). Placed top-left since GlobalTopBar's
+          language switcher/notification bell already occupy top-right. */}
+      <button
+        onClick={() => setMobileNavOpen(true)}
+        aria-label={t('nav.openMenu')}
+        className="fixed top-3 left-3 z-40 flex size-9 items-center justify-center rounded-lg border bg-card shadow-sm md:hidden"
+      >
+        <Menu className="size-4" />
+      </button>
+
+      {mobileNavOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/40 md:hidden"
+          onClick={() => setMobileNavOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      <aside
+        className={cn(
+          'fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-sidebar-border bg-sidebar p-4 transition-transform duration-200 md:static md:z-auto md:translate-x-0',
+          mobileNavOpen ? 'translate-x-0' : '-translate-x-full',
+        )}
+      >
+        <div className="mb-6 flex items-center justify-between gap-2 px-2">
+          <div className="flex items-center gap-2">
+            <div className="flex size-8 items-center justify-center rounded-lg bg-primary font-heading text-base font-bold text-primary-foreground">
+              R
+            </div>
+            <p className="font-heading text-lg font-bold text-sidebar-foreground">{t('appName')}</p>
           </div>
-          <p className="font-heading text-lg font-bold text-sidebar-foreground">{t('appName')}</p>
+          <button
+            onClick={() => setMobileNavOpen(false)}
+            aria-label={t('nav.closeMenu')}
+            className="text-muted-foreground md:hidden"
+          >
+            <X className="size-5" />
+          </button>
         </div>
         <nav className="flex flex-1 flex-col gap-1">
           {navItemsFor(session.userType).map(({ href, labelKey, icon: Icon }) => {
@@ -138,8 +181,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <div className="flex flex-1 flex-col">
-        <main className="flex flex-1 flex-col p-6 pt-16">{children}</main>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <main className="flex min-w-0 flex-1 flex-col p-6 pt-16">{children}</main>
       </div>
     </div>
   );
