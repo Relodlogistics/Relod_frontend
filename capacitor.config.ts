@@ -11,7 +11,9 @@ import type { CapacitorConfig } from '@capacitor/cli';
 // CAPACITOR_SERVER_URL must point at the real deployed HTTPS URL before
 // building a release APK — localhost only works for a device on the same
 // LAN as this dev machine, reachable at its LAN IP, not "localhost".
-const SERVER_URL = process.env.CAPACITOR_SERVER_URL || 'https://app.relod.in';
+// Defaults to the live Vercel URL; switch to https://relod.in once the
+// custom domain's DNS has finished propagating (see build workflow).
+const SERVER_URL = process.env.CAPACITOR_SERVER_URL || 'https://relod-frontend.vercel.app';
 
 const config: CapacitorConfig = {
   appId: 'com.relod.app',
