@@ -162,7 +162,6 @@ export default function SettingsPage() {
   const [whatsappNumber, setWhatsappNumber] = useState<string | null>(null);
   const [isOwnerOperator, setIsOwnerOperator] = useState(true);
   const [truckCount, setTruckCount] = useState<number | null>(null);
-  const [wantsReturnLoads, setWantsReturnLoads] = useState(false);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
 
   const [changeRequests, setChangeRequests] = useState<ChangeRequest[]>([]);
@@ -198,7 +197,6 @@ export default function SettingsPage() {
         setCarrierAadhaarNumber(profile.aadhaarNumber);
         setIsOwnerOperator(profile.isOwnerOperator);
         setTruckCount(profile.truckCount);
-        setWantsReturnLoads(profile.wantsReturnLoads);
       }
     });
     api.listMyChangeRequests(session.accessToken).then(setChangeRequests).catch(() => undefined);
@@ -567,20 +565,14 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent className="flex max-w-md flex-col gap-2 text-sm">
           {session.userType === 'carrier' && (
-            <>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">{t('settingsPage.driverArrangement')}</span>
-                <span>
-                  {isOwnerOperator
-                    ? t('settingsPage.ownerOperator')
-                    : t('settingsPage.fleetOwner', { count: truckCount ?? 0 })}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">{t('settingsPage.wantsReturnLoads')}</span>
-                <span>{wantsReturnLoads ? t('settingsPage.yes') : t('settingsPage.no')}</span>
-              </div>
-            </>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">{t('settingsPage.driverArrangement')}</span>
+              <span>
+                {isOwnerOperator
+                  ? t('settingsPage.ownerOperator')
+                  : t('settingsPage.fleetOwner', { count: truckCount ?? 0 })}
+              </span>
+            </div>
           )}
           <p className="text-xs text-muted-foreground">{t('settingsPage.registrationDetailsHint')}</p>
         </CardContent>

@@ -12,7 +12,6 @@ interface PendingCarrierProfile {
   whatsappVerificationToken?: string;
   // Only present when isOwnerOperator is false.
   truckCount?: number;
-  wantsReturnLoads: boolean;
   aadhaarNumber: string;
   panNumber?: string;
   email?: string;

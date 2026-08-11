@@ -41,7 +41,6 @@ export default function ProfilePage() {
   const [whatsappToken, setWhatsappToken] = useState<string | null>(null);
   const [whatsappError, setWhatsappError] = useState<string | null>(null);
   const [whatsappLoading, setWhatsappLoading] = useState(false);
-  const [wantsReturnLoads, setWantsReturnLoads] = useState(false);
   const [aadhaarNumber, setAadhaarNumber] = useState('');
   const [panNumber, setPanNumber] = useState('');
   const [businessName, setBusinessName] = useState('');
@@ -127,7 +126,6 @@ export default function ProfilePage() {
             whatsappNumber: isOwnerOperator ? fullWhatsapp : undefined,
             whatsappVerificationToken: isOwnerOperator ? (whatsappToken ?? undefined) : undefined,
             truckCount: isOwnerOperator ? undefined : Number(truckCount),
-            wantsReturnLoads,
             aadhaarNumber,
             panNumber: panNumber || undefined,
             email: email || undefined,
@@ -355,15 +353,6 @@ export default function ProfilePage() {
 
               {userType === 'carrier' && (
                 <>
-                  <label className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={wantsReturnLoads}
-                      onChange={(e) => setWantsReturnLoads(e.target.checked)}
-                    />
-                    {t('profile.wantsReturnLoads')}
-                  </label>
-
                   <div className="flex flex-col gap-3 rounded-lg border bg-muted/30 p-3">
                     <p className="text-sm font-medium">{t('profile.kycSection')}</p>
                     <div className="flex flex-col gap-1.5">

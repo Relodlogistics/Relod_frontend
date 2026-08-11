@@ -141,7 +141,6 @@ export const api = {
       whatsappNumber?: string;
       whatsappVerificationToken?: string;
       truckCount?: number;
-      wantsReturnLoads: boolean;
       aadhaarNumber: string;
       panNumber?: string;
       email?: string;
@@ -973,7 +972,6 @@ export interface Carrier {
   whatsappNumber: string | null;
   isOwnerOperator: boolean;
   truckCount: number | null;
-  wantsReturnLoads: boolean;
   aadhaarNumber: string | null;
   panNumber: string | null;
   verificationTier: 'basic' | 'verified' | 'trust_boosted';

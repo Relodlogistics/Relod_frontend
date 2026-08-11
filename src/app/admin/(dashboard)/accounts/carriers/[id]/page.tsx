@@ -278,10 +278,6 @@ export default function AdminCarrierDetailPage() {
               <p className="text-xs text-muted-foreground">{t('admin.colPan')}</p>
               <p>{carrier.panNumber ?? '—'}</p>
             </div>
-            <div>
-              <p className="text-xs text-muted-foreground">{t('admin.colReturnLoads')}</p>
-              <p>{carrier.wantsReturnLoads ? t('admin.yes') : t('admin.no')}</p>
-            </div>
           </div>
           <div>
             <Button variant="outline" size="sm" disabled={busy === 'suspend'} onClick={toggleSuspend}>
