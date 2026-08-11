@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { NotificationBell } from './NotificationBell';
+import { LiveTrackingIndicator } from './LiveTrackingIndicator';
 
 // The (marketing) route group renders its own header — with its own nav,
 // language switcher, and login/register CTAs — so this floating bar would
@@ -15,6 +16,7 @@ export function GlobalTopBar() {
 
   return (
     <div className="fixed top-3 right-3 z-50 flex items-center gap-2">
+      <LiveTrackingIndicator />
       <NotificationBell />
       <LanguageSwitcher />
     </div>
