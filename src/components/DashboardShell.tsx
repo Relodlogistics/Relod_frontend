@@ -10,6 +10,7 @@ import {
   PlusCircle,
   ClipboardList,
   Truck,
+  Route,
   Wallet,
   FileText,
   MessageSquare,
@@ -39,6 +40,7 @@ function navItemsFor(userType: 'carrier' | 'shipper') {
     ...(userType === 'shipper'
       ? [{ href: '/dashboard/tracking', labelKey: 'nav.trackShipments', icon: Truck }]
       : []),
+    { href: '/lanes', labelKey: 'nav.lanes', icon: Route },
     { href: '/dashboard/payments', labelKey: 'nav.payments', icon: Wallet },
     { href: '/dashboard/documents', labelKey: 'nav.documents', icon: FileText },
     { href: '/dashboard/messages', labelKey: 'nav.messages', icon: MessageSquare },

@@ -271,6 +271,9 @@ export const api = {
       businessType?: string;
       gstin?: string;
       businessAddress?: string;
+      paymentUpiId?: string;
+      industryType?: string;
+      shipmentVolume?: string;
       preferredLanguage?: string;
     },
   ) => request<Shipper>(`/shippers/${id}`, { method: 'PATCH', token, body: JSON.stringify(data) }),
@@ -915,6 +918,7 @@ export interface Carrier {
   id: string;
   fullName: string;
   phone: string;
+  username: string | null;
   email: string | null;
   whatsappNumber: string | null;
   isOwnerOperator: boolean;
@@ -933,6 +937,7 @@ export interface Shipper {
   id: string;
   fullName: string;
   phone: string;
+  username: string | null;
   whatsappNumber: string | null;
   email: string | null;
   businessName: string | null;
