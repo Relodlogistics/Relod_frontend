@@ -381,7 +381,19 @@
     "requestReason": "Reason for the change",
     "requestReasonPlaceholder": "Why are you requesting this change?",
     "submitRequest": "Submit request",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "registrationDetails": "Registration details",
+    "registrationDetailsHint": "Collected when you signed up. Contact Support if any of this needs to change.",
+    "driverArrangement": "Driver arrangement",
+    "ownerOperator": "Owner-operator (drives own truck)",
+    "fleetOwner": "Fleet owner ({{count}} truck(s))",
+    "wantsReturnLoads": "Wants return-trip loads",
+    "yes": "Yes",
+    "no": "No",
+    "myTrucks": "My truck(s)",
+    "capacityTons": "{{tons}} tons capacity",
+    "axles": "{{count}} axles",
+    "manageDocuments": "Manage documents"
   },
   "postings": {
     "title": "Nearby postings",

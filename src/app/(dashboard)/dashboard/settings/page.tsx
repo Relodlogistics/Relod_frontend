@@ -19,9 +19,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { api, ApiError, ChangeRequest } from '@/lib/api';
+import { api, ApiError, ChangeRequest, Vehicle } from '@/lib/api';
 import { useSession } from '@/lib/session-context';
 import { SUPPORTED_LANGUAGES } from '@/lib/i18n';
+import { truckTypeLabel } from '@/lib/truck-types';
 
 type ChangeableFieldName = ChangeRequest['fieldName'];
 
@@ -154,6 +155,16 @@ export default function SettingsPage() {
   const [carrierPanNumber, setCarrierPanNumber] = useState<string | null>(null);
   const [carrierAadhaarNumber, setCarrierAadhaarNumber] = useState<string | null>(null);
 
+  // Read-only registration-time details — shown so a user can see everything
+  // that was collected at signup, not editable here (isOwnerOperator/
+  // truckCount/vehicle specs are structural: changing them after vehicles
+  // already exist needs the Documents/Post-a-truck flows, not a plain edit).
+  const [whatsappNumber, setWhatsappNumber] = useState<string | null>(null);
+  const [isOwnerOperator, setIsOwnerOperator] = useState(true);
+  const [truckCount, setTruckCount] = useState<number | null>(null);
+  const [wantsReturnLoads, setWantsReturnLoads] = useState(false);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+
   const [changeRequests, setChangeRequests] = useState<ChangeRequest[]>([]);
   const [openRequestField, setOpenRequestField] = useState<ChangeableFieldName | null>(null);
   const [requestValue, setRequestValue] = useState('');
@@ -169,6 +180,7 @@ export default function SettingsPage() {
       setEmail(profile.email ?? '');
       setPreferredLanguage(profile.preferredLanguage);
       setCreatedAt(profile.createdAt);
+      setWhatsappNumber(profile.whatsappNumber);
       if ('businessName' in profile) {
         setBusinessName(profile.businessName ?? '');
         setBusinessType(profile.businessType ?? 'proprietorship');
@@ -183,9 +195,15 @@ export default function SettingsPage() {
         setVerificationTier(profile.verificationTier);
         setCarrierPanNumber(profile.panNumber);
         setCarrierAadhaarNumber(profile.aadhaarNumber);
+        setIsOwnerOperator(profile.isOwnerOperator);
+        setTruckCount(profile.truckCount);
+        setWantsReturnLoads(profile.wantsReturnLoads);
       }
     });
     api.listMyChangeRequests(session.accessToken).then(setChangeRequests).catch(() => undefined);
+    if (session.userType === 'carrier') {
+      api.listMyVehicles(session.accessToken).then(setVehicles).catch(() => undefined);
+    }
   }, [session]);
 
   const pendingRequestFor = (field: ChangeableFieldName) =>
@@ -512,6 +530,65 @@ export default function SettingsPage() {
           </Button>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('settingsPage.registrationDetails')}</CardTitle>
+        </CardHeader>
+        <CardContent className="flex max-w-md flex-col gap-2 text-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">{t('profile.whatsappNumber')}</span>
+            <span>{whatsappNumber || t('settingsPage.notSet')}</span>
+          </div>
+          {session.userType === 'carrier' && (
+            <>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">{t('settingsPage.driverArrangement')}</span>
+                <span>
+                  {isOwnerOperator
+                    ? t('settingsPage.ownerOperator')
+                    : t('settingsPage.fleetOwner', { count: truckCount ?? 0 })}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">{t('settingsPage.wantsReturnLoads')}</span>
+                <span>{wantsReturnLoads ? t('settingsPage.yes') : t('settingsPage.no')}</span>
+              </div>
+            </>
+          )}
+          <p className="text-xs text-muted-foreground">{t('settingsPage.registrationDetailsHint')}</p>
+        </CardContent>
+      </Card>
+
+      {session.userType === 'carrier' && vehicles.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('settingsPage.myTrucks')}</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            {vehicles.map((v) => (
+              <div key={v.id} className="flex flex-col gap-1 rounded-lg border p-3 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium">{v.registrationNumber}</span>
+                  <span className="text-muted-foreground">{truckTypeLabel(v.truckType)}</span>
+                </div>
+                <p className="text-muted-foreground">
+                  {t('settingsPage.capacityTons', { tons: v.capacityTons })}
+                  {v.numberOfAxles ? ` · ${t('settingsPage.axles', { count: v.numberOfAxles })}` : ''}
+                </p>
+                <p className="text-muted-foreground">
+                  {v.cargoTypes.map((c) => t(`vehicle.cargoType${c.charAt(0).toUpperCase()}${c.slice(1)}`)).join(', ')}
+                </p>
+              </div>
+            ))}
+            <Link href="/dashboard/documents" className="w-fit">
+              <Button variant="outline" size="sm">
+                {t('settingsPage.manageDocuments')}
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
 
       <p className="text-sm text-muted-foreground">
         {t('settingsPage.forgotPasswordHint')}{' '}

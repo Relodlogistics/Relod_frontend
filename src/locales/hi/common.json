@@ -381,7 +381,19 @@
     "requestReason": "बदलाव का कारण",
     "requestReasonPlaceholder": "आप यह बदलाव क्यों चाहते हैं?",
     "submitRequest": "अनुरोध भेजें",
-    "cancel": "रद्द करें"
+    "cancel": "रद्द करें",
+    "registrationDetails": "पंजीकरण विवरण",
+    "registrationDetailsHint": "साइन अप के समय एकत्र किया गया। इसमें कोई बदलाव चाहिए तो सहायता से संपर्क करें।",
+    "driverArrangement": "ड्राइवर व्यवस्था",
+    "ownerOperator": "मालिक-चालक (खुद ट्रक चलाते हैं)",
+    "fleetOwner": "फ्लीट मालिक ({{count}} ट्रक)",
+    "wantsReturnLoads": "वापसी लोड चाहते हैं",
+    "yes": "हाँ",
+    "no": "नहीं",
+    "myTrucks": "मेरे ट्रक",
+    "capacityTons": "{{tons}} टन क्षमता",
+    "axles": "{{count}} एक्सल",
+    "manageDocuments": "दस्तावेज़ प्रबंधित करें"
   },
   "postings": {
     "title": "आस-पास की पोस्टिंग",
