@@ -13,7 +13,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 // LAN as this dev machine, reachable at its LAN IP, not "localhost".
 // Defaults to the live Vercel URL; switch to https://relod.in once the
 // custom domain's DNS has finished propagating (see build workflow).
-const SERVER_URL = process.env.CAPACITOR_SERVER_URL || 'https://relod-frontend.vercel.app';
+const SERVER_URL = process.env.CAPACITOR_SERVER_URL || 'https://relod-frontend.vercel.app/login';
 
 const config: CapacitorConfig = {
   appId: 'com.relod.app',
