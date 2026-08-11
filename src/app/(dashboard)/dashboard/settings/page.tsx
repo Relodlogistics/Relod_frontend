@@ -3,11 +3,13 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
+import { CheckCircle2, Circle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -38,6 +40,15 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const [createdAt, setCreatedAt] = useState<string | null>(null);
+  const [verificationTier, setVerificationTier] = useState<
+    'basic' | 'verified' | 'trust_boosted' | null
+  >(null);
+  const [isShipperVerified, setIsShipperVerified] = useState(false);
+  const [shipperPanNumber, setShipperPanNumber] = useState<string | null>(null);
+  const [carrierPanNumber, setCarrierPanNumber] = useState<string | null>(null);
+  const [carrierAadhaarNumber, setCarrierAadhaarNumber] = useState<string | null>(null);
+
   const [currentUsername, setCurrentUsername] = useState<string | null>(null);
   const [username, setUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -55,6 +66,7 @@ export default function SettingsPage() {
       setPreferredLanguage(profile.preferredLanguage);
       setCurrentUsername(profile.username);
       setUsername(profile.username ?? '');
+      setCreatedAt(profile.createdAt);
       if ('businessName' in profile) {
         setBusinessName(profile.businessName ?? '');
         setBusinessType(profile.businessType ?? 'proprietorship');
@@ -63,6 +75,12 @@ export default function SettingsPage() {
         setPaymentUpiId(profile.paymentUpiId ?? '');
         setIndustryType(profile.industryType ?? '');
         setShipmentVolume(profile.shipmentVolume ?? '');
+        setIsShipperVerified(profile.isVerified);
+        setShipperPanNumber(profile.panNumber);
+      } else {
+        setVerificationTier(profile.verificationTier);
+        setCarrierPanNumber(profile.panNumber);
+        setCarrierAadhaarNumber(profile.aadhaarNumber);
       }
     });
   }, [session]);
@@ -130,6 +148,100 @@ export default function SettingsPage() {
   return (
     <div className="flex flex-1 flex-col gap-4">
       <h1 className="font-heading text-xl font-semibold">{t('settingsPage.title')}</h1>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('settingsPage.overview')}</CardTitle>
+        </CardHeader>
+        <CardContent className="flex max-w-md flex-col gap-3">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">{t('settingsPage.memberSince')}</span>
+            <span>
+              {createdAt
+                ? new Date(createdAt).toLocaleDateString('en-IN', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                  })
+                : '—'}
+            </span>
+          </div>
+
+          {session.userType === 'carrier' && verificationTier && (
+            <>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">{t('settingsPage.verificationTier')}</span>
+                <Badge variant={verificationTier === 'basic' ? 'secondary' : 'default'}>
+                  {t(`settingsPage.tier_${verificationTier}`)}
+                </Badge>
+              </div>
+              <div className="flex flex-col gap-1.5 text-sm">
+                <div className="flex items-center gap-2">
+                  {carrierAadhaarNumber ? (
+                    <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
+                  ) : (
+                    <Circle className="size-4 shrink-0 text-muted-foreground" />
+                  )}
+                  <span>{t('settingsPage.checklistAadhaar')}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {carrierPanNumber ? (
+                    <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
+                  ) : (
+                    <Circle className="size-4 shrink-0 text-muted-foreground" />
+                  )}
+                  <span>{t('settingsPage.checklistPan')}</span>
+                </div>
+                {verificationTier === 'basic' && (
+                  <p className="text-xs text-muted-foreground">{t('settingsPage.tierHintToVerified')}</p>
+                )}
+                {verificationTier === 'verified' && (
+                  <p className="text-xs text-muted-foreground">{t('settingsPage.tierHintToTrustBoosted')}</p>
+                )}
+              </div>
+            </>
+          )}
+
+          {session.userType === 'shipper' && (
+            <>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">{t('settingsPage.verificationTier')}</span>
+                <Badge variant={isShipperVerified ? 'default' : 'secondary'}>
+                  {isShipperVerified ? t('settingsPage.verified') : t('settingsPage.notVerified')}
+                </Badge>
+              </div>
+              {!isShipperVerified && (
+                <div className="flex flex-col gap-1.5 text-sm">
+                  <div className="flex items-center gap-2">
+                    {businessName ? (
+                      <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
+                    ) : (
+                      <Circle className="size-4 shrink-0 text-muted-foreground" />
+                    )}
+                    <span>{t('profile.businessName')}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {gstin ? (
+                      <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
+                    ) : (
+                      <Circle className="size-4 shrink-0 text-muted-foreground" />
+                    )}
+                    <span>{t('profile.gstin')}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {shipperPanNumber ? (
+                      <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
+                    ) : (
+                      <Circle className="size-4 shrink-0 text-muted-foreground" />
+                    )}
+                    <span>{t('profile.panNumber')}</span>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
