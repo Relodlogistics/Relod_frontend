@@ -393,7 +393,10 @@
     "myTrucks": "My truck(s)",
     "capacityTons": "{{tons}} tons capacity",
     "axles": "{{count}} axles",
-    "manageDocuments": "Manage documents"
+    "manageDocuments": "Manage documents",
+    "vehicleRegNumber": "Registration number",
+    "vehicleTruckType": "Truck type",
+    "vehicleCapacity": "Capacity"
   },
   "postings": {
     "title": "Nearby postings",

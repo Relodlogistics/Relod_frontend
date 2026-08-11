@@ -393,7 +393,10 @@
     "myTrucks": "मेरे ट्रक",
     "capacityTons": "{{tons}} टन क्षमता",
     "axles": "{{count}} एक्सल",
-    "manageDocuments": "दस्तावेज़ प्रबंधित करें"
+    "manageDocuments": "दस्तावेज़ प्रबंधित करें",
+    "vehicleRegNumber": "पंजीकरण संख्या",
+    "vehicleTruckType": "ट्रक प्रकार",
+    "vehicleCapacity": "क्षमता"
   },
   "postings": {
     "title": "आस-पास की पोस्टिंग",

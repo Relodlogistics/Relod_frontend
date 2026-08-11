@@ -167,6 +167,7 @@ export default function SettingsPage() {
 
   const [changeRequests, setChangeRequests] = useState<ChangeRequest[]>([]);
   const [openRequestField, setOpenRequestField] = useState<ChangeableFieldName | null>(null);
+  const [openRequestVehicleId, setOpenRequestVehicleId] = useState<string | undefined>(undefined);
   const [requestValue, setRequestValue] = useState('');
   const [requestReason, setRequestReason] = useState('');
   const [requestSubmitting, setRequestSubmitting] = useState(false);
@@ -206,17 +207,27 @@ export default function SettingsPage() {
     }
   }, [session]);
 
-  const pendingRequestFor = (field: ChangeableFieldName) =>
-    changeRequests.find((r) => r.fieldName === field && r.status === 'pending');
+  const pendingRequestFor = (field: ChangeableFieldName, vehicleId?: string) =>
+    changeRequests.find(
+      (r) => r.fieldName === field && (r.vehicleId ?? undefined) === vehicleId && r.status === 'pending',
+    );
 
-  const lastReviewedRequestFor = (field: ChangeableFieldName) =>
-    changeRequests.find((r) => r.fieldName === field && r.status !== 'pending');
+  const lastReviewedRequestFor = (field: ChangeableFieldName, vehicleId?: string) =>
+    changeRequests.find(
+      (r) => r.fieldName === field && (r.vehicleId ?? undefined) === vehicleId && r.status !== 'pending',
+    );
 
-  const handleOpenRequest = (field: ChangeableFieldName) => {
+  const handleOpenRequest = (field: ChangeableFieldName, vehicleId?: string) => {
     setOpenRequestField(field);
+    setOpenRequestVehicleId(vehicleId);
     setRequestValue('');
     setRequestReason('');
     setRequestError(null);
+  };
+
+  const handleCancelRequest = () => {
+    setOpenRequestField(null);
+    setOpenRequestVehicleId(undefined);
   };
 
   const handleSubmitRequest = async () => {
@@ -226,11 +237,13 @@ export default function SettingsPage() {
     try {
       const created = await api.createChangeRequest(session.accessToken, {
         fieldName: openRequestField,
+        vehicleId: openRequestVehicleId,
         requestedValue: requestValue,
         reason: requestReason,
       });
       setChangeRequests((prev) => [created, ...prev]);
       setOpenRequestField(null);
+      setOpenRequestVehicleId(undefined);
     } catch (e) {
       setRequestError(e instanceof ApiError ? e.message : t('errors.generic'));
     } finally {
@@ -361,6 +374,23 @@ export default function SettingsPage() {
           <CardTitle>{t('settingsPage.identityDetails')}</CardTitle>
         </CardHeader>
         <CardContent className="flex max-w-md flex-col gap-3">
+          <RequestableField
+            t={t}
+            label={t('profile.whatsappNumber')}
+            currentValue={whatsappNumber}
+            pendingRequest={pendingRequestFor('whatsappNumber')}
+            lastReviewed={lastReviewedRequestFor('whatsappNumber')}
+            isOpen={openRequestField === 'whatsappNumber'}
+            onOpen={() => handleOpenRequest('whatsappNumber')}
+            onCancel={handleCancelRequest}
+            value={requestValue}
+            onValueChange={setRequestValue}
+            reason={requestReason}
+            onReasonChange={setRequestReason}
+            onSubmit={handleSubmitRequest}
+            submitting={requestSubmitting}
+            error={openRequestField === 'whatsappNumber' ? requestError : null}
+          />
           {session.userType === 'carrier' ? (
             <>
               <RequestableField
@@ -371,7 +401,7 @@ export default function SettingsPage() {
                 lastReviewed={lastReviewedRequestFor('aadhaarNumber')}
                 isOpen={openRequestField === 'aadhaarNumber'}
                 onOpen={() => handleOpenRequest('aadhaarNumber')}
-                onCancel={() => setOpenRequestField(null)}
+                onCancel={handleCancelRequest}
                 value={requestValue}
                 onValueChange={setRequestValue}
                 reason={requestReason}
@@ -388,7 +418,7 @@ export default function SettingsPage() {
                 lastReviewed={lastReviewedRequestFor('panNumber')}
                 isOpen={openRequestField === 'panNumber'}
                 onOpen={() => handleOpenRequest('panNumber')}
-                onCancel={() => setOpenRequestField(null)}
+                onCancel={handleCancelRequest}
                 value={requestValue}
                 onValueChange={setRequestValue}
                 reason={requestReason}
@@ -408,7 +438,7 @@ export default function SettingsPage() {
                 lastReviewed={lastReviewedRequestFor('gstin')}
                 isOpen={openRequestField === 'gstin'}
                 onOpen={() => handleOpenRequest('gstin')}
-                onCancel={() => setOpenRequestField(null)}
+                onCancel={handleCancelRequest}
                 value={requestValue}
                 onValueChange={setRequestValue}
                 reason={requestReason}
@@ -425,7 +455,7 @@ export default function SettingsPage() {
                 lastReviewed={lastReviewedRequestFor('panNumber')}
                 isOpen={openRequestField === 'panNumber'}
                 onOpen={() => handleOpenRequest('panNumber')}
-                onCancel={() => setOpenRequestField(null)}
+                onCancel={handleCancelRequest}
                 value={requestValue}
                 onValueChange={setRequestValue}
                 reason={requestReason}
@@ -536,10 +566,6 @@ export default function SettingsPage() {
           <CardTitle>{t('settingsPage.registrationDetails')}</CardTitle>
         </CardHeader>
         <CardContent className="flex max-w-md flex-col gap-2 text-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">{t('profile.whatsappNumber')}</span>
-            <span>{whatsappNumber || t('settingsPage.notSet')}</span>
-          </div>
           {session.userType === 'carrier' && (
             <>
               <div className="flex items-center justify-between">
@@ -567,18 +593,70 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
             {vehicles.map((v) => (
-              <div key={v.id} className="flex flex-col gap-1 rounded-lg border p-3 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">{v.registrationNumber}</span>
-                  <span className="text-muted-foreground">{truckTypeLabel(v.truckType)}</span>
-                </div>
-                <p className="text-muted-foreground">
-                  {t('settingsPage.capacityTons', { tons: v.capacityTons })}
+              <div key={v.id} className="flex flex-col gap-3 rounded-lg border p-3">
+                <p className="text-muted-foreground text-sm">
+                  {v.cargoTypes.map((c) => t(`vehicle.cargoType${c.charAt(0).toUpperCase()}${c.slice(1)}`)).join(', ')}
                   {v.numberOfAxles ? ` · ${t('settingsPage.axles', { count: v.numberOfAxles })}` : ''}
                 </p>
-                <p className="text-muted-foreground">
-                  {v.cargoTypes.map((c) => t(`vehicle.cargoType${c.charAt(0).toUpperCase()}${c.slice(1)}`)).join(', ')}
-                </p>
+                <RequestableField
+                  t={t}
+                  label={t('settingsPage.vehicleRegNumber')}
+                  currentValue={v.registrationNumber}
+                  pendingRequest={pendingRequestFor('registrationNumber', v.id)}
+                  lastReviewed={lastReviewedRequestFor('registrationNumber', v.id)}
+                  isOpen={openRequestField === 'registrationNumber' && openRequestVehicleId === v.id}
+                  onOpen={() => handleOpenRequest('registrationNumber', v.id)}
+                  onCancel={handleCancelRequest}
+                  value={requestValue}
+                  onValueChange={setRequestValue}
+                  reason={requestReason}
+                  onReasonChange={setRequestReason}
+                  onSubmit={handleSubmitRequest}
+                  submitting={requestSubmitting}
+                  error={
+                    openRequestField === 'registrationNumber' && openRequestVehicleId === v.id
+                      ? requestError
+                      : null
+                  }
+                />
+                <RequestableField
+                  t={t}
+                  label={t('settingsPage.vehicleTruckType')}
+                  currentValue={truckTypeLabel(v.truckType)}
+                  pendingRequest={pendingRequestFor('truckType', v.id)}
+                  lastReviewed={lastReviewedRequestFor('truckType', v.id)}
+                  isOpen={openRequestField === 'truckType' && openRequestVehicleId === v.id}
+                  onOpen={() => handleOpenRequest('truckType', v.id)}
+                  onCancel={handleCancelRequest}
+                  value={requestValue}
+                  onValueChange={setRequestValue}
+                  reason={requestReason}
+                  onReasonChange={setRequestReason}
+                  onSubmit={handleSubmitRequest}
+                  submitting={requestSubmitting}
+                  error={
+                    openRequestField === 'truckType' && openRequestVehicleId === v.id ? requestError : null
+                  }
+                />
+                <RequestableField
+                  t={t}
+                  label={t('settingsPage.vehicleCapacity')}
+                  currentValue={t('settingsPage.capacityTons', { tons: v.capacityTons })}
+                  pendingRequest={pendingRequestFor('capacityTons', v.id)}
+                  lastReviewed={lastReviewedRequestFor('capacityTons', v.id)}
+                  isOpen={openRequestField === 'capacityTons' && openRequestVehicleId === v.id}
+                  onOpen={() => handleOpenRequest('capacityTons', v.id)}
+                  onCancel={handleCancelRequest}
+                  value={requestValue}
+                  onValueChange={setRequestValue}
+                  reason={requestReason}
+                  onReasonChange={setRequestReason}
+                  onSubmit={handleSubmitRequest}
+                  submitting={requestSubmitting}
+                  error={
+                    openRequestField === 'capacityTons' && openRequestVehicleId === v.id ? requestError : null
+                  }
+                />
               </div>
             ))}
             <Link href="/dashboard/documents" className="w-fit">

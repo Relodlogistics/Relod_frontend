@@ -280,7 +280,7 @@ export const api = {
 
   createChangeRequest: (
     token: string,
-    data: { fieldName: 'aadhaarNumber' | 'panNumber' | 'gstin'; requestedValue: string; reason: string },
+    data: { fieldName: ChangeableFieldName; vehicleId?: string; requestedValue: string; reason: string },
   ) => request<ChangeRequest>('/change-requests', { method: 'POST', token, body: JSON.stringify(data) }),
 
   listMyChangeRequests: (token: string) => request<ChangeRequest[]>('/change-requests/mine', { token }),
@@ -934,11 +934,21 @@ export interface KycVerification {
   verifiedAt: string | null;
 }
 
+export type ChangeableFieldName =
+  | 'aadhaarNumber'
+  | 'panNumber'
+  | 'gstin'
+  | 'whatsappNumber'
+  | 'registrationNumber'
+  | 'truckType'
+  | 'capacityTons';
+
 export interface ChangeRequest {
   id: string;
   accountId: string;
   accountType: 'carrier' | 'shipper';
-  fieldName: 'aadhaarNumber' | 'panNumber' | 'gstin';
+  vehicleId: string | null;
+  fieldName: ChangeableFieldName;
   currentValue: string | null;
   requestedValue: string;
   reason: string;
@@ -951,6 +961,7 @@ export interface ChangeRequest {
 
 export interface AdminChangeRequest extends ChangeRequest {
   account: { fullName: string; phone: string } | null;
+  vehicle: { id: string; registrationNumber: string } | null;
 }
 
 export interface Carrier {

@@ -12,6 +12,7 @@ import { useAdminSession } from '@/lib/admin-session-context';
 import { timeAgo } from '@/lib/utils';
 
 const STATUSES: AdminChangeRequest['status'][] = ['pending', 'approved', 'rejected'];
+const VEHICLE_FIELD_NAMES = new Set(['registrationNumber', 'truckType', 'capacityTons']);
 
 function statusVariant(status: AdminChangeRequest['status']) {
   if (status === 'approved') return 'default' as const;
@@ -123,7 +124,8 @@ export default function AdminChangeRequestsPage() {
               <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
                 <p>
                   <span className="text-muted-foreground">{t('admin.changeRequestField')}: </span>
-                  {t(`profile.${r.fieldName}`)}
+                  {t(`${VEHICLE_FIELD_NAMES.has(r.fieldName) ? 'vehicle' : 'profile'}.${r.fieldName}`)}
+                  {r.vehicle && ` (${r.vehicle.registrationNumber})`}
                 </p>
                 <p>
                   <span className="text-muted-foreground">{t('admin.changeRequestWhen')}: </span>
