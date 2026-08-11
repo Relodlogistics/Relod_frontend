@@ -278,6 +278,26 @@ export const api = {
     },
   ) => request<Shipper>(`/shippers/${id}`, { method: 'PATCH', token, body: JSON.stringify(data) }),
 
+  createChangeRequest: (
+    token: string,
+    data: { fieldName: 'aadhaarNumber' | 'panNumber' | 'gstin'; requestedValue: string; reason: string },
+  ) => request<ChangeRequest>('/change-requests', { method: 'POST', token, body: JSON.stringify(data) }),
+
+  listMyChangeRequests: (token: string) => request<ChangeRequest[]>('/change-requests/mine', { token }),
+
+  adminListChangeRequests: (token: string, status?: ChangeRequest['status']) =>
+    request<AdminChangeRequest[]>(`/admin/change-requests${status ? `?status=${status}` : ''}`, { token }),
+
+  adminApproveChangeRequest: (token: string, id: string) =>
+    request<ChangeRequest>(`/admin/change-requests/${id}/approve`, { method: 'POST', token }),
+
+  adminRejectChangeRequest: (token: string, id: string, adminNote?: string) =>
+    request<ChangeRequest>(`/admin/change-requests/${id}/reject`, {
+      method: 'POST',
+      token,
+      body: JSON.stringify({ adminNote }),
+    }),
+
   uploadVehicleDocument: (
     token: string,
     vehicleId: string,
@@ -912,6 +932,25 @@ export interface KycVerification {
   referenceId: string | null;
   resultData: Record<string, unknown> | null;
   verifiedAt: string | null;
+}
+
+export interface ChangeRequest {
+  id: string;
+  accountId: string;
+  accountType: 'carrier' | 'shipper';
+  fieldName: 'aadhaarNumber' | 'panNumber' | 'gstin';
+  currentValue: string | null;
+  requestedValue: string;
+  reason: string;
+  status: 'pending' | 'approved' | 'rejected';
+  adminNote: string | null;
+  reviewedByAdminId: string | null;
+  reviewedAt: string | null;
+  createdAt: string;
+}
+
+export interface AdminChangeRequest extends ChangeRequest {
+  account: { fullName: string; phone: string } | null;
 }
 
 export interface Carrier {

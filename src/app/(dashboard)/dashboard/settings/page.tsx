@@ -3,11 +3,13 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { CheckCircle2, Circle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -17,9 +19,112 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { api, ApiError } from '@/lib/api';
+import { api, ApiError, ChangeRequest } from '@/lib/api';
 import { useSession } from '@/lib/session-context';
 import { SUPPORTED_LANGUAGES } from '@/lib/i18n';
+
+type ChangeableFieldName = ChangeRequest['fieldName'];
+
+// A profile field the account holder can't edit directly — Aadhaar/PAN/GSTIN
+// feed verification tier and matching trust, so instead of a plain Input
+// this shows the current value plus a "Request change" control that files a
+// ChangeRequest for admin review (see change-requests.service.ts on the
+// backend). Reused for both roles since the same UI applies to each field.
+function RequestableField({
+  t,
+  label,
+  currentValue,
+  pendingRequest,
+  lastReviewed,
+  isOpen,
+  onOpen,
+  onCancel,
+  value,
+  onValueChange,
+  reason,
+  onReasonChange,
+  onSubmit,
+  submitting,
+  error,
+}: {
+  t: (key: string, opts?: Record<string, unknown>) => string;
+  label: string;
+  currentValue: string | null;
+  pendingRequest: ChangeRequest | undefined;
+  lastReviewed: ChangeRequest | undefined;
+  isOpen: boolean;
+  onOpen: () => void;
+  onCancel: () => void;
+  value: string;
+  onValueChange: (v: string) => void;
+  reason: string;
+  onReasonChange: (v: string) => void;
+  onSubmit: () => void;
+  submitting: boolean;
+  error: string | null;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5 border-t pt-3 first:border-t-0 first:pt-0">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium">{label}</p>
+          <p className="text-sm text-muted-foreground">{currentValue || t('settingsPage.notSet')}</p>
+        </div>
+        {pendingRequest ? (
+          <Badge variant="outline">{t('settingsPage.requestPending')}</Badge>
+        ) : (
+          !isOpen && (
+            <Button variant="outline" size="sm" onClick={onOpen}>
+              {t('settingsPage.requestChange')}
+            </Button>
+          )
+        )}
+      </div>
+
+      {!pendingRequest && lastReviewed?.status === 'rejected' && (
+        <p className="text-xs text-destructive">
+          {t('settingsPage.requestRejected')}
+          {lastReviewed.adminNote ? `: ${lastReviewed.adminNote}` : ''}
+        </p>
+      )}
+
+      {isOpen && (
+        <div className="flex flex-col gap-2 rounded-lg border bg-muted/30 p-3">
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          <div className="flex flex-col gap-1">
+            <Label className="text-xs">{t('settingsPage.newValue')}</Label>
+            <Input value={value} onChange={(e) => onValueChange(e.target.value)} />
+          </div>
+          <div className="flex flex-col gap-1">
+            <Label className="text-xs">{t('settingsPage.requestReason')}</Label>
+            <Textarea
+              value={reason}
+              onChange={(e) => onReasonChange(e.target.value)}
+              placeholder={t('settingsPage.requestReasonPlaceholder')}
+              rows={2}
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              onClick={onSubmit}
+              disabled={submitting || !value || reason.length < 5}
+            >
+              {t('settingsPage.submitRequest')}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={onCancel}>
+              {t('settingsPage.cancel')}
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function SettingsPage() {
   const { t } = useTranslation();
@@ -49,13 +154,12 @@ export default function SettingsPage() {
   const [carrierPanNumber, setCarrierPanNumber] = useState<string | null>(null);
   const [carrierAadhaarNumber, setCarrierAadhaarNumber] = useState<string | null>(null);
 
-  const [currentUsername, setCurrentUsername] = useState<string | null>(null);
-  const [username, setUsername] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordError, setPasswordError] = useState<string | null>(null);
-  const [passwordSaved, setPasswordSaved] = useState(false);
-  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [changeRequests, setChangeRequests] = useState<ChangeRequest[]>([]);
+  const [openRequestField, setOpenRequestField] = useState<ChangeableFieldName | null>(null);
+  const [requestValue, setRequestValue] = useState('');
+  const [requestReason, setRequestReason] = useState('');
+  const [requestSubmitting, setRequestSubmitting] = useState(false);
+  const [requestError, setRequestError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!session) return;
@@ -64,8 +168,6 @@ export default function SettingsPage() {
       setFullName(profile.fullName);
       setEmail(profile.email ?? '');
       setPreferredLanguage(profile.preferredLanguage);
-      setCurrentUsername(profile.username);
-      setUsername(profile.username ?? '');
       setCreatedAt(profile.createdAt);
       if ('businessName' in profile) {
         setBusinessName(profile.businessName ?? '');
@@ -83,7 +185,40 @@ export default function SettingsPage() {
         setCarrierAadhaarNumber(profile.aadhaarNumber);
       }
     });
+    api.listMyChangeRequests(session.accessToken).then(setChangeRequests).catch(() => undefined);
   }, [session]);
+
+  const pendingRequestFor = (field: ChangeableFieldName) =>
+    changeRequests.find((r) => r.fieldName === field && r.status === 'pending');
+
+  const lastReviewedRequestFor = (field: ChangeableFieldName) =>
+    changeRequests.find((r) => r.fieldName === field && r.status !== 'pending');
+
+  const handleOpenRequest = (field: ChangeableFieldName) => {
+    setOpenRequestField(field);
+    setRequestValue('');
+    setRequestReason('');
+    setRequestError(null);
+  };
+
+  const handleSubmitRequest = async () => {
+    if (!session || !openRequestField) return;
+    setRequestError(null);
+    setRequestSubmitting(true);
+    try {
+      const created = await api.createChangeRequest(session.accessToken, {
+        fieldName: openRequestField,
+        requestedValue: requestValue,
+        reason: requestReason,
+      });
+      setChangeRequests((prev) => [created, ...prev]);
+      setOpenRequestField(null);
+    } catch (e) {
+      setRequestError(e instanceof ApiError ? e.message : t('errors.generic'));
+    } finally {
+      setRequestSubmitting(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!session) return;
@@ -103,7 +238,6 @@ export default function SettingsPage() {
           email: email || undefined,
           businessName: businessName || undefined,
           businessType,
-          gstin: gstin || undefined,
           businessAddress: businessAddress || undefined,
           paymentUpiId: paymentUpiId || undefined,
           industryType: industryType || undefined,
@@ -116,25 +250,6 @@ export default function SettingsPage() {
       setError(e instanceof ApiError ? e.message : t('errors.generic'));
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleSetPassword = async () => {
-    if (!session) return;
-    setPasswordError(null);
-    setPasswordSaved(false);
-    if (newPassword !== confirmPassword) {
-      setPasswordError(t('settingsPage.passwordMismatch'));
-      return;
-    }
-    setPasswordLoading(true);
-    try {
-      await api.setPassword(session.accessToken, { username, password: newPassword });
-      setPasswordSaved(true);
-    } catch (e) {
-      setPasswordError(e instanceof ApiError ? e.message : t('errors.generic'));
-    } finally {
-      setPasswordLoading(false);
     }
   };
 
@@ -175,30 +290,28 @@ export default function SettingsPage() {
                   {t(`settingsPage.tier_${verificationTier}`)}
                 </Badge>
               </div>
-              <div className="flex flex-col gap-1.5 text-sm">
-                <div className="flex items-center gap-2">
-                  {carrierAadhaarNumber ? (
-                    <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
-                  ) : (
-                    <Circle className="size-4 shrink-0 text-muted-foreground" />
-                  )}
-                  <span>{t('settingsPage.checklistAadhaar')}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {carrierPanNumber ? (
-                    <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
-                  ) : (
-                    <Circle className="size-4 shrink-0 text-muted-foreground" />
-                  )}
-                  <span>{t('settingsPage.checklistPan')}</span>
-                </div>
-                {verificationTier === 'basic' && (
-                  <p className="text-xs text-muted-foreground">{t('settingsPage.tierHintToVerified')}</p>
+              <div className="flex items-center gap-2 text-sm">
+                {carrierAadhaarNumber ? (
+                  <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
+                ) : (
+                  <Circle className="size-4 shrink-0 text-muted-foreground" />
                 )}
-                {verificationTier === 'verified' && (
-                  <p className="text-xs text-muted-foreground">{t('settingsPage.tierHintToTrustBoosted')}</p>
-                )}
+                <span>{t('settingsPage.checklistAadhaar')}</span>
               </div>
+              <div className="flex items-center gap-2 text-sm">
+                {carrierPanNumber ? (
+                  <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
+                ) : (
+                  <Circle className="size-4 shrink-0 text-muted-foreground" />
+                )}
+                <span>{t('settingsPage.checklistPan')}</span>
+              </div>
+              {verificationTier === 'basic' && (
+                <p className="text-xs text-muted-foreground">{t('settingsPage.tierHintToVerified')}</p>
+              )}
+              {verificationTier === 'verified' && (
+                <p className="text-xs text-muted-foreground">{t('settingsPage.tierHintToTrustBoosted')}</p>
+              )}
             </>
           )}
 
@@ -211,33 +324,98 @@ export default function SettingsPage() {
                 </Badge>
               </div>
               {!isShipperVerified && (
-                <div className="flex flex-col gap-1.5 text-sm">
-                  <div className="flex items-center gap-2">
-                    {businessName ? (
-                      <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
-                    ) : (
-                      <Circle className="size-4 shrink-0 text-muted-foreground" />
-                    )}
-                    <span>{t('profile.businessName')}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {gstin ? (
-                      <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
-                    ) : (
-                      <Circle className="size-4 shrink-0 text-muted-foreground" />
-                    )}
-                    <span>{t('profile.gstin')}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {shipperPanNumber ? (
-                      <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
-                    ) : (
-                      <Circle className="size-4 shrink-0 text-muted-foreground" />
-                    )}
-                    <span>{t('profile.panNumber')}</span>
-                  </div>
+                <div className="flex items-center gap-2 text-sm">
+                  {businessName ? (
+                    <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
+                  ) : (
+                    <Circle className="size-4 shrink-0 text-muted-foreground" />
+                  )}
+                  <span>{t('profile.businessName')}</span>
                 </div>
               )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('settingsPage.identityDetails')}</CardTitle>
+        </CardHeader>
+        <CardContent className="flex max-w-md flex-col gap-3">
+          {session.userType === 'carrier' ? (
+            <>
+              <RequestableField
+                t={t}
+                label={t('settingsPage.checklistAadhaar')}
+                currentValue={carrierAadhaarNumber}
+                pendingRequest={pendingRequestFor('aadhaarNumber')}
+                lastReviewed={lastReviewedRequestFor('aadhaarNumber')}
+                isOpen={openRequestField === 'aadhaarNumber'}
+                onOpen={() => handleOpenRequest('aadhaarNumber')}
+                onCancel={() => setOpenRequestField(null)}
+                value={requestValue}
+                onValueChange={setRequestValue}
+                reason={requestReason}
+                onReasonChange={setRequestReason}
+                onSubmit={handleSubmitRequest}
+                submitting={requestSubmitting}
+                error={openRequestField === 'aadhaarNumber' ? requestError : null}
+              />
+              <RequestableField
+                t={t}
+                label={t('profile.panNumber')}
+                currentValue={carrierPanNumber}
+                pendingRequest={pendingRequestFor('panNumber')}
+                lastReviewed={lastReviewedRequestFor('panNumber')}
+                isOpen={openRequestField === 'panNumber'}
+                onOpen={() => handleOpenRequest('panNumber')}
+                onCancel={() => setOpenRequestField(null)}
+                value={requestValue}
+                onValueChange={setRequestValue}
+                reason={requestReason}
+                onReasonChange={setRequestReason}
+                onSubmit={handleSubmitRequest}
+                submitting={requestSubmitting}
+                error={openRequestField === 'panNumber' ? requestError : null}
+              />
+            </>
+          ) : (
+            <>
+              <RequestableField
+                t={t}
+                label={t('profile.gstin')}
+                currentValue={gstin || null}
+                pendingRequest={pendingRequestFor('gstin')}
+                lastReviewed={lastReviewedRequestFor('gstin')}
+                isOpen={openRequestField === 'gstin'}
+                onOpen={() => handleOpenRequest('gstin')}
+                onCancel={() => setOpenRequestField(null)}
+                value={requestValue}
+                onValueChange={setRequestValue}
+                reason={requestReason}
+                onReasonChange={setRequestReason}
+                onSubmit={handleSubmitRequest}
+                submitting={requestSubmitting}
+                error={openRequestField === 'gstin' ? requestError : null}
+              />
+              <RequestableField
+                t={t}
+                label={t('profile.panNumber')}
+                currentValue={shipperPanNumber}
+                pendingRequest={pendingRequestFor('panNumber')}
+                lastReviewed={lastReviewedRequestFor('panNumber')}
+                isOpen={openRequestField === 'panNumber'}
+                onOpen={() => handleOpenRequest('panNumber')}
+                onCancel={() => setOpenRequestField(null)}
+                value={requestValue}
+                onValueChange={setRequestValue}
+                reason={requestReason}
+                onReasonChange={setRequestReason}
+                onSubmit={handleSubmitRequest}
+                submitting={requestSubmitting}
+                error={openRequestField === 'panNumber' ? requestError : null}
+              />
             </>
           )}
         </CardContent>
@@ -302,10 +480,6 @@ export default function SettingsPage() {
                 </Select>
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label>{t('profile.gstin')}</Label>
-                <Input value={gstin} onChange={(e) => setGstin(e.target.value)} />
-              </div>
-              <div className="flex flex-col gap-1.5">
                 <Label>{t('profile.businessAddress')}</Label>
                 <Input value={businessAddress} onChange={(e) => setBusinessAddress(e.target.value)} />
               </div>
@@ -339,65 +513,12 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('settingsPage.password')}</CardTitle>
-        </CardHeader>
-        <CardContent className="flex max-w-md flex-col gap-3">
-          <p className="text-sm text-muted-foreground">
-            {currentUsername
-              ? t('settingsPage.passwordHintExisting', { username: currentUsername })
-              : t('settingsPage.passwordHint')}
-          </p>
-          {passwordError && (
-            <Alert variant="destructive">
-              <AlertDescription>{passwordError}</AlertDescription>
-            </Alert>
-          )}
-          {passwordSaved && (
-            <Alert>
-              <AlertDescription>{t('settingsPage.passwordSaved')}</AlertDescription>
-            </Alert>
-          )}
-          <div className="flex flex-col gap-1.5">
-            <Label>{t('settingsPage.username')}</Label>
-            <Input
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              autoComplete="off"
-              name="relod-username"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label>{t('settingsPage.newPassword')}</Label>
-            <Input
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              autoComplete="new-password"
-              name="relod-new-password"
-              placeholder={t('settingsPage.newPasswordPlaceholder')}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label>{t('settingsPage.confirmPassword')}</Label>
-            <Input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              autoComplete="new-password"
-              name="relod-confirm-password"
-            />
-          </div>
-          <Button
-            onClick={handleSetPassword}
-            disabled={passwordLoading || !username || newPassword.length < 8}
-            className="w-fit"
-          >
-            {t('settingsPage.setPassword')}
-          </Button>
-        </CardContent>
-      </Card>
+      <p className="text-sm text-muted-foreground">
+        {t('settingsPage.forgotPasswordHint')}{' '}
+        <Link href="/forgot-password" className="text-primary hover:underline">
+          {t('settingsPage.forgotPasswordLink')}
+        </Link>
+      </p>
 
       <Button variant="destructive" onClick={handleLogout} className="w-fit">
         {t('settingsPage.logout')}

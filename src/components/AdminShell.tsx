@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
-import { Users, ClipboardList, Wallet, Headphones, ShieldCheck, LogOut } from 'lucide-react';
+import { Users, ClipboardList, Wallet, Headphones, ShieldCheck, ClipboardCheck, LogOut } from 'lucide-react';
 import { useAdminSession } from '@/lib/admin-session-context';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { href: '/admin/oversight', labelKey: 'admin.navOversight', icon: ClipboardList },
   { href: '/admin/payments', labelKey: 'admin.navPayments', icon: Wallet },
   { href: '/admin/support', labelKey: 'admin.navSupport', icon: Headphones },
+  { href: '/admin/change-requests', labelKey: 'admin.navChangeRequests', icon: ClipboardCheck },
   { href: '/admin/users', labelKey: 'admin.navAdminUsers', icon: ShieldCheck, superAdminOnly: true },
 ];
 
