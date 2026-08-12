@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
@@ -22,6 +23,20 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { adminSession, clearAdminSession } = useAdminSession();
+  const [unseenChangeRequests, setUnseenChangeRequests] = useState(0);
+
+  // Re-checked on every navigation — the Change Requests page itself calls
+  // markSeen() on mount, so navigating away from it is what makes this badge
+  // actually clear, same as a chat app re-reading unread count after you
+  // leave a conversation.
+  useEffect(() => {
+    if (!adminSession) return;
+    api
+      .adminCountUnseenChangeRequests(adminSession.accessToken)
+      .then((res) => setUnseenChangeRequests(res.count))
+      .catch(() => undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adminSession, pathname]);
 
   if (!adminSession) return null;
 
@@ -51,6 +66,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           {NAV_ITEMS.filter((item) => !item.superAdminOnly || adminSession.admin.role === 'super_admin').map(
             ({ href, labelKey, icon: Icon }) => {
               const active = pathname === href || pathname.startsWith(href + '/');
+              const showBadge = href === '/admin/change-requests' && unseenChangeRequests > 0;
               return (
                 <Link
                   key={href}
@@ -64,6 +80,11 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 >
                   <Icon className="size-4" />
                   <span className="flex-1">{t(labelKey)}</span>
+                  {showBadge && (
+                    <span className="flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
+                      {unseenChangeRequests}
+                    </span>
+                  )}
                 </Link>
               );
             },

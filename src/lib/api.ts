@@ -297,6 +297,12 @@ export const api = {
       body: JSON.stringify({ adminNote }),
     }),
 
+  adminCountUnseenChangeRequests: (token: string) =>
+    request<{ count: number }>('/admin/change-requests/unseen-count', { token }),
+
+  adminMarkChangeRequestsSeen: (token: string) =>
+    request<{ message: string }>('/admin/change-requests/mark-seen', { method: 'POST', token }),
+
   uploadVehicleDocument: (
     token: string,
     vehicleId: string,

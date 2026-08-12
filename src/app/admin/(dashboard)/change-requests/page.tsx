@@ -46,6 +46,14 @@ export default function AdminChangeRequestsPage() {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(load, [adminSession, status, t]);
 
+  // Marks the badge as seen for this admin — AdminShell re-checks the
+  // unseen count on every navigation, so leaving this page is what clears it.
+  useEffect(() => {
+    if (!adminSession) return;
+    api.adminMarkChangeRequestsSeen(adminSession.accessToken).catch(() => undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adminSession]);
+
   const handleApprove = async (id: string) => {
     if (!adminSession) return;
     setBusyId(id);
