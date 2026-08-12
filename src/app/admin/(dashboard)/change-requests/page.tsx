@@ -46,11 +46,16 @@ export default function AdminChangeRequestsPage() {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(load, [adminSession, status, t]);
 
-  // Marks the badge as seen for this admin — AdminShell re-checks the
-  // unseen count on every navigation, so leaving this page is what clears it.
+  // Marks the badge as seen for this admin, then tells AdminShell to clear
+  // it immediately (it also re-checks on navigation, but that alone would
+  // leave the badge showing a stale count for as long as you stay on this
+  // page — same fix WhatsApp applies the instant you open a chat).
   useEffect(() => {
     if (!adminSession) return;
-    api.adminMarkChangeRequestsSeen(adminSession.accessToken).catch(() => undefined);
+    api
+      .adminMarkChangeRequestsSeen(adminSession.accessToken)
+      .then(() => window.dispatchEvent(new Event('admin-change-requests-seen')))
+      .catch(() => undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adminSession]);
 

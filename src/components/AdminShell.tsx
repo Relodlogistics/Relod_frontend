@@ -25,16 +25,22 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const { adminSession, clearAdminSession } = useAdminSession();
   const [unseenChangeRequests, setUnseenChangeRequests] = useState(0);
 
-  // Re-checked on every navigation — the Change Requests page itself calls
-  // markSeen() on mount, so navigating away from it is what makes this badge
-  // actually clear, same as a chat app re-reading unread count after you
-  // leave a conversation.
+  // Re-checked on every navigation, and also instantly on the
+  // 'admin-change-requests-seen' event the Change Requests page fires right
+  // after marking itself seen — without that second path the badge would
+  // keep showing the stale count for as long as the admin stayed on that
+  // page, since pathname alone wouldn't change until they navigated away.
   useEffect(() => {
     if (!adminSession) return;
-    api
-      .adminCountUnseenChangeRequests(adminSession.accessToken)
-      .then((res) => setUnseenChangeRequests(res.count))
-      .catch(() => undefined);
+    const refresh = () => {
+      api
+        .adminCountUnseenChangeRequests(adminSession.accessToken)
+        .then((res) => setUnseenChangeRequests(res.count))
+        .catch(() => undefined);
+    };
+    refresh();
+    window.addEventListener('admin-change-requests-seen', refresh);
+    return () => window.removeEventListener('admin-change-requests-seen', refresh);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adminSession, pathname]);
 
