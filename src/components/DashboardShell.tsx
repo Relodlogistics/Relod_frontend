@@ -25,6 +25,7 @@ import { useSession } from '@/lib/session-context';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
 import { useDisplayName } from '@/lib/use-display-name';
+import { ChangeRequestResultPopup } from './ChangeRequestResultPopup';
 
 function navItemsFor(userType: 'carrier' | 'shipper') {
   return [
@@ -94,6 +95,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex flex-1 bg-background">
+      <ChangeRequestResultPopup />
       {/* Hamburger button — the sidebar below is a fixed-width, always-visible
           block on desktop, but becomes a slide-in drawer on mobile (see the
           aside's responsive classes). Placed top-left since GlobalTopBar's

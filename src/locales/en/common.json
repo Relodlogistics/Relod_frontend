@@ -350,6 +350,14 @@
     "attachFile": "Attach a file",
     "notFound": "Ticket not found."
   },
+  "changeRequestPopup": {
+    "title": "Update on your requested changes",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "newValue": "New value",
+    "adminNote": "Note from our team",
+    "close": "Close"
+  },
   "settingsPage": {
     "title": "Settings",
     "overview": "Account overview",

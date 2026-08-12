@@ -284,6 +284,12 @@ export const api = {
 
   listMyChangeRequests: (token: string) => request<ChangeRequest[]>('/change-requests/mine', { token }),
 
+  listUnseenResolvedChangeRequests: (token: string) =>
+    request<ChangeRequest[]>('/change-requests/unseen-resolved', { token }),
+
+  markResolvedChangeRequestsSeen: (token: string) =>
+    request<{ message: string }>('/change-requests/mark-resolved-seen', { method: 'POST', token }),
+
   adminListChangeRequests: (token: string, status?: ChangeRequest['status']) =>
     request<AdminChangeRequest[]>(`/admin/change-requests${status ? `?status=${status}` : ''}`, { token }),
 

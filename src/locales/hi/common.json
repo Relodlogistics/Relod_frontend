@@ -350,6 +350,14 @@
     "attachFile": "फ़ाइल संलग्न करें",
     "notFound": "टिकट नहीं मिला।"
   },
+  "changeRequestPopup": {
+    "title": "आपके अनुरोधित बदलावों पर अपडेट",
+    "approved": "स्वीकृत",
+    "rejected": "अस्वीकृत",
+    "newValue": "नया मान",
+    "adminNote": "हमारी टीम की टिप्पणी",
+    "close": "बंद करें"
+  },
   "settingsPage": {
     "title": "सेटिंग्स",
     "overview": "खाता अवलोकन",
