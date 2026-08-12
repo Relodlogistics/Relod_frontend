@@ -97,6 +97,7 @@ export default function DashboardPage() {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [bannerPosting, setBannerPosting] = useState<Posting | null>(null);
   const [currentLoadTracking, setCurrentLoadTracking] = useState<BookingTracking | null>(null);
+  const [pendingTruckCount, setPendingTruckCount] = useState(0);
 
   useEffect(() => {
     if (!session) return;
@@ -104,6 +105,23 @@ export default function DashboardPage() {
     api.listMyBookings(session.accessToken).then(setBookings).catch(() => undefined);
     api.listMyPaymentTracking(session.accessToken).then(setPaymentLogs).catch(() => undefined);
     api.listNotifications(session.accessToken).then(setNotifications).catch(() => undefined);
+  }, [session]);
+
+  // A fleet owner (non-owner-operator) can leave the add-trucks loop partway
+  // through via "Skip for now" after their first truck — surface the
+  // shortfall here rather than leaving it silently unfinished.
+  useEffect(() => {
+    if (!session || session.userType !== 'carrier') return;
+    Promise.all([
+      api.getCarrierProfile(session.accessToken, session.accountId),
+      api.listMyVehicles(session.accessToken),
+    ])
+      .then(([carrier, vehicles]) => {
+        if (!carrier.isOwnerOperator && carrier.truckCount) {
+          setPendingTruckCount(Math.max(0, carrier.truckCount - vehicles.length));
+        }
+      })
+      .catch(() => undefined);
   }, [session]);
 
   const currentLoad = bookings.find((b) => b.status === 'in_transit') ?? null;
@@ -226,6 +244,25 @@ export default function DashboardPage() {
           {formatDateRange(weekStart, weekEnd)}
         </div>
       </div>
+
+      {pendingTruckCount > 0 && (
+        <Card className="border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950">
+          <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
+            <div className="flex items-start gap-3">
+              <Truck className="mt-0.5 size-5 shrink-0 text-amber-600" />
+              <div>
+                <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                  {t('dashboard.pendingTrucksTitle', { count: pendingTruckCount })}
+                </p>
+                <p className="text-xs text-amber-800 dark:text-amber-200">{t('dashboard.pendingTrucksDesc')}</p>
+              </div>
+            </div>
+            <Link href="/register/add-trucks">
+              <Button size="sm">{t('dashboard.pendingTrucksCta')}</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="flex flex-wrap gap-3">
         <Link href="/postings/new">

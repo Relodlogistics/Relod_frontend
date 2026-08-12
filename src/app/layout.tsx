@@ -4,6 +4,7 @@ import "./globals.css";
 import { I18nProvider } from "@/components/I18nProvider";
 import { RegistrationProvider } from "@/lib/registration-context";
 import { SessionProvider } from "@/lib/session-context";
+import { DriverSessionProvider } from "@/lib/driver-session-context";
 import { AdminSessionProvider } from "@/lib/admin-session-context";
 import { GlobalTopBar } from "@/components/GlobalTopBar";
 import { SITE_URL } from "@/lib/site";
@@ -50,12 +51,14 @@ export default async function RootLayout({
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <I18nProvider>
           <SessionProvider>
-            <AdminSessionProvider>
-              <RegistrationProvider>
-                <GlobalTopBar />
-                {children}
-              </RegistrationProvider>
-            </AdminSessionProvider>
+            <DriverSessionProvider>
+              <AdminSessionProvider>
+                <RegistrationProvider>
+                  <GlobalTopBar />
+                  {children}
+                </RegistrationProvider>
+              </AdminSessionProvider>
+            </DriverSessionProvider>
           </SessionProvider>
         </I18nProvider>
       </body>

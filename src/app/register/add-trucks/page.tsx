@@ -9,7 +9,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { CheckCircle2 } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -19,6 +18,8 @@ import {
 } from '@/components/ui/select';
 import { api, ApiError, CargoType } from '@/lib/api';
 import { useSession } from '@/lib/session-context';
+import { useRegistration } from '@/lib/registration-context';
+import { VehicleVerificationStep } from '@/components/VehicleVerificationStep';
 import { AuthBackground } from '@/components/auth/AuthBackground';
 import { TRUCK_TYPES, truckTypeLabel } from '@/lib/truck-types';
 
@@ -40,6 +41,7 @@ export default function AddTrucksPage() {
   const { t } = useTranslation();
   const router = useRouter();
   const { session, loaded } = useSession();
+  const { state, setState } = useRegistration();
 
   const [totalTrucks, setTotalTrucks] = useState<number | null>(null);
   const [addedCount, setAddedCount] = useState(0);
@@ -53,6 +55,7 @@ export default function AddTrucksPage() {
   const [cargoTypes, setCargoTypes] = useState<CargoType[]>(['general']);
   const [driverName, setDriverName] = useState('');
   const [driverPhone, setDriverPhone] = useState('');
+  const [driverAuthorized, setDriverAuthorized] = useState(false);
   const [lanes, setLanes] = useState<{ origin: string; destination: string }[]>([
     { origin: '', destination: '' },
   ]);
@@ -67,18 +70,21 @@ export default function AddTrucksPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Set once addVehicle succeeds — holds the checklist here on an RC-check
+  // Set once addVehicle succeeds — holds the checklist here on an RC+documents
   // step for that truck before letting the form reset for the next one.
+  // Recovered from registration-context on refresh, see effect below.
   const [pendingRcVehicleId, setPendingRcVehicleId] = useState<string | null>(null);
-  const [rcVerified, setRcVerified] = useState(false);
-  const [rcError, setRcError] = useState<string | null>(null);
-  const [rcLoading, setRcLoading] = useState(false);
+  const [verificationComplete, setVerificationComplete] = useState(false);
 
   useEffect(() => {
     if (!loaded) return;
     if (!session || session.userType !== 'carrier') {
       router.replace('/login');
       return;
+    }
+    if (state.pendingAddTruckVehicleId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPendingRcVehicleId(state.pendingAddTruckVehicleId);
     }
     api
       .getCarrierProfile(session.accessToken, session.accountId)
@@ -105,6 +111,7 @@ export default function AddTrucksPage() {
     setCargoTypes(['general']);
     setDriverName('');
     setDriverPhone('');
+    setDriverAuthorized(false);
     setLanes([{ origin: '', destination: '' }]);
     setWhatsappStep('input');
     setWhatsappCode('');
@@ -176,14 +183,16 @@ export default function AddTrucksPage() {
         driverName,
         driverPhone: fullDriverWhatsapp,
         driverWhatsappVerificationToken: whatsappToken,
+        driverAuthorized,
         preferredLanes: completeLanes.map((lane) => ({
           originLabel: lane.origin,
           destinationLabel: lane.destination,
         })),
       });
-      // Hold here on an RC-check step for this truck before letting the
+      // Hold here on an RC+documents step for this truck before letting the
       // form move on to the next one — see pendingRcVehicleId below.
       setPendingRcVehicleId(vehicle.id);
+      setState({ pendingAddTruckVehicleId: vehicle.id });
     } catch (e) {
       setError(e instanceof ApiError ? e.message : t('errors.generic'));
     } finally {
@@ -191,25 +200,11 @@ export default function AddTrucksPage() {
     }
   };
 
-  const handleVerifyRc = async () => {
-    if (!session || !pendingRcVehicleId) return;
-    setRcError(null);
-    setRcLoading(true);
-    try {
-      await api.verifyVehicleRc(session.accessToken, pendingRcVehicleId);
-      setRcVerified(true);
-    } catch (e) {
-      setRcError(e instanceof ApiError ? e.message : t('errors.generic'));
-    } finally {
-      setRcLoading(false);
-    }
-  };
-
-  const handleContinueAfterRc = () => {
+  const handleContinueAfterVerification = () => {
     setAddedCount((prev) => prev + 1);
     setPendingRcVehicleId(null);
-    setRcVerified(false);
-    setRcError(null);
+    setVerificationComplete(false);
+    setState({ pendingAddTruckVehicleId: undefined });
     resetTruckForm();
   };
 
@@ -248,7 +243,7 @@ export default function AddTrucksPage() {
     );
   }
 
-  if (pendingRcVehicleId) {
+  if (pendingRcVehicleId && session) {
     return (
       <AuthBackground
         imageSrc="/auth/register-bg.png"
@@ -260,24 +255,18 @@ export default function AddTrucksPage() {
               <CardTitle>{t('addTrucks.rcTitle')}</CardTitle>
               <CardDescription>{t('addTrucks.rcSubtitle')}</CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-              {rcError && (
-                <Alert variant="destructive">
-                  <AlertDescription>{rcError}</AlertDescription>
-                </Alert>
-              )}
-              {rcVerified ? (
-                <>
-                  <p className="flex items-center gap-1.5 text-sm font-medium text-emerald-600">
-                    <CheckCircle2 className="size-4" />
-                    {t('addTrucks.rcVerified')}
-                  </p>
-                  <Button onClick={handleContinueAfterRc}>{t('verify.continue')}</Button>
-                </>
-              ) : (
-                <Button onClick={handleVerifyRc} disabled={rcLoading}>
-                  {t('phone.verify')}
-                </Button>
+            <CardContent className="flex flex-col gap-3">
+              <VehicleVerificationStep
+                token={session.accessToken}
+                vehicleId={pendingRcVehicleId}
+                includeDriverDocs
+                onComplete={setVerificationComplete}
+              />
+              <Button onClick={handleContinueAfterVerification} disabled={!verificationComplete}>
+                {t('verify.continue')}
+              </Button>
+              {!verificationComplete && (
+                <p className="text-center text-xs text-muted-foreground">{t('vehicle.finishHint')}</p>
               )}
             </CardContent>
           </Card>
@@ -293,6 +282,7 @@ export default function AddTrucksPage() {
     driverName.length >= 2 &&
     driverPhone.length >= 10 &&
     whatsappStep === 'verified' &&
+    driverAuthorized &&
     completeLanes.length > 0;
 
   return (
@@ -473,6 +463,15 @@ export default function AddTrucksPage() {
                 )}
                 {whatsappError && <p className="text-xs text-destructive">{whatsappError}</p>}
               </div>
+              <label className="flex items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={driverAuthorized}
+                  onChange={(e) => setDriverAuthorized(e.target.checked)}
+                />
+                <span>{t('vehicle.driverAuthorizeConsent')}</span>
+              </label>
             </div>
 
             <div className="flex flex-col gap-2">
@@ -497,9 +496,11 @@ export default function AddTrucksPage() {
             <Button onClick={handleSubmit} disabled={loading || !canSubmit}>
               {t('addTrucks.submit')}
             </Button>
-            <Button variant="ghost" onClick={() => router.push('/dashboard')}>
-              {t('addTrucks.skipForNow')}
-            </Button>
+            {addedCount > 0 && (
+              <Button variant="ghost" onClick={() => router.push('/dashboard')}>
+                {t('addTrucks.skipForNow')}
+              </Button>
+            )}
           </CardContent>
         </Card>
       </div>

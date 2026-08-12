@@ -44,6 +44,16 @@ interface RegistrationState {
   // these fields are held here, client-side only, in between.
   pendingCarrierProfile: PendingCarrierProfile;
   pendingShipperProfile: PendingShipperProfile;
+  // Set once the first vehicle is created (register/vehicle) — lets the
+  // document-upload/RC-verify step recover after a refresh instead of
+  // stranding the carrier (see register/vehicle's mount effect).
+  pendingVehicleId: string;
+  pendingVehicleIncludesDriverDocs: boolean;
+  // Same recovery purpose as pendingVehicleId above, but for the add-trucks
+  // loop (fleet owners adding truck 2..N, or all of truck 1..N for
+  // non-owner-operators) — set once a truck is created, cleared once its
+  // RC + required docs are done and the loop moves to the next truck.
+  pendingAddTruckVehicleId: string;
 }
 
 interface RegistrationContextValue {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,17 +16,37 @@ interface Props {
   token: string;
   vehicleId: string;
   accept?: string;
+  required?: boolean;
+  // True when this doc was already uploaded in a prior session (e.g. after a
+  // refresh) — skips straight to the "uploaded" state instead of showing the
+  // file picker again.
+  alreadyUploaded?: boolean;
+  onUploaded?: () => void;
 }
 
 type Status = 'idle' | 'uploading' | 'uploaded' | 'error';
 
-export function DocumentUploadField({ docType, labelKey, token, vehicleId, accept }: Props) {
+export function DocumentUploadField({
+  docType,
+  labelKey,
+  token,
+  vehicleId,
+  accept,
+  required,
+  alreadyUploaded,
+  onUploaded,
+}: Props) {
   const { t } = useTranslation();
   const [file, setFile] = useState<File | null>(null);
   const [expiryDate, setExpiryDate] = useState('');
-  const [status, setStatus] = useState<Status>('idle');
+  const [status, setStatus] = useState<Status>(alreadyUploaded ? 'uploaded' : 'idle');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const needsExpiry = EXPIRY_BEARING.includes(docType);
+
+  useEffect(() => {
+    if (alreadyUploaded) onUploaded?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleUpload = async () => {
     if (!file) return;
@@ -35,6 +55,7 @@ export function DocumentUploadField({ docType, labelKey, token, vehicleId, accep
     try {
       await api.uploadVehicleDocument(token, vehicleId, docType, file, expiryDate || undefined);
       setStatus('uploaded');
+      onUploaded?.();
     } catch (e) {
       setStatus('error');
       setErrorMsg(e instanceof ApiError ? e.message : t('vehicle.uploadFailed'));
@@ -44,7 +65,10 @@ export function DocumentUploadField({ docType, labelKey, token, vehicleId, accep
   return (
     <div className="flex flex-col gap-2 rounded-lg border p-3">
       <div className="flex items-center justify-between">
-        <Label>{t(labelKey)}</Label>
+        <Label>
+          {t(labelKey)}
+          {required && status !== 'uploaded' && <span className="text-destructive"> *</span>}
+        </Label>
         {status === 'uploaded' && <Badge>{t('vehicle.uploaded')}</Badge>}
       </div>
 

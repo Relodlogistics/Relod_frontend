@@ -78,6 +78,7 @@
     "driverSection": "Driver details",
     "driverName": "Driver's full name",
     "driverPhone": "Driver's phone number",
+    "driverAuthorizeConsent": "I authorize this driver to post this truck's availability and accept loads on my behalf. Either of our actions will be treated as final.",
     "cargoTypes": "Cargo types you carry",
     "cargoTypeGeneral": "General",
     "cargoTypeRefrigerated": "Refrigerated",
@@ -94,7 +95,10 @@
     "removeLane": "Remove route",
     "submit": "Save vehicle",
     "documentsTitle": "Upload documents",
-    "documentsSubtitle": "Add these now, or later — they unlock higher verification tiers",
+    "documentsSubtitle": "Items marked * are required before this truck is fully onboarded — the rest unlock higher verification tiers and can be added later",
+    "requiredDocsRemaining": "{{count}} required item(s) left",
+    "requiredDocsComplete": "All required items done",
+    "finishHint": "Verify RC and upload every item marked * to continue",
     "rc": "RC (Registration Certificate)",
     "insurance": "Insurance certificate",
     "fitness": "Fitness certificate",
@@ -244,6 +248,10 @@
     "closeMenu": "Close menu"
   },
   "dashboard": {
+    "pendingTrucksTitle": "{{count}} truck still needs onboarding",
+    "pendingTrucksTitle_other": "{{count}} trucks still need onboarding",
+    "pendingTrucksDesc": "Finish adding driver details, RC verification, and documents to start getting matched loads on them.",
+    "pendingTrucksCta": "Continue adding trucks",
     "postLoad": "Post a load",
     "postTruck": "Post my truck",
     "searchCarrier": "Search Trucks",
@@ -357,6 +365,20 @@
     "newValue": "New value",
     "adminNote": "Note from our team",
     "close": "Close"
+  },
+  "driverLogin": {
+    "title": "Driver login",
+    "subtitle": "Enter the phone number your truck owner registered you with",
+    "notFound": "This number isn't registered as a driver on any truck yet. Ask your truck owner to add you."
+  },
+  "driverDashboard": {
+    "drivingFor": "Driving for {{name}}",
+    "verificationStatus": "Verification status",
+    "status_pending": "Pending review",
+    "status_approved": "Approved",
+    "status_rejected": "Rejected",
+    "notAuthorizedYet": "Your owner hasn't authorized you to post or accept loads yet — you can view your truck's details in the meantime.",
+    "documents": "Documents"
   },
   "settingsPage": {
     "title": "Settings",

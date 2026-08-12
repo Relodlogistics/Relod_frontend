@@ -63,13 +63,21 @@ async function request<T>(
 }
 
 export const api = {
-  sendOtp: (phone: string, purpose: 'signup' | 'login' | 'whatsapp_verify', turnstileToken?: string) =>
+  sendOtp: (
+    phone: string,
+    purpose: 'signup' | 'login' | 'whatsapp_verify' | 'driver_login',
+    turnstileToken?: string,
+  ) =>
     request<{ message: string; expiresInSeconds: number; devCode?: string }>('/auth/send-otp', {
       method: 'POST',
       body: JSON.stringify({ phone, purpose, turnstileToken }),
     }),
 
-  verifyOtp: (phone: string, purpose: 'signup' | 'login' | 'whatsapp_verify', code: string) =>
+  verifyOtp: (
+    phone: string,
+    purpose: 'signup' | 'login' | 'whatsapp_verify' | 'driver_login',
+    code: string,
+  ) =>
     request<{
       verified: boolean;
       token: string;
@@ -78,6 +86,11 @@ export const api = {
       accessToken?: string;
       accountId?: string;
       userType?: 'carrier' | 'shipper';
+      // Only present when purpose is 'driver_login'.
+      vehicleId?: string;
+      driverName?: string | null;
+      registrationNumber?: string;
+      driverAuthorizedAt?: string | null;
     }>('/auth/verify-otp', {
       method: 'POST',
       body: JSON.stringify({ phone, purpose, code }),
@@ -423,6 +436,11 @@ export const api = {
     }),
 
   listMyVehicles: (token: string) => request<Vehicle[]>('/vehicles/mine', { token }),
+
+  // Driver-scoped — token is a DriverAccessGuard token (see driver-session-context),
+  // not a carrier/shipper access token. Read-only for now (Phase 1).
+  getMyDriverVehicle: (token: string) =>
+    request<DriverVehicle>('/driver/me', { token }),
 
   rebook: (token: string, postingId: string, carrierId: string) =>
     request<Booking>(`/postings/${postingId}/rebook`, {
@@ -815,6 +833,52 @@ export interface Vehicle {
   capacityTons: string;
   numberOfAxles: number | null;
   cargoTypes: string[];
+  rcVerifiedAt: string | null;
+  rcUrl: string | null;
+  insuranceUrl: string | null;
+  fitnessUrl: string | null;
+  pucUrl: string | null;
+  permitUrl: string | null;
+  photoFrontUrl: string | null;
+  photoSideUrl: string | null;
+  photoRearUrl: string | null;
+  cargoPhotoUrl: string | null;
+  numberPlatePhotoUrl: string | null;
+  walkaroundVideoUrl: string | null;
+  driverPhotoUrl: string | null;
+  driverLicenseUrl: string | null;
+}
+
+// Shape returned by GET /driver/me — deliberately narrower than Vehicle/
+// AdminVehicle: no financial data, no other trucks, matching the driver
+// permission boundary enforced server-side by DriversService.getMyVehicle.
+export interface DriverVehicle {
+  id: string;
+  registrationNumber: string;
+  truckType: string;
+  capacityTons: string;
+  numberOfAxles: number | null;
+  cargoTypes: string[];
+  verificationStatus: 'pending' | 'approved' | 'rejected';
+  rcVerifiedAt: string | null;
+  driverName: string | null;
+  driverAuthorizedAt: string | null;
+  ownerFullName: string;
+  documents: {
+    rc: boolean;
+    insurance: boolean;
+    fitness: boolean;
+    puc: boolean;
+    permit: boolean;
+    photoFront: boolean;
+    photoSide: boolean;
+    photoRear: boolean;
+    cargoPhoto: boolean;
+    numberPlatePhoto: boolean;
+    walkaroundVideo: boolean;
+    driverPhoto: boolean;
+    driverLicense: boolean;
+  };
 }
 
 export interface Booking {
@@ -910,6 +974,11 @@ export interface VehicleRegistrationFields {
   isOwnerDriver?: boolean;
   driverName?: string;
   driverPhone?: string;
+  driverWhatsappVerificationToken?: string;
+  // Required whenever a driver other than the account holder is named —
+  // explicit consent that this driver may post this truck and accept loads
+  // on the owner's behalf (see DriverAccessGuard).
+  driverAuthorized?: boolean;
   homeBaseLat?: number;
   homeBaseLng?: number;
   preferredLanes: { originLabel: string; destinationLabel: string }[];
@@ -930,6 +999,10 @@ export interface AddVehicleFields {
   driverName: string;
   driverPhone: string;
   driverWhatsappVerificationToken: string;
+  // Explicit owner consent that this driver may post this truck and accept
+  // loads on the owner's behalf (see DriverAccessGuard) — always required
+  // here, since AddVehicleFields is only ever used for a driver-driven truck.
+  driverAuthorized: boolean;
   preferredLanes: { originLabel: string; destinationLabel: string }[];
 }
 
@@ -1065,25 +1138,12 @@ export interface AdminUserListItem extends AdminUser {
 export interface AdminVehicle extends Vehicle {
   driverName: string | null;
   driverPhone: string | null;
-  driverLicenseUrl: string | null;
-  driverPhotoUrl: string | null;
   verificationStatus: 'pending' | 'approved' | 'rejected';
-  rcUrl: string | null;
-  insuranceUrl: string | null;
   insuranceExpiryDate: string | null;
-  fitnessUrl: string | null;
   fitnessExpiryDate: string | null;
-  pucUrl: string | null;
   pucExpiryDate: string | null;
-  permitUrl: string | null;
   permitExpiryDate: string | null;
   photoUrls: string[];
-  photoFrontUrl: string | null;
-  photoSideUrl: string | null;
-  photoRearUrl: string | null;
-  cargoPhotoUrl: string | null;
-  numberPlatePhotoUrl: string | null;
-  walkaroundVideoUrl: string | null;
   upiId: string | null;
 }
 

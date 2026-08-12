@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { X, CheckCircle2 } from 'lucide-react';
+import { X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,10 +20,9 @@ import {
 import { api, ApiError, CargoType } from '@/lib/api';
 import { useRegistration } from '@/lib/registration-context';
 import { useSession } from '@/lib/session-context';
-import { DocumentUploadField } from '@/components/DocumentUploadField';
+import { VehicleVerificationStep } from '@/components/VehicleVerificationStep';
 import { RegistrationStepper } from '@/components/RegistrationStepper';
 import { AuthBackground } from '@/components/auth/AuthBackground';
-import { VEHICLE_DOCUMENTS, DRIVER_DOCUMENTS } from '@/lib/document-types';
 import { TRUCK_TYPES, truckTypeLabel } from '@/lib/truck-types';
 
 const CARGO_TYPES: { value: CargoType; labelKey: string }[] = [
@@ -48,8 +47,8 @@ const STEPS = [
 export default function VehiclePage() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { state } = useRegistration();
-  const { session, setSession } = useSession();
+  const { state, setState } = useRegistration();
+  const { session, setSession, loaded: sessionLoaded } = useSession();
 
   const [registrationNumber, setRegistrationNumber] = useState('');
   const [truckType, setTruckType] = useState(TRUCK_TYPES[0]);
@@ -59,6 +58,7 @@ export default function VehiclePage() {
   const [isOwnerDriver, setIsOwnerDriver] = useState(true);
   const [driverName, setDriverName] = useState('');
   const [driverPhone, setDriverPhone] = useState('');
+  const [driverAuthorized, setDriverAuthorized] = useState(false);
   const [cargoTypes, setCargoTypes] = useState<CargoType[]>(['general']);
   const [lanes, setLanes] = useState<{ origin: string; destination: string }[]>([
     { origin: '', destination: '' },
@@ -67,15 +67,32 @@ export default function VehiclePage() {
   const [showLoginLink, setShowLoginLink] = useState(false);
   const [loading, setLoading] = useState(false);
   const [vehicleId, setVehicleId] = useState<string | null>(null);
-  const [rcVerified, setRcVerified] = useState(false);
-  const [rcLoading, setRcLoading] = useState(false);
-  const [rcError, setRcError] = useState<string | null>(null);
+  const [verificationComplete, setVerificationComplete] = useState(false);
+  const [finishing, setFinishing] = useState(false);
 
+  const [whatsappStep, setWhatsappStep] = useState<'input' | 'otp' | 'verified'>('input');
+  const [whatsappCode, setWhatsappCode] = useState('');
+  const [whatsappDevCode, setWhatsappDevCode] = useState<string | null>(null);
+  const [whatsappToken, setWhatsappToken] = useState<string | null>(null);
+  const [whatsappError, setWhatsappError] = useState<string | null>(null);
+  const [whatsappLoading, setWhatsappLoading] = useState(false);
+
+  // Recovers from a mid-upload refresh: the carrier account + vehicle already
+  // exist (session is set, pendingVehicleId is persisted) so there's no
+  // reason to send them back to /register/phone — jump straight back to the
+  // document-upload step instead.
   useEffect(() => {
+    if (!sessionLoaded) return;
+    if (session && state.pendingVehicleId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setVehicleId(state.pendingVehicleId);
+      return;
+    }
     if (!state.token || !state.phone || state.userType !== 'carrier' || !state.pendingCarrierProfile) {
       router.replace('/register/phone');
     }
-  }, [state.token, state.phone, state.userType, state.pendingCarrierProfile, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionLoaded, session, state.pendingVehicleId, state.token, state.phone, state.userType, state.pendingCarrierProfile]);
 
   const toggleCargoType = (value: CargoType) => {
     setCargoTypes((prev) =>
@@ -96,19 +113,42 @@ export default function VehiclePage() {
   };
 
   const completeLanes = lanes.filter((lane) => lane.origin && lane.destination);
+  const fullDriverWhatsapp = driverPhone.startsWith('+') ? driverPhone : `+91${driverPhone}`;
 
-  const handleVerifyRc = async () => {
-    if (!session || !vehicleId) return;
-    setRcError(null);
-    setRcLoading(true);
+  const handleSendWhatsappOtp = async () => {
+    setWhatsappError(null);
+    setWhatsappLoading(true);
     try {
-      await api.verifyVehicleRc(session.accessToken, vehicleId);
-      setRcVerified(true);
+      const res = await api.sendOtp(fullDriverWhatsapp, 'whatsapp_verify');
+      setWhatsappDevCode(res.devCode ?? null);
+      setWhatsappStep('otp');
     } catch (e) {
-      setRcError(e instanceof ApiError ? e.message : t('errors.generic'));
+      setWhatsappError(e instanceof ApiError ? e.message : t('errors.generic'));
     } finally {
-      setRcLoading(false);
+      setWhatsappLoading(false);
     }
+  };
+
+  const handleVerifyWhatsappOtp = async () => {
+    setWhatsappError(null);
+    setWhatsappLoading(true);
+    try {
+      const res = await api.verifyOtp(fullDriverWhatsapp, 'whatsapp_verify', whatsappCode);
+      setWhatsappToken(res.token);
+      setWhatsappStep('verified');
+    } catch (e) {
+      setWhatsappError(e instanceof ApiError ? e.message : t('errors.generic'));
+    } finally {
+      setWhatsappLoading(false);
+    }
+  };
+
+  const handleChangeDriverWhatsapp = () => {
+    setWhatsappStep('input');
+    setWhatsappToken(null);
+    setWhatsappCode('');
+    setWhatsappDevCode(null);
+    setWhatsappError(null);
   };
 
   const handleSubmit = async () => {
@@ -134,7 +174,9 @@ export default function VehiclePage() {
           upiId: upiId || undefined,
           isOwnerDriver,
           driverName: !isOwnerDriver ? driverName : undefined,
-          driverPhone: !isOwnerDriver ? driverPhone : undefined,
+          driverPhone: !isOwnerDriver ? fullDriverWhatsapp : undefined,
+          driverWhatsappVerificationToken: !isOwnerDriver ? whatsappToken! : undefined,
+          driverAuthorized: !isOwnerDriver ? driverAuthorized : undefined,
           preferredLanes,
         },
       });
@@ -146,6 +188,10 @@ export default function VehiclePage() {
         router.push('/dashboard');
       } else {
         setVehicleId(res.vehicleId ?? null);
+        setState({
+          pendingVehicleId: res.vehicleId ?? undefined,
+          pendingVehicleIncludesDriverDocs: !isOwnerDriver,
+        });
       }
     } catch (e) {
       if (e instanceof ApiError && e.status === 409) {
@@ -159,8 +205,12 @@ export default function VehiclePage() {
     }
   };
 
-  if (vehicleId && state.token) {
-    const documents = isOwnerDriver ? VEHICLE_DOCUMENTS : [...VEHICLE_DOCUMENTS, ...DRIVER_DOCUMENTS];
+  const handleFinish = () => {
+    setFinishing(true);
+    router.push('/dashboard');
+  };
+
+  if (vehicleId && session) {
     return (
       <AuthBackground
         imageSrc="/auth/register-bg.png"
@@ -177,38 +227,24 @@ export default function VehiclePage() {
               <CardDescription>{t('vehicle.documentsSubtitle')}</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
-              <div className="flex flex-col gap-2 rounded-lg border bg-muted/30 p-3">
-                <p className="text-sm font-medium">{t('addTrucks.rcTitle')}</p>
-                <p className="text-xs text-muted-foreground">{t('addTrucks.rcSubtitle')}</p>
-                {rcError && (
-                  <Alert variant="destructive">
-                    <AlertDescription>{rcError}</AlertDescription>
-                  </Alert>
-                )}
-                {rcVerified ? (
-                  <p className="flex items-center gap-1.5 text-sm font-medium text-emerald-600">
-                    <CheckCircle2 className="size-4" />
-                    {t('addTrucks.rcVerified')}
-                  </p>
-                ) : (
-                  <Button size="sm" className="self-start" onClick={handleVerifyRc} disabled={rcLoading}>
-                    {t('phone.verify')}
-                  </Button>
-                )}
-              </div>
-              {documents.map((doc) => (
-                <DocumentUploadField
-                  key={doc.docType}
-                  docType={doc.docType}
-                  labelKey={doc.labelKey}
-                  accept={doc.accept}
-                  token={state.token!}
-                  vehicleId={vehicleId}
-                />
-              ))}
-              <Button className="mt-2" onClick={() => router.push('/dashboard')}>
+              <VehicleVerificationStep
+                token={session.accessToken}
+                vehicleId={vehicleId}
+                includeDriverDocs={state.pendingVehicleIncludesDriverDocs ?? !isOwnerDriver}
+                onComplete={setVerificationComplete}
+              />
+              <Button
+                className="mt-2"
+                onClick={handleFinish}
+                disabled={!verificationComplete || finishing}
+              >
                 {t('vehicle.finish')}
               </Button>
+              {!verificationComplete && (
+                <p className="text-center text-xs text-muted-foreground">
+                  {t('vehicle.finishHint')}
+                </p>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -319,7 +355,13 @@ export default function VehiclePage() {
                 <input
                   type="checkbox"
                   checked={isOwnerDriver}
-                  onChange={(e) => setIsOwnerDriver(e.target.checked)}
+                  onChange={(e) => {
+                    setIsOwnerDriver(e.target.checked);
+                    if (e.target.checked) {
+                      handleChangeDriverWhatsapp();
+                      setDriverAuthorized(false);
+                    }
+                  }}
                 />
                 {t('vehicle.isOwnerDriver')}
               </label>
@@ -331,14 +373,92 @@ export default function VehiclePage() {
                     <Input id="driverName" value={driverName} onChange={(e) => setDriverName(e.target.value)} />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="driverPhone">{t('vehicle.driverPhone')}</Label>
-                    <Input
-                      id="driverPhone"
-                      type="tel"
-                      value={driverPhone}
-                      onChange={(e) => setDriverPhone(e.target.value)}
-                    />
+                    <Label htmlFor="driverPhone">{t('addTrucks.driverWhatsapp')}</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="driverPhone"
+                        type="tel"
+                        value={driverPhone}
+                        disabled={whatsappStep !== 'input'}
+                        onChange={(e) => setDriverPhone(e.target.value)}
+                      />
+                      {whatsappStep === 'input' && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleSendWhatsappOtp}
+                          disabled={whatsappLoading || driverPhone.length < 10}
+                        >
+                          {t('phone.sendOtp')}
+                        </Button>
+                      )}
+                      {whatsappStep === 'verified' && (
+                        <Button type="button" variant="ghost" onClick={handleChangeDriverWhatsapp}>
+                          {t('phone.changeNumber')}
+                        </Button>
+                      )}
+                    </div>
+                    {whatsappStep === 'verified' ? (
+                      <p className="text-xs font-medium text-emerald-600">✓ {t('profile.whatsappVerified')}</p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">{t('addTrucks.driverWhatsappHint')}</p>
+                    )}
+                    {whatsappStep === 'otp' && (
+                      <div className="flex flex-col gap-2 rounded-lg border bg-muted/30 p-3">
+                        <p className="text-xs text-muted-foreground">
+                          {t('phone.otpSent', { phone: fullDriverWhatsapp })}
+                        </p>
+                        {whatsappDevCode && (
+                          <p className="text-xs text-muted-foreground">
+                            {t('phone.devCode', { code: whatsappDevCode })}
+                          </p>
+                        )}
+                        <div className="flex gap-2">
+                          <Input
+                            id="driverWhatsappOtp"
+                            inputMode="numeric"
+                            maxLength={6}
+                            placeholder={t('phone.otpLabel')}
+                            value={whatsappCode}
+                            onChange={(e) => setWhatsappCode(e.target.value.replace(/\D/g, ''))}
+                          />
+                          <Button
+                            type="button"
+                            onClick={handleVerifyWhatsappOtp}
+                            disabled={whatsappLoading || whatsappCode.length !== 6}
+                          >
+                            {t('phone.verify')}
+                          </Button>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <button
+                            type="button"
+                            className="text-muted-foreground underline"
+                            onClick={handleChangeDriverWhatsapp}
+                          >
+                            {t('phone.changeNumber')}
+                          </button>
+                          <button
+                            type="button"
+                            className="text-muted-foreground underline"
+                            onClick={handleSendWhatsappOtp}
+                          >
+                            {t('phone.resend')}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    {whatsappError && <p className="text-xs text-destructive">{whatsappError}</p>}
                   </div>
+                  <label className="flex items-start gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5"
+                      checked={driverAuthorized}
+                      onChange={(e) => setDriverAuthorized(e.target.checked)}
+                    />
+                    <span>{t('vehicle.driverAuthorizeConsent')}</span>
+                  </label>
                 </>
               )}
             </div>
@@ -390,7 +510,8 @@ export default function VehiclePage() {
                 !capacityTons ||
                 cargoTypes.length === 0 ||
                 completeLanes.length === 0 ||
-                (!isOwnerDriver && (driverName.length < 2 || driverPhone.length < 10))
+                (!isOwnerDriver &&
+                  (driverName.length < 2 || whatsappStep !== 'verified' || !driverAuthorized))
               }
             >
               {t('vehicle.submit')}
