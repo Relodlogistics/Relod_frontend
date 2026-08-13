@@ -21,13 +21,13 @@ export function Logo({ className, markSize = 8, variant = 'default' }: LogoProps
     <Link href="/" className={cn('flex items-center gap-2', className)}>
       <Image
         src={src}
-        alt="ReLod"
+        alt="Relod"
         width={markSizePx}
         height={markSizePx}
         className="shrink-0"
         priority
       />
-      <span className="font-display text-xl font-bold text-foreground">ReLod</span>
+      <span className="font-display text-xl font-bold text-foreground">Relod</span>
     </Link>
   );
 }

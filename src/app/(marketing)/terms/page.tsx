@@ -4,7 +4,7 @@ import { SITE_URL } from '@/lib/site';
 
 export const metadata: Metadata = {
   title: 'Terms of Service (Draft)',
-  description: "ReLod's terms of service (draft, pending legal review).",
+  description: "Relod's terms of service (draft, pending legal review).",
   alternates: { canonical: `${SITE_URL}/terms` },
   robots: { index: false },
 };

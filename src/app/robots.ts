@@ -28,7 +28,7 @@ export default function robots(): MetadataRoute.Robots {
         // Covers search engines (Googlebot, Bingbot) and AI crawlers that
         // fetch content live to cite in answers (e.g. ChatGPT-User,
         // PerplexityBot; Google's AI Overviews use the regular Googlebot) —
-        // same access as a search engine, so ReLod is citable when people
+        // same access as a search engine, so Relod is citable when people
         // ask AI assistants about India freight/trucking.
         userAgent: '*',
         allow: PUBLIC_PATHS,

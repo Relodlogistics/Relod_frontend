@@ -72,7 +72,7 @@ export async function startLiveTracking(token: string, vehicleId: string): Promi
   try {
     watcherId = await BackgroundGeolocation.addWatcher(
       {
-        backgroundTitle: 'ReLod is sharing your location',
+        backgroundTitle: 'Relod is sharing your location',
         backgroundMessage: 'Your live location helps shippers match loads to you.',
         requestPermissions: true,
         distanceFilter: 25,

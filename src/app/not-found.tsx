@@ -24,7 +24,7 @@ export default function NotFound() {
         </p>
       </div>
       <Link href="/" className={buttonVariants({ variant: 'default' })}>
-        Back to ReLod
+        Back to Relod
       </Link>
     </div>
   );

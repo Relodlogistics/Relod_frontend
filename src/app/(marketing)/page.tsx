@@ -5,20 +5,20 @@ import { SITE_URL } from '@/lib/site';
 export const metadata: Metadata = {
   title: 'Post a Load, Match a Truck, Track Every Mile',
   description:
-    "ReLod is a tech-enabled efficiency tool connecting Indian shippers with multimodal transporting fleets. Post a load or truck, get a ranked shortlist of matches, message on WhatsApp in one tap, and track every trip live — device or mobile GPS.",
+    "Relod is a tech-enabled efficiency tool connecting Indian shippers with multimodal transporting fleets. Post a load or truck, get a ranked shortlist of matches, message on WhatsApp in one tap, and track every trip live — device or mobile GPS.",
   alternates: { canonical: SITE_URL },
   openGraph: {
-    title: 'ReLod — Post a Load, Match a Truck, Track Every Mile',
+    title: 'Relod — Post a Load, Match a Truck, Track Every Mile',
     description:
       "India's tech-enabled freight efficiency tool — ranked carrier matching, one-tap WhatsApp outreach, and live GPS tracking.",
     url: SITE_URL,
-    siteName: 'ReLod',
+    siteName: 'Relod',
     locale: 'en_IN',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'ReLod — Post a Load, Match a Truck, Track Every Mile',
+    title: 'Relod — Post a Load, Match a Truck, Track Every Mile',
     description: "India's tech-enabled freight efficiency tool.",
   },
 };
@@ -26,10 +26,10 @@ export const metadata: Metadata = {
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
-  name: 'ReLod',
+  name: 'Relod',
   url: SITE_URL,
   description:
-    "ReLod is a tech-enabled efficiency tool connecting Indian shippers with multimodal transporting fleets, with ranked carrier matching, WhatsApp outreach and live GPS tracking.",
+    "Relod is a tech-enabled efficiency tool connecting Indian shippers with multimodal transporting fleets, with ranked carrier matching, WhatsApp outreach and live GPS tracking.",
 };
 
 export default function LandingRoute() {

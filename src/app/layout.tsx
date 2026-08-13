@@ -23,11 +23,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "ReLod — Post a Load, Match a Truck, Track Every Mile",
-    template: "%s | ReLod",
+    default: "Relod — Post a Load, Match a Truck, Track Every Mile",
+    template: "%s | Relod",
   },
   description:
-    "ReLod is a tech-enabled efficiency tool connecting Indian shippers with multimodal transporting fleets — ranked carrier matching, one-tap WhatsApp outreach, and live GPS tracking from pickup to delivery.",
+    "Relod is a tech-enabled efficiency tool connecting Indian shippers with multimodal transporting fleets — ranked carrier matching, one-tap WhatsApp outreach, and live GPS tracking from pickup to delivery.",
   keywords: [
     "load board India",
     "truck booking",

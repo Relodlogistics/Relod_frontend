@@ -4,23 +4,23 @@ import { SITE_URL } from '@/lib/site';
 import { getServerLocale, createServerT } from '@/lib/server-i18n';
 
 const DESCRIPTION =
-  "Answers to common questions about how ReLod's load matching, WhatsApp outreach, tracking and registration work.";
+  "Answers to common questions about how Relod's load matching, WhatsApp outreach, tracking and registration work.";
 
 export const metadata: Metadata = {
   title: 'FAQ',
   description: DESCRIPTION,
   alternates: { canonical: `${SITE_URL}/faq` },
   openGraph: {
-    title: 'ReLod FAQ',
+    title: 'Relod FAQ',
     description: DESCRIPTION,
     url: `${SITE_URL}/faq`,
-    siteName: 'ReLod',
+    siteName: 'Relod',
     locale: 'en_IN',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'ReLod FAQ',
+    title: 'Relod FAQ',
     description: DESCRIPTION,
   },
 };

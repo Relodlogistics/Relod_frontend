@@ -37,7 +37,7 @@ export async function startNativeTracking(token: string, vehicleId: string): Pro
 
   watcherId = await BackgroundGeolocation.addWatcher(
     {
-      backgroundTitle: 'ReLod is tracking your trip',
+      backgroundTitle: 'Relod is tracking your trip',
       backgroundMessage: 'Location is shared with the shipper until this trip ends.',
       requestPermissions: true,
       distanceFilter: 25,
