@@ -3,14 +3,13 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
-import { CheckCircle2, CircleDashed, LogOut } from 'lucide-react';
+import { CheckCircle2, CircleDashed } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { api, ApiError, DriverVehicle } from '@/lib/api';
 import { useDriverSession } from '@/lib/driver-session-context';
-import { Logo } from '@/components/Logo';
+import { DriverShell } from '@/components/DriverShell';
 import { truckTypeLabel } from '@/lib/truck-types';
 
 const DOCUMENT_LABELS: { key: keyof DriverVehicle['documents']; labelKey: string }[] = [
@@ -29,13 +28,10 @@ const DOCUMENT_LABELS: { key: keyof DriverVehicle['documents']; labelKey: string
   { key: 'driverLicense', labelKey: 'vehicle.driver_license' },
 ];
 
-// Phase 1: read-only. The driver can see their assigned truck's status and
-// documents, but posting/accepting loads (Phase 2) isn't wired up yet — see
-// the driver dashboard plan discussed with the owner.
 export default function DriverDashboardPage() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { driverSession, clearDriverSession, loaded } = useDriverSession();
+  const { driverSession, loaded } = useDriverSession();
 
   const [vehicle, setVehicle] = useState<DriverVehicle | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -53,23 +49,10 @@ export default function DriverDashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loaded, driverSession]);
 
-  const handleLogout = () => {
-    clearDriverSession();
-    router.push('/driver/login');
-  };
-
   if (!driverSession) return null;
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-lg flex-col gap-4 p-4">
-      <div className="flex items-center justify-between pt-2">
-        <Logo />
-        <Button variant="ghost" size="sm" onClick={handleLogout}>
-          <LogOut className="mr-1.5 size-4" />
-          {t('nav.logout')}
-        </Button>
-      </div>
-
+    <DriverShell>
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -125,6 +108,6 @@ export default function DriverDashboardPage() {
           </Card>
         </>
       )}
-    </div>
+    </DriverShell>
   );
 }

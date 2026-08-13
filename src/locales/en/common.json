@@ -378,7 +378,18 @@
     "status_approved": "Approved",
     "status_rejected": "Rejected",
     "notAuthorizedYet": "Your owner hasn't authorized you to post or accept loads yet — you can view your truck's details in the meantime.",
-    "documents": "Documents"
+    "documents": "Documents",
+    "navTruck": "My truck",
+    "navPostTruck": "Post truck",
+    "navFindLoads": "Find loads",
+    "navBookings": "Bookings",
+    "postTruckTitle": "Post your truck's availability",
+    "postTruckSubtitle": "Shippers looking for a truck on this route will be able to book you",
+    "findLoadsTitle": "Find loads",
+    "findLoadsSubtitle": "Browse loads and book or negotiate for your truck",
+    "myPostingsTitle": "My truck's postings",
+    "noPostingsYet": "You haven't posted your truck's availability yet.",
+    "noBookingsYet": "No bookings yet."
   },
   "settingsPage": {
     "title": "Settings",
@@ -643,6 +654,7 @@
     "laneMatch": "A posting matched one of your lanes",
     "broadcast": "A shipper broadcast a load to you",
     "bookingUpdate": "Booking update",
+    "driverAction": "Your driver made an update to a load — tap to view",
     "markRead": "Mark read",
     "new": "New"
   },

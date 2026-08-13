@@ -31,6 +31,7 @@ const NOTIFICATION_LABEL_KEY: Record<AppNotification['type'], string> = {
   lane_match: 'notifications.laneMatch',
   broadcast: 'notifications.broadcast',
   booking_update: 'dashboard.carrierAcceptedNotif',
+  driver_action: 'notifications.driverAction',
 };
 
 function startOfWeek(d: Date) {

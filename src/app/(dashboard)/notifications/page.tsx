@@ -15,6 +15,7 @@ const LABEL_KEY: Record<AppNotification['type'], string> = {
   lane_match: 'notifications.laneMatch',
   broadcast: 'notifications.broadcast',
   booking_update: 'notifications.bookingUpdate',
+  driver_action: 'notifications.driverAction',
 };
 
 export default function NotificationsPage() {

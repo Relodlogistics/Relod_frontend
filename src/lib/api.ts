@@ -437,10 +437,71 @@ export const api = {
 
   listMyVehicles: (token: string) => request<Vehicle[]>('/vehicles/mine', { token }),
 
-  // Driver-scoped — token is a DriverAccessGuard token (see driver-session-context),
-  // not a carrier/shipper access token. Read-only for now (Phase 1).
+  // Driver-scoped — every call below takes a DriverAccessGuard token (see
+  // driver-session-context), not a carrier/shipper access token. Each mirrors
+  // the matching carrier-facing function above, scoped server-side to the
+  // driver's one vehicle — see DriverActionsService.
   getMyDriverVehicle: (token: string) =>
     request<DriverVehicle>('/driver/me', { token }),
+
+  driverCreatePosting: (
+    token: string,
+    data: {
+      originLat: number;
+      originLng: number;
+      originLabel?: string;
+      originCityLabel?: string;
+      destinations: { lat: number; lng: number; label?: string; cityLabel?: string }[];
+      availableFromDate: string;
+      availableToDate: string;
+      priceType: 'fixed' | 'open_to_offers';
+      priceAmount?: string;
+      loadType: 'full' | 'part_load_ok';
+      optionalNote?: string;
+    },
+  ) => request<Posting>('/driver/postings', { method: 'POST', token, body: JSON.stringify(data) }),
+
+  driverSearchPostings: (
+    token: string,
+    params: { origin?: string; destination?: string; loadType?: 'full' | 'part_load_ok'; page?: number; pageSize?: number },
+  ) => {
+    const query = new URLSearchParams(
+      Object.entries(params)
+        .filter(([, v]) => v !== undefined)
+        .map(([k, v]) => [k, String(v)]),
+    );
+    return request<PaginatedPostings>(`/driver/postings/search?${query.toString()}`, { token });
+  },
+
+  driverListMyPostings: (token: string) => request<Posting[]>('/driver/postings/mine', { token }),
+
+  driverBookPosting: (token: string, postingId: string) =>
+    request<Booking>(`/driver/postings/${postingId}/book`, { method: 'POST', token }),
+
+  driverNegotiatePosting: (token: string, postingId: string, message: string, proposedPrice?: number) =>
+    request<Booking>(`/driver/postings/${postingId}/negotiate`, {
+      method: 'POST',
+      token,
+      body: JSON.stringify({ message, proposedPrice }),
+    }),
+
+  driverListMyBookings: (token: string) => request<Booking[]>('/driver/bookings/mine', { token }),
+
+  driverGetBooking: (token: string, bookingId: string) =>
+    request<Booking>(`/driver/bookings/${bookingId}`, { token }),
+
+  driverAcceptBooking: (token: string, bookingId: string) =>
+    request<Booking>(`/driver/bookings/${bookingId}/accept`, { method: 'POST', token }),
+
+  driverSendBookingMessage: (token: string, bookingId: string, body: string) =>
+    request<BookingMessage>(`/driver/bookings/${bookingId}/messages`, {
+      method: 'POST',
+      token,
+      body: JSON.stringify({ body }),
+    }),
+
+  driverListBookingMessages: (token: string, bookingId: string) =>
+    request<BookingMessage[]>(`/driver/bookings/${bookingId}/messages`, { token }),
 
   rebook: (token: string, postingId: string, carrierId: string) =>
     request<Booking>(`/postings/${postingId}/rebook`, {
@@ -956,7 +1017,7 @@ export interface AppNotification {
   id: string;
   userId: string;
   userType: 'carrier' | 'shipper';
-  type: 'lane_match' | 'broadcast' | 'booking_update';
+  type: 'lane_match' | 'broadcast' | 'booking_update' | 'driver_action';
   payload: { postingId?: string };
   readAt: string | null;
   createdAt: string;
