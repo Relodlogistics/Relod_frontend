@@ -22,6 +22,7 @@ import { useRegistration } from '@/lib/registration-context';
 import { useSession } from '@/lib/session-context';
 import { RegistrationStepper } from '@/components/RegistrationStepper';
 import { AuthBackground } from '@/components/auth/AuthBackground';
+import { Logo } from '@/components/Logo';
 
 export default function ProfilePage() {
   const { t, i18n } = useTranslation();
@@ -186,6 +187,7 @@ export default function ProfilePage() {
       imageAlt="A truck following a winding road toward Mumbai"
     >
       <div className="w-full max-w-md">
+        <Logo variant="auth" className="mb-6 justify-center" />
         <RegistrationStepper steps={steps} currentIndex={1} />
         <Card>
           <CardHeader>

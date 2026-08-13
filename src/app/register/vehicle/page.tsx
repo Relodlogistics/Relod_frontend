@@ -23,6 +23,7 @@ import { useSession } from '@/lib/session-context';
 import { VehicleVerificationStep } from '@/components/VehicleVerificationStep';
 import { RegistrationStepper } from '@/components/RegistrationStepper';
 import { AuthBackground } from '@/components/auth/AuthBackground';
+import { Logo } from '@/components/Logo';
 import { TRUCK_TYPES, truckTypeLabel } from '@/lib/truck-types';
 
 const CARGO_TYPES: { value: CargoType; labelKey: string }[] = [
@@ -217,6 +218,7 @@ export default function VehiclePage() {
         imageAlt="A truck following a winding road toward Mumbai"
       >
         <div className="w-full max-w-md">
+          <Logo variant="auth" className="mb-6 justify-center" />
           <RegistrationStepper
             steps={STEPS.map((s) => ({ key: s.key, label: t(s.labelKey) }))}
             currentIndex={4}
@@ -258,6 +260,7 @@ export default function VehiclePage() {
       imageAlt="A truck following a winding road toward Mumbai"
     >
       <div className="w-full max-w-md">
+        <Logo variant="auth" className="mb-6 justify-center" />
         <RegistrationStepper
           steps={STEPS.map((s) => ({ key: s.key, label: t(s.labelKey) }))}
           currentIndex={3}

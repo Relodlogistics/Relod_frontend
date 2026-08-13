@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/select';
 import { RegistrationStepper } from '@/components/RegistrationStepper';
 import { AuthBackground } from '@/components/auth/AuthBackground';
+import { Logo } from '@/components/Logo';
 import { api, ApiError, KycDocType, KycVerification } from '@/lib/api';
 import { useRegistration } from '@/lib/registration-context';
 import { useSession } from '@/lib/session-context';
@@ -94,13 +95,13 @@ export default function VerifyPage() {
       .kycStatus(state.token)
       .then((rows: KycVerification[]) => {
         const done = new Set(rows.filter((r) => r.status === 'verified').map((r) => r.docType));
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+         
         setVerified(done);
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+         
         setStatusLoaded(true);
       })
       .catch(() => setStatusLoaded(true));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [state.token]);
 
   const currentIndex = items.findIndex((item) => !verified.has(item.docType));
@@ -151,6 +152,7 @@ export default function VerifyPage() {
       imageAlt="A truck following a winding road toward Mumbai"
     >
       <div className="w-full max-w-md">
+        <Logo variant="auth" className="mb-6 justify-center" />
         <RegistrationStepper
           steps={
             isCarrier

@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
 import { useRegistration } from '@/lib/registration-context';
 import { AuthBackground } from '@/components/auth/AuthBackground';
+import { Logo } from '@/components/Logo';
 
 const TIER_PROGRESS: Record<string, number> = {
   basic: 33,
@@ -54,7 +55,9 @@ function StatusContent() {
       imageSrc="/auth/register-bg.png"
       imageAlt="A truck following a winding road toward Mumbai"
     >
-      <Card className="w-full max-w-md">
+      <div className="w-full max-w-md">
+        <Logo variant="auth" className="mb-6 justify-center" />
+        <Card>
         <CardHeader>
           <CardTitle>{t('status.title')}</CardTitle>
         </CardHeader>
@@ -90,6 +93,7 @@ function StatusContent() {
           <Button className="mt-2">{t('status.done')}</Button>
         </CardContent>
       </Card>
+      </div>
     </AuthBackground>
   );
 }

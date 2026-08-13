@@ -13,6 +13,7 @@ import { api, ApiError } from '@/lib/api';
 import { useRegistration } from '@/lib/registration-context';
 import { RegistrationStepper } from '@/components/RegistrationStepper';
 import { AuthBackground } from '@/components/auth/AuthBackground';
+import { Logo } from '@/components/Logo';
 import { PhoneInput } from '@/components/PhoneInput';
 import { TurnstileWidget } from '@/components/TurnstileWidget';
 
@@ -73,6 +74,7 @@ export default function PhonePage() {
       imageAlt="A truck following a winding road toward Mumbai"
     >
       <div className="mx-auto w-full max-w-sm">
+        <Logo variant="auth" className="mb-6 justify-center" />
         <RegistrationStepper
           steps={[
             { key: 'phone', label: t('stepper.phone') },

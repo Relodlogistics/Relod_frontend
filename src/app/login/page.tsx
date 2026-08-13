@@ -122,7 +122,7 @@ export default function LoginPage() {
       imageAlt="A truck on a highway at dusk, mountains in the distance"
     >
       <div className="w-full max-w-sm">
-        <Logo className="mb-6 justify-center" />
+        <Logo variant="auth" className="mb-6 justify-center" />
         <Card>
           <CardHeader>
             <CardTitle>{t('login.title')}</CardTitle>

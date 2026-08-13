@@ -21,6 +21,7 @@ import { useSession } from '@/lib/session-context';
 import { useRegistration } from '@/lib/registration-context';
 import { VehicleVerificationStep } from '@/components/VehicleVerificationStep';
 import { AuthBackground } from '@/components/auth/AuthBackground';
+import { Logo } from '@/components/Logo';
 import { TRUCK_TYPES, truckTypeLabel } from '@/lib/truck-types';
 
 const CARGO_TYPES: { value: CargoType; labelKey: string }[] = [
@@ -229,16 +230,19 @@ export default function AddTrucksPage() {
         imageSrc="/auth/register-bg.png"
         imageAlt="A truck following a winding road toward Mumbai"
       >
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>{t('addTrucks.allDone')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Button className="w-full" onClick={() => router.push('/dashboard')}>
-              {t('addTrucks.goToDashboard')}
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="w-full max-w-md">
+          <Logo variant="auth" className="mb-6 justify-center" />
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('addTrucks.allDone')}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Button className="w-full" onClick={() => router.push('/dashboard')}>
+                {t('addTrucks.goToDashboard')}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </AuthBackground>
     );
   }
@@ -250,6 +254,7 @@ export default function AddTrucksPage() {
         imageAlt="A truck following a winding road toward Mumbai"
       >
         <div className="w-full max-w-md">
+          <Logo variant="auth" className="mb-6 justify-center" />
           <Card>
             <CardHeader>
               <CardTitle>{t('addTrucks.rcTitle')}</CardTitle>
@@ -291,6 +296,7 @@ export default function AddTrucksPage() {
       imageAlt="A truck following a winding road toward Mumbai"
     >
       <div className="w-full max-w-md">
+        <Logo variant="auth" className="mb-6 justify-center" />
         <Card>
           <CardHeader>
             <CardTitle>{t('addTrucks.title')}</CardTitle>
