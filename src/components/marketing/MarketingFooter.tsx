@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useTranslation } from 'react-i18next';
 
 export function MarketingFooter() {
@@ -37,9 +38,7 @@ export function MarketingFooter() {
         <div className="grid gap-12 md:grid-cols-[1.6fr_1fr_1fr_1fr]">
           <div className="flex flex-col gap-4">
             <span className="flex items-center gap-2.5">
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary font-display text-lg font-bold text-primary-foreground">
-                R
-              </span>
+              <Image src="/logo.png" alt="ReLod" width={36} height={36} className="shrink-0" />
               <span className="font-display text-xl font-bold text-white">ReLod</span>
             </span>
             <p className="max-w-xs text-sm leading-relaxed text-[#9990b4]">

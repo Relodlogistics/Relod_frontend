@@ -27,11 +27,11 @@ export const metadata: Metadata = {
     template: "%s | ReLod",
   },
   description:
-    "ReLod is India's direct load-truck marketplace — ranked carrier matching, one-tap WhatsApp outreach, and live GPS tracking from pickup to delivery.",
+    "ReLod is a tech-enabled efficiency tool connecting Indian shippers with multimodal transporting fleets — ranked carrier matching, one-tap WhatsApp outreach, and live GPS tracking from pickup to delivery.",
   keywords: [
     "load board India",
     "truck booking",
-    "freight marketplace India",
+    "freight efficiency platform India",
     "GPS truck tracking",
     "shipper carrier matching",
   ],

@@ -870,7 +870,7 @@
       "contact": "Contact"
     },
     "footer": {
-      "tagline": "A direct marketplace connecting Indian shippers and truck owners — ranked matching, WhatsApp outreach, and live tracking in one place.",
+      "tagline": "A tech-enabled efficiency tool connecting shippers with multimodal transporting fleets — ranked matching, WhatsApp outreach, and live tracking in one place.",
       "companyTitle": "Company",
       "about": "About us",
       "contact": "Contact",
@@ -882,11 +882,11 @@
       "forCarriers": "For truck owners",
       "faq": "FAQ",
       "copyright": "© {{year}} ReLod. All rights reserved.",
-      "madeIn": "Made in India, for India's roads.",
+      "madeIn": "Made in India, for global routes.",
       "trustLine": "Free to join. Live tracking. WhatsApp outreach."
     },
     "hero": {
-      "eyebrow": "India's direct load-truck marketplace",
+      "eyebrow": "India's tech-enabled freight efficiency tool",
       "headline": "Post a load. Match a truck. Track every mile.",
       "subheadline": "ReLod connects shippers and truck owners directly. Post once, get a ranked shortlist of matching carriers, reach them on WhatsApp in one tap, and track the truck live until it's delivered.",
       "ctaPrimary": "Get started free",
@@ -925,7 +925,8 @@
       "viewMore": "View more details",
       "viewAll": "View the full loadboard",
       "kmAway": "{{distance}} km away from your load location",
-      "reachingOn": "Reaching load location on {{date}}"
+      "reachingOn": "Reaching load location on {{date}}",
+      "signInForPrice": "Sign in to view price"
     },
     "features": {
       "eyebrow": "Features",
@@ -973,9 +974,9 @@
     },
     "about": {
       "title": "About ReLod",
-      "metaDescription": "ReLod is a direct marketplace connecting Indian shippers and truck owners, with ranked carrier matching, WhatsApp outreach and live GPS tracking.",
+      "metaDescription": "ReLod is a tech-enabled efficiency tool connecting Indian shippers with multimodal transporting fleets, with ranked carrier matching, WhatsApp outreach and live GPS tracking.",
       "heroTitle": "Built to remove friction. Built for shippers and truck owners, equally.",
-      "heroBody": "ReLod is India's direct load-truck marketplace. We connect shippers with truck owners directly — cutting out the layers that add delay and cost, so both sides get a fairer deal.",
+      "heroBody": "ReLod is India's tech-enabled logistics efficiency tool. We connect shippers with multimodal transporting fleets directly — cutting out the layers that add delay and cost, so both sides get a fairer deal.",
       "missionTitle": "What we're building",
       "missionBody": "A two-sided load board where shippers and truck owners deal directly: ranked matches based on distance, truck type, capacity and availability; one-tap WhatsApp outreach so no one has to re-type the same message to ten different contacts; and live tracking that works whether or not a truck has a GPS device installed.",
       "whoTitle": "Who it's for",
@@ -1080,7 +1081,7 @@
         "s1Title": "1. About these terms",
         "s1Body": "These terms will govern use of the ReLod platform by shippers, truck owners and other users, once finalised.",
         "s2Title": "2. What ReLod is",
-        "s2Body": "ReLod is a marketplace connecting shippers and truck owners. ReLod facilitates introductions, matching, communication and tracking between the two parties.",
+        "s2Body": "ReLod is a tech-enabled efficiency tool connecting shippers and transporting fleets. ReLod facilitates introductions, matching, communication and tracking between the two parties.",
         "s3Title": "3. Bookings and cancellations",
         "s3Body": "Terms covering how a booking is formed, and the conditions under which either party may cancel, will be set out here.",
         "s4Title": "4. Payments",

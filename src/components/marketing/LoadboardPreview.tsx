@@ -10,6 +10,7 @@ import {
   ArrowLeftRight,
   CalendarDays,
   BadgeCheck,
+  Lock,
   List as ListIcon,
   LayoutGrid,
   Search,
@@ -27,7 +28,7 @@ import {
 } from '@/components/ui/select';
 import { useSession } from '@/lib/session-context';
 import { useMarketingRole } from '@/lib/marketing-role-context';
-import { formatMoney, cn } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 
 interface SampleEntry {
   // 'route' shows a normal origin → destination pair, same as a load
@@ -44,7 +45,18 @@ interface SampleEntry {
   date: string;
   cost: number;
   postedBy: string;
+  // Truck entries only — kept separate from postedBy so it can be masked
+  // (see maskRegNumber below) rather than baked into a display string.
+  regNumber?: string;
   loadType: 'full' | 'part_load_ok';
+}
+
+// Anonymous visitors never see a real price or a real registration number —
+// both only appear once logged in, on the real /postings board. This preview
+// is sample data anyway, but masks it the same way real public data would be,
+// so the format itself demonstrates what a signed-out visitor actually sees.
+function maskRegNumber(reg: string): string {
+  return reg.replace(/\d{4}$/, 'xxxx');
 }
 
 // Placeholder data for the anonymous-visitor preview only — never fetched
@@ -72,16 +84,16 @@ const LOAD_POOL: SampleEntry[] = [
 ];
 
 const TRUCK_POOL: SampleEntry[] = [
-  { variant: 'nearby', distanceKm: 48, cost: 17500, date: '2026-08-08', postedBy: 'Ramesh Yadav · MH12AB1234', loadType: 'full' },
-  { variant: 'route', origin: 'Delhi, NCR', destination: 'Jaipur, Rajasthan', cost: 21000, date: '2026-08-07', postedBy: 'Suresh Chauhan · RJ14CD5678', loadType: 'full' },
-  { variant: 'nearby', distanceKm: 22, cost: 12000, date: '2026-08-07', postedBy: 'Kiran Patel · GJ01EF9012', loadType: 'part_load_ok' },
-  { variant: 'route', origin: 'Bengaluru, Karnataka', destination: 'Chennai, Tamil Nadu', cost: 26000, date: '2026-08-08', postedBy: 'Manjunath R · KA05GH3456', loadType: 'full' },
-  { variant: 'nearby', distanceKm: 65, cost: 23000, date: '2026-08-10', postedBy: 'Venkatesh Rao · TS09IJ7890', loadType: 'part_load_ok' },
-  { variant: 'route', origin: 'Kolkata, West Bengal', destination: 'Bhubaneswar, Odisha', cost: 18200, date: '2026-08-07', postedBy: 'Bimal Das · WB06KL1234', loadType: 'full' },
-  { variant: 'nearby', distanceKm: 14, cost: 9200, date: '2026-08-07', postedBy: 'Gurpreet Singh · PB11MN5678', loadType: 'part_load_ok' },
-  { variant: 'route', origin: 'Indore, Madhya Pradesh', destination: 'Bhopal, Madhya Pradesh', cost: 10500, date: '2026-08-08', postedBy: 'Ashok Verma · MP09OP9012', loadType: 'full' },
-  { variant: 'nearby', distanceKm: 37, cost: 15600, date: '2026-08-09', postedBy: 'Selvam K · TN37QR3456', loadType: 'part_load_ok' },
-  { variant: 'route', origin: 'Lucknow, Uttar Pradesh', destination: 'Kanpur, Uttar Pradesh', cost: 8000, date: '2026-08-06', postedBy: 'Ram Singh · UP32ST7890', loadType: 'full' },
+  { variant: 'nearby', distanceKm: 48, cost: 17500, date: '2026-08-08', postedBy: 'Ramesh Yadav', regNumber: 'MH12AB1234', loadType: 'full' },
+  { variant: 'route', origin: 'Delhi, NCR', destination: 'Jaipur, Rajasthan', cost: 21000, date: '2026-08-07', postedBy: 'Suresh Chauhan', regNumber: 'RJ14CD5678', loadType: 'full' },
+  { variant: 'nearby', distanceKm: 22, cost: 12000, date: '2026-08-07', postedBy: 'Kiran Patel', regNumber: 'GJ01EF9012', loadType: 'part_load_ok' },
+  { variant: 'route', origin: 'Bengaluru, Karnataka', destination: 'Chennai, Tamil Nadu', cost: 26000, date: '2026-08-08', postedBy: 'Manjunath R', regNumber: 'KA05GH3456', loadType: 'full' },
+  { variant: 'nearby', distanceKm: 65, cost: 23000, date: '2026-08-10', postedBy: 'Venkatesh Rao', regNumber: 'TS09IJ7890', loadType: 'part_load_ok' },
+  { variant: 'route', origin: 'Kolkata, West Bengal', destination: 'Bhubaneswar, Odisha', cost: 18200, date: '2026-08-07', postedBy: 'Bimal Das', regNumber: 'WB06KL1234', loadType: 'full' },
+  { variant: 'nearby', distanceKm: 14, cost: 9200, date: '2026-08-07', postedBy: 'Gurpreet Singh', regNumber: 'PB11MN5678', loadType: 'part_load_ok' },
+  { variant: 'route', origin: 'Indore, Madhya Pradesh', destination: 'Bhopal, Madhya Pradesh', cost: 10500, date: '2026-08-08', postedBy: 'Ashok Verma', regNumber: 'MP09OP9012', loadType: 'full' },
+  { variant: 'nearby', distanceKm: 37, cost: 15600, date: '2026-08-09', postedBy: 'Selvam K', regNumber: 'TN37QR3456', loadType: 'part_load_ok' },
+  { variant: 'route', origin: 'Lucknow, Uttar Pradesh', destination: 'Kanpur, Uttar Pradesh', cost: 8000, date: '2026-08-06', postedBy: 'Ram Singh', regNumber: 'UP32ST7890', loadType: 'full' },
 ];
 
 const VISIBLE_COUNT = 6;
@@ -302,11 +314,17 @@ export function LoadboardPreview() {
                           </div>
                         </td>
                         <td className="py-3 pr-3 whitespace-nowrap">
-                          <p className="font-semibold">{formatMoney(load.cost)}</p>
+                          <p className="flex items-center gap-1 text-sm font-medium text-muted-foreground">
+                            <Lock className="size-3.5 shrink-0" />
+                            {t('marketing.loadboard.signInForPrice')}
+                          </p>
                         </td>
                         <td className="py-3 pr-3">
                           <div className="flex items-center gap-1 text-sm font-medium">
                             {load.postedBy}
+                            {load.regNumber && (
+                              <span className="text-xs text-muted-foreground">· {maskRegNumber(load.regNumber)}</span>
+                            )}
                             <BadgeCheck className="size-3.5 shrink-0 text-primary" />
                           </div>
                         </td>
@@ -342,7 +360,10 @@ export function LoadboardPreview() {
                       </div>
                     )}
 
-                    <p className="text-lg font-semibold">{formatMoney(load.cost)}</p>
+                    <p className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+                      <Lock className="size-3.5 shrink-0" />
+                      {t('marketing.loadboard.signInForPrice')}
+                    </p>
 
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       <CalendarDays className="size-3.5 shrink-0" />
@@ -353,6 +374,7 @@ export function LoadboardPreview() {
 
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       {load.postedBy}
+                      {load.regNumber && <span>· {maskRegNumber(load.regNumber)}</span>}
                       <BadgeCheck className="size-3.5 text-primary" />
                     </div>
 

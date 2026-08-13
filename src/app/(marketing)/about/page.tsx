@@ -3,7 +3,7 @@ import { AboutContent } from '@/components/marketing/AboutContent';
 import { SITE_URL } from '@/lib/site';
 
 const DESCRIPTION =
-  'ReLod is a direct marketplace connecting Indian shippers and truck owners, with ranked carrier matching, WhatsApp outreach and live GPS tracking.';
+  'ReLod is a tech-enabled efficiency tool connecting Indian shippers with multimodal transporting fleets, with ranked carrier matching, WhatsApp outreach and live GPS tracking.';
 
 export const metadata: Metadata = {
   title: 'About Us',

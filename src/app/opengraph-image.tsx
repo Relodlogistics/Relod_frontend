@@ -52,7 +52,7 @@ export default function OpengraphImage() {
           Post a load. Match a truck. Track every mile.
         </div>
         <div style={{ marginTop: 28, fontSize: 28, color: '#6b6478', maxWidth: 800 }}>
-          India&apos;s direct marketplace for shippers and truck owners.
+          India&apos;s tech-enabled efficiency tool for shippers and transporting fleets.
         </div>
       </div>
     ),
