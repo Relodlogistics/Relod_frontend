@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { Users, ClipboardList, Wallet, Headphones, ShieldCheck, ClipboardCheck, LogOut } from 'lucide-react';
@@ -63,9 +64,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     <div className="flex flex-1 bg-background">
       <aside className="flex w-64 flex-col border-r border-sidebar-border bg-sidebar p-4">
         <div className="mb-6 flex items-center gap-2 px-2">
-          <div className="flex size-8 items-center justify-center rounded-lg bg-primary font-heading text-base font-bold text-primary-foreground">
-            R
-          </div>
+          <Image src="/logo.png" alt="" width={32} height={32} className="shrink-0" />
           <p className="font-heading text-lg font-bold text-sidebar-foreground">{t('admin.panelName')}</p>
         </div>
         <nav className="flex flex-1 flex-col gap-1">

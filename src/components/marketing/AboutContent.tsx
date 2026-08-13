@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { getServerLocale, createServerT } from '@/lib/server-i18n';
 import {
   X,
@@ -257,8 +258,8 @@ export async function AboutContent() {
           <BenefitsPanel titleKey="marketing.about.benefitsShippersTitle" items={shipperBenefits} tone="purple" t={t} />
           <BenefitsPanel titleKey="marketing.about.benefitsCarriersTitle" items={carrierBenefits} tone="green" t={t} />
         </div>
-        <span className="absolute top-1/2 left-1/2 hidden size-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-4 border-background bg-primary font-display text-base font-bold text-primary-foreground shadow-lg lg:flex">
-          R
+        <span className="absolute top-1/2 left-1/2 hidden size-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center overflow-hidden rounded-full border-4 border-background shadow-lg lg:flex">
+          <Image src="/logo.png" alt="" width={44} height={44} />
         </span>
       </section>
 
