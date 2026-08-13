@@ -5,18 +5,21 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
-import { Users, ClipboardList, Wallet, Headphones, ShieldCheck, ClipboardCheck, LogOut } from 'lucide-react';
+import { Users, ClipboardList, Wallet, Headphones, ShieldCheck, ClipboardCheck, History, LogOut } from 'lucide-react';
 import { useAdminSession } from '@/lib/admin-session-context';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
 
+// ceo/cto see two extra items no one else does: managing the team, and the
+// activity log tracking everyone's actions (including their own).
 const NAV_ITEMS = [
   { href: '/admin/accounts', labelKey: 'admin.navAccounts', icon: Users },
   { href: '/admin/oversight', labelKey: 'admin.navOversight', icon: ClipboardList },
   { href: '/admin/payments', labelKey: 'admin.navPayments', icon: Wallet },
   { href: '/admin/support', labelKey: 'admin.navSupport', icon: Headphones },
   { href: '/admin/change-requests', labelKey: 'admin.navChangeRequests', icon: ClipboardCheck },
-  { href: '/admin/users', labelKey: 'admin.navAdminUsers', icon: ShieldCheck, superAdminOnly: true },
+  { href: '/admin/activity', labelKey: 'admin.navActivity', icon: History, execOnly: true },
+  { href: '/admin/users', labelKey: 'admin.navAdminUsers', icon: ShieldCheck, execOnly: true },
 ];
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
@@ -42,7 +45,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     refresh();
     window.addEventListener('admin-change-requests-seen', refresh);
     return () => window.removeEventListener('admin-change-requests-seen', refresh);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [adminSession, pathname]);
 
   if (!adminSession) return null;
@@ -59,6 +62,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   const initial = adminSession.admin.name.charAt(0).toUpperCase();
   const roleLabel = t(`admin.role_${adminSession.admin.role}`);
+  const isExec = adminSession.admin.role === 'ceo' || adminSession.admin.role === 'cto';
 
   return (
     <div className="flex flex-1 bg-background">
@@ -68,7 +72,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           <p className="font-heading text-lg font-bold text-sidebar-foreground">{t('admin.panelName')}</p>
         </div>
         <nav className="flex flex-1 flex-col gap-1">
-          {NAV_ITEMS.filter((item) => !item.superAdminOnly || adminSession.admin.role === 'super_admin').map(
+          {NAV_ITEMS.filter((item) => !item.execOnly || isExec).map(
             ({ href, labelKey, icon: Icon }) => {
               const active = pathname === href || pathname.startsWith(href + '/');
               const showBadge = href === '/admin/change-requests' && unseenChangeRequests > 0;

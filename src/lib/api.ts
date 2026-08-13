@@ -772,7 +772,38 @@ export const api = {
       token,
       body: JSON.stringify(data),
     }),
+
+  // ceo/cto can always set a new password for a team member rather than
+  // ever storing/retrieving the old one — see AdminActivityLog namesake.
+  adminResetAdminPassword: (token: string, id: string, newPassword: string) =>
+    request<{ message: string }>(`/admin/users/${id}/reset-password`, {
+      method: 'PATCH',
+      token,
+      body: JSON.stringify({ newPassword }),
+    }),
+
+  // ceo/cto only — see AdminActivityController.
+  adminListActivity: (token: string, page?: number, pageSize?: number) => {
+    const query = new URLSearchParams();
+    if (page) query.set('page', String(page));
+    if (pageSize) query.set('pageSize', String(pageSize));
+    const qs = query.toString();
+    return request<AdminActivityLogEntry[]>(`/admin/activity${qs ? `?${qs}` : ''}`, { token });
+  },
 };
+
+export interface AdminActivityLogEntry {
+  id: string;
+  adminId: string;
+  adminName: string;
+  adminRole: AdminRole;
+  action: string;
+  description: string;
+  targetType: string | null;
+  targetId: string | null;
+  targetLabel: string | null;
+  createdAt: string;
+}
 
 export interface PaymentTrackingLog {
   id: string;
@@ -1183,11 +1214,13 @@ export interface AdminPaymentTrackingLog {
   updatedAt: string;
 }
 
+export type AdminRole = 'support' | 'ops' | 'super_admin' | 'ceo' | 'cto' | 'cmo' | 'coo' | 'cfo';
+
 export interface AdminUser {
   id: string;
   name: string;
   email: string;
-  role: 'support' | 'ops' | 'super_admin';
+  role: AdminRole;
 }
 
 export interface AdminUserListItem extends AdminUser {

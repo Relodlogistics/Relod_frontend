@@ -12,7 +12,7 @@ import { api, ApiError, AdminUser, AdminUserListItem } from '@/lib/api';
 import { useAdminSession } from '@/lib/admin-session-context';
 import { timeAgo } from '@/lib/utils';
 
-const ROLES: AdminUser['role'][] = ['support', 'ops', 'super_admin'];
+const ROLES: AdminUser['role'][] = ['ceo', 'cto', 'cmo', 'coo', 'cfo', 'ops', 'support', 'super_admin'];
 
 export default function AdminUsersPage() {
   const { t } = useTranslation();
@@ -30,6 +30,10 @@ export default function AdminUsersPage() {
   const [role, setRole] = useState<AdminUser['role']>('support');
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+
+  const [resettingId, setResettingId] = useState<string | null>(null);
+  const [resetPassword, setResetPassword] = useState('');
+  const [resetError, setResetError] = useState<string | null>(null);
 
   const load = () => {
     if (!adminSession) return;
@@ -66,6 +70,21 @@ export default function AdminUsersPage() {
       setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, isActive: !isActive } : u)));
     } catch (e) {
       setError(e instanceof ApiError ? e.message : t('errors.generic'));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleResetPassword = async (id: string) => {
+    if (!adminSession || resetPassword.length < 8) return;
+    setBusyId(id);
+    setResetError(null);
+    try {
+      await api.adminResetAdminPassword(adminSession.accessToken, id, resetPassword);
+      setResettingId(null);
+      setResetPassword('');
+    } catch (e) {
+      setResetError(e instanceof ApiError ? e.message : t('errors.generic'));
     } finally {
       setBusyId(null);
     }
@@ -210,19 +229,70 @@ export default function AdminUsersPage() {
                         {u.lastLoginAt ? timeAgo(u.lastLoginAt) : t('admin.never')}
                       </td>
                       <td className="py-3 text-right">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={busyId === u.id || isSelf}
-                          title={isSelf ? t('admin.cannotDeactivateSelf') : undefined}
-                          onClick={() => handleToggleActive(u.id, u.isActive)}
-                        >
-                          {u.isActive ? t('admin.deactivate') : t('admin.activate')}
-                        </Button>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setResettingId(resettingId === u.id ? null : u.id);
+                              setResetPassword('');
+                              setResetError(null);
+                            }}
+                          >
+                            {t('admin.resetPassword')}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={busyId === u.id || isSelf}
+                            title={isSelf ? t('admin.cannotDeactivateSelf') : undefined}
+                            onClick={() => handleToggleActive(u.id, u.isActive)}
+                          >
+                            {u.isActive ? t('admin.deactivate') : t('admin.activate')}
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   );
                 })}
+                {users.map((u) =>
+                  resettingId === u.id ? (
+                    <tr key={`${u.id}-reset`} className="border-b bg-muted/30 last:border-b-0">
+                      <td colSpan={6} className="py-3">
+                        <div className="flex items-center gap-2 px-1">
+                          <p className="text-sm text-muted-foreground">
+                            {t('admin.resetPasswordFor', { name: u.name })}
+                          </p>
+                          <Input
+                            type="password"
+                            className="h-8 w-48"
+                            placeholder={t('admin.newPasswordPlaceholder')}
+                            value={resetPassword}
+                            onChange={(e) => setResetPassword(e.target.value)}
+                          />
+                          <Button
+                            size="sm"
+                            disabled={busyId === u.id || resetPassword.length < 8}
+                            onClick={() => handleResetPassword(u.id)}
+                          >
+                            {t('admin.save')}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setResettingId(null);
+                              setResetPassword('');
+                            }}
+                          >
+                            {t('settingsPage.cancel')}
+                          </Button>
+                          {resetError && <p className="text-sm text-destructive">{resetError}</p>}
+                        </div>
+                      </td>
+                    </tr>
+                  ) : null,
+                )}
               </tbody>
             </table>
           </CardContent>

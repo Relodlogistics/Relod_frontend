@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
+import type { AdminRole } from './api';
 
 export interface AdminSession {
   accessToken: string;
@@ -8,7 +9,7 @@ export interface AdminSession {
     id: string;
     name: string;
     email: string;
-    role: 'support' | 'ops' | 'super_admin';
+    role: AdminRole;
   };
 }
 
