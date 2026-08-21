@@ -79,6 +79,11 @@ export default function DriverBookingDetailPage({ params }: { params: Promise<{ 
   if (!driverSession) return null;
 
   const badge = booking ? statusBadge(booking.status) : null;
+  // See BookingDetailPage (carrier/shipper) — an instant-accept candidate on a
+  // load posting isn't a negotiation, so messaging is hidden until it's either
+  // a negotiated offer or the booking has moved past "pending".
+  const canMessage =
+    !!booking && !(booking.bookingType === 'instant_book' && booking.status === 'pending');
 
   return (
     <DriverShell>
@@ -142,28 +147,32 @@ export default function DriverBookingDetailPage({ params }: { params: Promise<{ 
             </div>
           )}
 
-          <p className="text-sm font-medium">{t('bookingDetail.messages')}</p>
-          <div className="flex max-h-64 flex-col gap-2 overflow-y-auto rounded-md border p-3">
-            {messages.map((m) => (
-              <div
-                key={m.id}
-                className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
-                  m.senderType === 'carrier' ? 'self-end bg-primary text-primary-foreground' : 'self-start bg-muted'
-                }`}
-              >
-                {m.body}
+          {canMessage && (
+            <>
+              <p className="text-sm font-medium">{t('bookingDetail.messages')}</p>
+              <div className="flex max-h-64 flex-col gap-2 overflow-y-auto rounded-md border p-3">
+                {messages.map((m) => (
+                  <div
+                    key={m.id}
+                    className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
+                      m.senderType === 'carrier' ? 'self-end bg-primary text-primary-foreground' : 'self-start bg-muted'
+                    }`}
+                  >
+                    {m.body}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
 
-          <Textarea
-            placeholder={t('bookingDetail.typeMessage')}
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-          />
-          <Button onClick={handleSend} disabled={loading || !body}>
-            {t('bookingDetail.send')}
-          </Button>
+              <Textarea
+                placeholder={t('bookingDetail.typeMessage')}
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+              />
+              <Button onClick={handleSend} disabled={loading || !body}>
+                {t('bookingDetail.send')}
+              </Button>
+            </>
+          )}
 
           {booking?.status === 'pending' && booking.bookingType === 'negotiated' && (
             <Button variant="outline" onClick={handleAccept} disabled={loading}>

@@ -366,6 +366,7 @@ export const api = {
       optionalNote?: string;
       requiredTruckType?: string;
       requiredCapacityTons?: string;
+      requiredLengthFeet?: string;
       cargoType?: CargoType;
       vehicleId?: string;
       selfDeclared?: boolean;
@@ -425,8 +426,12 @@ export const api = {
       body: JSON.stringify({ carrierIds }),
     }),
 
-  instantBook: (token: string, postingId: string) =>
-    request<Booking>(`/postings/${postingId}/book`, { method: 'POST', token }),
+  instantBook: (token: string, postingId: string, vehicleId?: string) =>
+    request<Booking>(`/postings/${postingId}/book`, {
+      method: 'POST',
+      token,
+      body: JSON.stringify({ vehicleId }),
+    }),
 
   negotiate: (token: string, postingId: string, message: string, proposedPrice?: number) =>
     request<Booking>(`/postings/${postingId}/negotiate`, {
@@ -434,6 +439,17 @@ export const api = {
       token,
       body: JSON.stringify({ message, proposedPrice }),
     }),
+
+  // Pending candidates (instant-accept or negotiated) on a shipper's own
+  // load posting — the shipper reviews these and picks one via acceptBooking.
+  listCandidates: (token: string, postingId: string) =>
+    request<BookingCandidate[]>(`/postings/${postingId}/candidates`, { token }),
+
+  // Full registration profile for one candidate — fetched only when the
+  // shipper opens "View more details" on that specific truck, not upfront
+  // for the whole list (see BookingCandidateDetail).
+  getCandidateDetail: (token: string, postingId: string, bookingId: string) =>
+    request<BookingCandidateDetail>(`/postings/${postingId}/candidates/${bookingId}`, { token }),
 
   listMyVehicles: (token: string) => request<Vehicle[]>('/vehicles/mine', { token }),
 
@@ -848,13 +864,14 @@ export interface Posting {
   optionalNote: string | null;
   requiredTruckType: string | null;
   requiredCapacityTons: string | null;
+  requiredLengthFeet: string | null;
   cargoType: CargoType | null;
   createdAt: string;
   destinations: PostingDestination[];
   distanceKm?: number | null;
   bookings?: { status: Booking['status'] }[];
   postedBy?: { name: string; verified: boolean; rating: number | null; ratingCount: number } | null;
-  equipment?: { truckType: string | null; capacityTons: string | null } | null;
+  equipment?: { truckType: string | null; capacityTons: string | null; lengthFeet: string | null } | null;
   savedByMe?: boolean;
   // How high a carrier can negotiate a fixed-price load — computed server-side
   // from the shipper's private actual budget (priceMax) minus the platform
@@ -881,7 +898,7 @@ export interface PostingContact {
   // carrier-only
   verificationTier?: 'basic' | 'verified' | 'trust_boosted';
   isOwnerOperator?: boolean;
-  vehicles?: { truckType: string; capacityTons: string; registrationNumber: string }[];
+  vehicles?: { truckType: string; capacityTons: string; lengthFeet: string | null; registrationNumber: string }[];
 }
 
 export interface MatchingCarrier {
@@ -892,6 +909,7 @@ export interface MatchingCarrier {
   vehicleId: string;
   truckType: string;
   capacityTons: number;
+  lengthFeet: number | null;
   distanceKm: number;
   rating: number | null;
   ratingCount: number;
@@ -923,6 +941,7 @@ export interface Vehicle {
   registrationNumber: string;
   truckType: string;
   capacityTons: string;
+  lengthFeet: string | null;
   numberOfAxles: number | null;
   cargoTypes: string[];
   rcVerifiedAt: string | null;
@@ -949,6 +968,7 @@ export interface DriverVehicle {
   registrationNumber: string;
   truckType: string;
   capacityTons: string;
+  lengthFeet: string | null;
   numberOfAxles: number | null;
   cargoTypes: string[];
   verificationStatus: 'pending' | 'approved' | 'rejected';
@@ -986,6 +1006,65 @@ export interface Booking {
   posting?: Posting;
   counterpartyContact?: { name: string; phone: string; whatsappNumber?: string | null } | null;
   reviews?: Review[];
+}
+
+export interface BookingCandidate {
+  bookingId: string;
+  bookingType: 'instant_book' | 'negotiated';
+  proposedPrice: string | null;
+  createdAt: string;
+  actedByDriver: boolean;
+  owner: { name: string } | null;
+  driver: { name: string; photoUrl: string | null } | null;
+  vehicle: {
+    registrationNumber: string;
+    truckType: string;
+    capacityTons: string;
+    lengthFeet: string | null;
+    photoUrls: string[];
+    photoFrontUrl: string | null;
+    photoSideUrl: string | null;
+    photoRearUrl: string | null;
+    cargoPhotoUrl: string | null;
+    walkaroundVideoUrl: string | null;
+  } | null;
+}
+
+// Full registration profile for one candidate — see api.getCandidateDetail.
+export interface BookingCandidateDetail {
+  bookingId: string;
+  bookingType: 'instant_book' | 'negotiated';
+  proposedPrice: string | null;
+  createdAt: string;
+  actedByDriver: boolean;
+  owner: {
+    name: string;
+    isOwnerOperator: boolean;
+    rating: number | null;
+    ratingCount: number;
+  } | null;
+  driver: { name: string; photoUrl: string | null } | null;
+  vehicle: {
+    registrationNumber: string;
+    truckType: string;
+    capacityTons: string;
+    lengthFeet: string | null;
+    numberOfAxles: number | null;
+    cargoTypes: CargoType[];
+    verificationStatus: 'pending' | 'approved' | 'rejected';
+    insuranceExpiryDate: string | null;
+    fitnessExpiryDate: string | null;
+    pucExpiryDate: string | null;
+    permitExpiryDate: string | null;
+    photoUrls: string[];
+    photoFrontUrl: string | null;
+    photoSideUrl: string | null;
+    photoRearUrl: string | null;
+    cargoPhotoUrl: string | null;
+    numberPlatePhotoUrl: string | null;
+    walkaroundVideoUrl: string | null;
+  } | null;
+  frequentLanes: { originLabel: string; destinationLabel: string }[];
 }
 
 export interface Review {
@@ -1060,6 +1139,7 @@ export interface VehicleRegistrationFields {
   registrationNumber: string;
   truckType: string;
   capacityTons: string;
+  lengthFeet?: string;
   cargoTypes: CargoType[];
   numberOfAxles?: number;
   upiId?: string;
@@ -1083,6 +1163,7 @@ export interface AddVehicleFields {
   registrationNumber: string;
   truckType: string;
   capacityTons: string;
+  lengthFeet?: string;
   cargoTypes: CargoType[];
   numberOfAxles?: number;
   upiId?: string;

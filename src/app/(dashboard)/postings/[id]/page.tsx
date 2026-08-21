@@ -22,6 +22,9 @@ import {
   Lock,
   Volume2,
   VolumeX,
+  ChevronDown,
+  ChevronUp,
+  User,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -36,13 +39,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { api, ApiError, CargoType, MatchingCarrier, Posting, Vehicle } from '@/lib/api';
+import { api, ApiError, BookingCandidate, CargoType, MatchingCarrier, Posting, Vehicle } from '@/lib/api';
 import { useSession } from '@/lib/session-context';
 import { boardLocation, formatMoney, timeAgo } from '@/lib/utils';
 import { statusBadge } from '@/lib/status-badge';
 import { truckTypeLabel } from '@/lib/truck-types';
 import { useSpeak } from '@/lib/use-speak';
 import { MatchingCarrierCard } from '@/components/MatchingCarrierCard';
+import { TruckDetailsModal } from '@/components/TruckDetailsModal';
 
 const NEGOTIATE_STEP = 500;
 
@@ -112,6 +116,10 @@ export default function PostingDetailPage({ params }: { params: Promise<{ id: st
   const [matchRadiusKm, setMatchRadiusKm] = useState<number | null>(null);
   const [selectedCarrierIds, setSelectedCarrierIds] = useState<Set<string>>(new Set());
   const [sendingAlerts, setSendingAlerts] = useState(false);
+  const [candidates, setCandidates] = useState<BookingCandidate[]>([]);
+  const [expandedCandidateId, setExpandedCandidateId] = useState<string | null>(null);
+  const [selectingCandidateId, setSelectingCandidateId] = useState<string | null>(null);
+  const [viewingDetailsBookingId, setViewingDetailsBookingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (loaded && !session) router.replace('/login');
@@ -163,6 +171,35 @@ export default function PostingDetailPage({ params }: { params: Promise<{ id: st
     ((session.userType === 'carrier' && posting.postedByCarrierId === session.accountId) ||
       (session.userType === 'shipper' && posting.postedByShipperId === session.accountId));
 
+  const isOwnActiveLoad =
+    session?.userType === 'shipper' &&
+    !!posting &&
+    posting.postedByShipperId === session.accountId &&
+    posting.status === 'active';
+
+  useEffect(() => {
+    if (!isOwnActiveLoad || !session) return;
+    api
+      .listCandidates(session.accessToken, id)
+      .then(setCandidates)
+      .catch(() => undefined);
+     
+  }, [session, id, isOwnActiveLoad]);
+
+  const handleSelectCandidate = async (bookingId: string) => {
+    if (!session) return;
+    setError(null);
+    setSelectingCandidateId(bookingId);
+    try {
+      await api.acceptBooking(session.accessToken, bookingId);
+      router.push(`/bookings/${bookingId}`);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : t('errors.generic'));
+    } finally {
+      setSelectingCandidateId(null);
+    }
+  };
+
   const isFixedPrice = posting?.priceAmount != null;
   // Only a carrier negotiating a shipper's fixed-price load gets the templated
   // message + slider — that's the only side with a private ceiling to slide up to.
@@ -178,12 +215,23 @@ export default function PostingDetailPage({ params }: { params: Promise<{ id: st
       })
     : t('postings.negotiateTemplateFallback');
 
+  // A carrier accepting a shipper's LOAD needs to say which of their trucks is
+  // taking it (the shipper's candidate list shows this per truck) — a shipper
+  // booking a carrier's TRUCK posting doesn't, the vehicle is already fixed on
+  // that posting.
+  const isLoadPosting = !!posting && posting.postedByShipperId != null;
+  const bookNeedsVehicle = session?.userType === 'carrier' && isLoadPosting && !isOwner;
+
   const handleBook = async () => {
     if (!session) return;
     setError(null);
     setLoading(true);
     try {
-      const booking = await api.instantBook(session.accessToken, id);
+      const booking = await api.instantBook(
+        session.accessToken,
+        id,
+        bookNeedsVehicle ? selectedVehicleId : undefined,
+      );
       router.push(`/bookings/${booking.id}`);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : t('errors.generic'));
@@ -454,12 +502,13 @@ export default function PostingDetailPage({ params }: { params: Promise<{ id: st
                     <Truck className="size-4 shrink-0 text-muted-foreground" />
                     <span className="text-muted-foreground">{t('postings.equipment')}:</span>
                     <span className="font-medium">
-                      {posting.equipment?.truckType || posting.equipment?.capacityTons ? (
+                      {posting.equipment?.truckType || posting.equipment?.capacityTons || posting.equipment?.lengthFeet ? (
                         <>
                           {posting.equipment.truckType ? truckTypeLabel(posting.equipment.truckType) : t('postings.notSpecified')}
                           {posting.equipment.capacityTons
                             ? ` · ${t('postings.weightTon', { count: Number(posting.equipment.capacityTons) })}`
                             : ''}
+                          {posting.equipment.lengthFeet ? ` · ${posting.equipment.lengthFeet}ft` : ''}
                         </>
                       ) : (
                         t('postings.notSpecified')
@@ -534,7 +583,10 @@ export default function PostingDetailPage({ params }: { params: Promise<{ id: st
                             {t('postings.vehicleDetails')}:{' '}
                             <span className="text-foreground">
                               {posting.contact.vehicles
-                                .map((v) => `${truckTypeLabel(v.truckType)} (${v.capacityTons}t, ${v.registrationNumber})`)
+                                .map(
+                                  (v) =>
+                                    `${truckTypeLabel(v.truckType)} (${v.capacityTons}t${v.lengthFeet ? `, ${v.lengthFeet}ft` : ''}, ${v.registrationNumber})`,
+                                )
                                 .join(', ')}
                             </span>
                           </div>
@@ -567,7 +619,28 @@ export default function PostingDetailPage({ params }: { params: Promise<{ id: st
 
             {posting?.status === 'active' && !isOwner && (
               <>
-                <Button onClick={handleBook} disabled={loading}>
+                {bookNeedsVehicle && vehicles.length > 1 && (
+                  <div className="flex flex-col gap-1.5">
+                    <Label className="text-xs">{t('postings.selectVehicle')}</Label>
+                    <Select value={selectedVehicleId} onValueChange={(v) => v && setSelectedVehicleId(v)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {vehicles.map((v) => (
+                          <SelectItem key={v.id} value={v.id}>
+                            {v.registrationNumber}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                {bookNeedsVehicle && vehicles.length === 0 && (
+                  <p className="text-xs text-muted-foreground">{t('postings.negotiateNoVehicleHint')}</p>
+                )}
+
+                <Button onClick={handleBook} disabled={loading || (bookNeedsVehicle && !selectedVehicleId)}>
                   {t('postings.book')}
                 </Button>
 
@@ -655,6 +728,97 @@ export default function PostingDetailPage({ params }: { params: Promise<{ id: st
           </CardContent>
         </Card>
 
+        {isOwnActiveLoad && candidates.length > 0 && (
+          <Card className="mt-4">
+            <CardContent className="flex flex-col gap-3 py-5">
+              <div>
+                <p className="text-sm font-semibold">
+                  {t('postings.candidatesTitle', { count: candidates.length })}
+                </p>
+                <p className="text-xs text-muted-foreground">{t('postings.candidatesHint')}</p>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                {candidates.map((c) => {
+                  const expanded = expandedCandidateId === c.bookingId;
+                  return (
+                    <div key={c.bookingId} className="rounded-lg border p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-sm font-medium">
+                            {c.vehicle?.registrationNumber ?? t('postings.notSpecified')}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {c.vehicle
+                              ? `${truckTypeLabel(c.vehicle.truckType)} · ${c.vehicle.capacityTons}t${c.vehicle.lengthFeet ? ` · ${c.vehicle.lengthFeet}ft` : ''}`
+                              : ''}
+                          </span>
+                        </div>
+                        <Badge variant="outline" className="shrink-0">
+                          {c.bookingType === 'instant_book'
+                            ? t('postings.candidateInstantAccept')
+                            : t('postings.candidateNegotiated')}
+                        </Badge>
+                      </div>
+
+                      {c.proposedPrice && (
+                        <p className="mt-1.5 text-sm">
+                          {t('postings.candidateProposedPrice')}: <span className="font-semibold">{formatMoney(Number(c.proposedPrice))}</span>
+                        </p>
+                      )}
+
+                      <button
+                        type="button"
+                        className="mt-2 flex items-center gap-1 text-xs text-primary hover:underline"
+                        onClick={() => setExpandedCandidateId(expanded ? null : c.bookingId)}
+                      >
+                        {expanded ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
+                        {expanded ? t('postings.hideDetails') : t('postings.viewDetails')}
+                      </button>
+
+                      {expanded && (
+                        <div className="mt-2 flex flex-col gap-2 rounded-md bg-muted/40 p-2.5 text-sm">
+                          {c.owner && (
+                            <p className="flex items-center gap-1.5">
+                              <User className="size-3.5 shrink-0 text-muted-foreground" />
+                              {t('postings.candidateOwnerLabel')}: <span className="font-medium">{c.owner.name}</span>
+                            </p>
+                          )}
+                          {c.driver && (
+                            <p className="flex items-center gap-1.5">
+                              <User className="size-3.5 shrink-0 text-muted-foreground" />
+                              {t('postings.candidateDriverLabel')}: <span className="font-medium">{c.driver.name}</span>
+                              {c.actedByDriver && (
+                                <span className="text-xs text-muted-foreground">({t('postings.candidateViaDriver')})</span>
+                              )}
+                            </p>
+                          )}
+                          <button
+                            type="button"
+                            className="w-fit text-xs text-primary hover:underline"
+                            onClick={() => setViewingDetailsBookingId(c.bookingId)}
+                          >
+                            {t('postings.viewMoreDetails')}
+                          </button>
+                        </div>
+                      )}
+
+                      <Button
+                        className="mt-3 w-full"
+                        size="sm"
+                        onClick={() => handleSelectCandidate(c.bookingId)}
+                        disabled={selectingCandidateId !== null}
+                      >
+                        {t('postings.selectThisTruck')}
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {session.userType === 'shipper' && posting?.status === 'active' && isOwner && matches && (
           <Card className="mt-4">
             <CardContent className="flex flex-col gap-3 py-5">
@@ -699,6 +863,14 @@ export default function PostingDetailPage({ params }: { params: Promise<{ id: st
           </Card>
         )}
       </div>
+
+      {viewingDetailsBookingId && (
+        <TruckDetailsModal
+          postingId={id}
+          bookingId={viewingDetailsBookingId}
+          onClose={() => setViewingDetailsBookingId(null)}
+        />
+      )}
     </div>
   );
 }

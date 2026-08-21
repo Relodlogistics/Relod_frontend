@@ -123,6 +123,7 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
         navigator.geolocation.clearWatch(watchIdRef.current);
         watchIdRef.current = null;
       }
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSharingLocation(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -228,6 +229,11 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
       (session.userType === 'shipper' && booking.posting.postedByShipperId === session.accountId));
   const myReview = booking?.reviews?.find((r) => r.reviewerType === session.userType);
   const theirReview = booking?.reviews?.find((r) => r.reviewerType !== session.userType);
+  // An instant-accept candidate on a load posting isn't a negotiation — there's
+  // nothing to discuss until the shipper picks a truck, so messaging only makes
+  // sense once it's a negotiated offer, or the booking has moved past "pending".
+  const canMessage =
+    !!booking && !(booking.bookingType === 'instant_book' && booking.status === 'pending');
 
   return (
     <div className="flex flex-1 flex-col gap-4">
@@ -394,32 +400,36 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
               </div>
             )}
 
-            <p className="text-sm font-medium">{t('bookingDetail.messages')}</p>
-            <div className="flex max-h-64 flex-col gap-2 overflow-y-auto rounded-md border p-3">
-              {messages.map((m) => (
-                <div
-                  key={m.id}
-                  className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
-                    m.senderType === session.userType
-                      ? 'self-end bg-primary text-primary-foreground'
-                      : 'self-start bg-muted'
-                  }`}
-                >
-                  {m.body}
+            {canMessage && (
+              <>
+                <p className="text-sm font-medium">{t('bookingDetail.messages')}</p>
+                <div className="flex max-h-64 flex-col gap-2 overflow-y-auto rounded-md border p-3">
+                  {messages.map((m) => (
+                    <div
+                      key={m.id}
+                      className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
+                        m.senderType === session.userType
+                          ? 'self-end bg-primary text-primary-foreground'
+                          : 'self-start bg-muted'
+                      }`}
+                    >
+                      {m.body}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
 
-            <Textarea
-              placeholder={t('bookingDetail.typeMessage')}
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-            />
-            <Button onClick={handleSend} disabled={loading || !body}>
-              {t('bookingDetail.send')}
-            </Button>
+                <Textarea
+                  placeholder={t('bookingDetail.typeMessage')}
+                  value={body}
+                  onChange={(e) => setBody(e.target.value)}
+                />
+                <Button onClick={handleSend} disabled={loading || !body}>
+                  {t('bookingDetail.send')}
+                </Button>
+              </>
+            )}
 
-            {booking?.status === 'pending' && booking.bookingType === 'negotiated' && isPostingOwner && (
+            {booking?.status === 'pending' && isPostingOwner && (
               <Button variant="outline" onClick={handleAccept} disabled={loading}>
                 {t('bookingDetail.accept')}
               </Button>

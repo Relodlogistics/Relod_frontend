@@ -14,6 +14,7 @@ import {
   Check,
   Info,
   Plus,
+  Ruler,
   X,
   type LucideIcon,
 } from 'lucide-react';
@@ -33,6 +34,7 @@ import {
 import { api, ApiError } from '@/lib/api';
 import { useSession } from '@/lib/session-context';
 import { TRUCK_TYPES, truckTypeLabel } from '@/lib/truck-types';
+import { LENGTH_PRESETS, PresetChipField } from '@/components/PresetChipField';
 import { cn } from '@/lib/utils';
 import { PlaceAutocompleteInput, PlaceResult, cityLabel } from '@/components/PlaceAutocompleteInput';
 
@@ -141,6 +143,7 @@ export default function NewPostingPage() {
   const [loadType, setLoadType] = useState<'full' | 'part_load_ok'>('full');
   const [requiredTruckType, setRequiredTruckType] = useState<'any' | string>('any');
   const [requiredCapacityTons, setRequiredCapacityTons] = useState('');
+  const [requiredLengthFeet, setRequiredLengthFeet] = useState('');
   const [optionalNote, setOptionalNote] = useState('');
   const [selfDeclared, setSelfDeclared] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -203,6 +206,8 @@ export default function NewPostingPage() {
           session.userType === 'shipper' && requiredTruckType !== 'any' ? requiredTruckType : undefined,
         requiredCapacityTons:
           session.userType === 'shipper' && requiredCapacityTons ? requiredCapacityTons : undefined,
+        requiredLengthFeet:
+          session.userType === 'shipper' && requiredLengthFeet ? requiredLengthFeet : undefined,
         selfDeclared: session.userType === 'carrier' ? selfDeclared : undefined,
       });
       router.push(
@@ -407,6 +412,15 @@ export default function NewPostingPage() {
                   </div>
                 </div>
 
+                <PresetChipField
+                  id="requiredLengthFeet"
+                  label={t('postings.preferredLength')}
+                  value={requiredLengthFeet}
+                  onChange={setRequiredLengthFeet}
+                  presets={LENGTH_PRESETS}
+                  unit="ft"
+                />
+
                 <div className="flex flex-col gap-2">
                   <Label>{t('postings.loadType')}</Label>
                   <div className="grid grid-cols-2 gap-3">
@@ -507,6 +521,11 @@ export default function NewPostingPage() {
                         ? `${requiredCapacityTons} ${t('postings.summaryTons')}`
                         : t('postings.notSpecified')
                     }
+                  />
+                  <SummaryRow
+                    icon={Ruler}
+                    label={t('postings.preferredLength')}
+                    value={requiredLengthFeet ? `${requiredLengthFeet} ft` : t('postings.notSpecified')}
                   />
                 </div>
 

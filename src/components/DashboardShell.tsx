@@ -72,6 +72,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   // Close the mobile drawer automatically on navigation — otherwise it'd
   // stay open over the new page after tapping a nav link.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMobileNavOpen(false);
   }, [pathname]);
 
@@ -95,7 +96,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const roleLabel = session.userType === 'carrier' ? t('nav.roleCarrier') : t('nav.roleShipper');
 
   return (
-    <div className="flex flex-1 bg-background">
+    <div className="flex flex-1 bg-background md:h-screen md:overflow-hidden">
       <ChangeRequestResultPopup />
       {/* Hamburger button — the sidebar below is a fixed-width, always-visible
           block on desktop, but becomes a slide-in drawer on mobile (see the
@@ -117,9 +118,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         />
       )}
 
+      {/* Pinned via fixed positioning at every breakpoint (not just mobile) —
+          inset-y-0 guarantees its height is exactly the viewport height, so
+          the user-card/logout block at the bottom reliably sits flush at the
+          bottom instead of depending on flex-stretch from its row parent. */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-sidebar-border bg-sidebar p-4 transition-transform duration-200 md:static md:z-auto md:translate-x-0',
+          'fixed inset-y-0 left-0 z-50 flex w-64 flex-col overflow-y-auto border-r border-sidebar-border bg-sidebar p-4 transition-transform duration-200 md:translate-x-0',
           mobileNavOpen ? 'translate-x-0' : '-translate-x-full',
         )}
       >
@@ -184,7 +189,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col md:h-full md:overflow-y-auto md:ml-64">
         <main className="flex min-w-0 flex-1 flex-col p-6 pt-16">{children}</main>
       </div>
     </div>

@@ -41,6 +41,7 @@ export function MatchingCarrierCard({
         </div>
         <p className="text-xs text-muted-foreground">
           {truckTypeLabel(carrier.truckType)} · {carrier.capacityTons} {t('postings.summaryTons')}
+          {carrier.lengthFeet != null ? ` · ${carrier.lengthFeet}ft` : ''}
         </p>
         {carrier.reasons.length > 0 && (
           <div className="flex flex-wrap gap-1">

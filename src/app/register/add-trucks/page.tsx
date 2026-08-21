@@ -23,6 +23,7 @@ import { VehicleVerificationStep } from '@/components/VehicleVerificationStep';
 import { AuthBackground } from '@/components/auth/AuthBackground';
 import { Logo } from '@/components/Logo';
 import { TRUCK_TYPES, truckTypeLabel } from '@/lib/truck-types';
+import { LENGTH_PRESETS, PresetChipField, TONNAGE_PRESETS } from '@/components/PresetChipField';
 
 const CARGO_TYPES: { value: CargoType; labelKey: string }[] = [
   { value: 'general', labelKey: 'vehicle.cargoTypeGeneral' },
@@ -51,6 +52,7 @@ export default function AddTrucksPage() {
   const [registrationNumber, setRegistrationNumber] = useState('');
   const [truckType, setTruckType] = useState(TRUCK_TYPES[0]);
   const [capacityTons, setCapacityTons] = useState('');
+  const [lengthFeet, setLengthFeet] = useState('');
   const [numberOfAxles, setNumberOfAxles] = useState('');
   const [upiId, setUpiId] = useState('');
   const [cargoTypes, setCargoTypes] = useState<CargoType[]>(['general']);
@@ -178,6 +180,7 @@ export default function AddTrucksPage() {
         registrationNumber: registrationNumber.toUpperCase().replace(/[\s-]/g, ''),
         truckType,
         capacityTons,
+        lengthFeet: lengthFeet || undefined,
         cargoTypes,
         numberOfAxles: numberOfAxles ? Number(numberOfAxles) : undefined,
         upiId: upiId || undefined,
@@ -341,16 +344,14 @@ export default function AddTrucksPage() {
               </Select>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="capacity">{t('vehicle.capacityTons')}</Label>
-                <Input
-                  id="capacity"
-                  type="number"
-                  step="0.1"
-                  value={capacityTons}
-                  onChange={(e) => setCapacityTons(e.target.value)}
-                />
-              </div>
+              <PresetChipField
+                id="capacity"
+                label={t('vehicle.capacityTons')}
+                value={capacityTons}
+                onChange={setCapacityTons}
+                presets={TONNAGE_PRESETS}
+                unit="t"
+              />
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="axles">{t('vehicle.numberOfAxles')}</Label>
                 <Input
@@ -363,6 +364,16 @@ export default function AddTrucksPage() {
                 />
               </div>
             </div>
+
+            <PresetChipField
+              id="lengthFeet"
+              label={t('vehicle.lengthFeet')}
+              hint={t('vehicle.lengthFeetHint')}
+              value={lengthFeet}
+              onChange={setLengthFeet}
+              presets={LENGTH_PRESETS}
+              unit="ft"
+            />
 
             <div className="flex flex-col gap-1.5">
               <Label>{t('vehicle.cargoTypes')}</Label>
