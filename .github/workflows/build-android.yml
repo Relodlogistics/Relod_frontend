@@ -16,6 +16,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -97,3 +99,23 @@ jobs:
           name: relod-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
+
+      # Publishes the signed APK to a URL end users can actually reach.
+      # public/ is served as static files by the Next.js/Vercel deploy of
+      # this same repo, so this file becomes downloadable at
+      # https://relod-frontend.vercel.app/downloads/relod-latest.apk within
+      # a normal Vercel deploy cycle after this push — no separate hosting
+      # needed. Skipped for unsigned debug builds (those are for local
+      # testing only, never for real users).
+      - name: Publish APK for in-app updates
+        if: steps.keystore_check.outputs.present == 'true'
+        run: |
+          mkdir -p public/downloads
+          cp android/app/build/outputs/apk/release/app-release.apk public/downloads/relod-latest.apk
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add public/downloads/relod-latest.apk
+          if ! git diff --cached --quiet; then
+            git commit -m "Publish latest signed APK for in-app updates [skip ci]"
+            git push
+          fi
