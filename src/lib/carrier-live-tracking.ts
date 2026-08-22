@@ -5,6 +5,7 @@ import { Capacitor, registerPlugin } from '@capacitor/core';
 import type { BackgroundGeolocationPlugin, Location, CallbackError } from '@capacitor-community/background-geolocation';
 import { App } from '@capacitor/app';
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { Geolocation } from '@capacitor/geolocation';
 import { api } from '@/lib/api';
 
 const BackgroundGeolocation = registerPlugin<BackgroundGeolocationPlugin>('BackgroundGeolocation');
@@ -16,12 +17,19 @@ const BackgroundGeolocation = registerPlugin<BackgroundGeolocationPlugin>('Backg
 // native-tracking.ts's, so a booking page unmounting and calling
 // stopNativeTracking() there can never accidentally kill this one.
 const MIN_PING_INTERVAL_MS = 25000;
-const OFF_REMINDER_INTERVAL_MS = 15 * 60 * 1000; // don't re-notify more than once per 15 min
+const OFF_REMINDER_INTERVAL_MS = 2 * 60 * 60 * 1000; // background nudge, at most once every 2 hours
+// The watcher's own error callback isn't reliable at catching the OS-level
+// "Location" toggle being switched off — some Android versions keep
+// delivering a stale cached fix instead of erroring, which left the status
+// pill stuck on "Live". This polls a real GPS request on the side so "off"
+// gets caught even when the passive watcher doesn't notice.
+const HEALTH_CHECK_INTERVAL_MS = 30000;
 
 export type LiveTrackingStatus = 'starting' | 'live' | 'off' | 'unsupported';
 
 let status: LiveTrackingStatus = 'unsupported';
 let watcherId: string | null = null;
+let healthCheckId: ReturnType<typeof setInterval> | null = null;
 let lastSentAt = 0;
 let lastOffNotifiedAt = 0;
 const listeners = new Set<(s: LiveTrackingStatus) => void>();
@@ -53,6 +61,28 @@ async function notifyLocationOff() {
 
 export function isNativeApp(): boolean {
   return Capacitor.isNativePlatform();
+}
+
+async function checkLocationHealth(): Promise<void> {
+  try {
+    await Geolocation.getCurrentPosition({ enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 });
+    if (status === 'off') setStatus('live');
+  } catch {
+    setStatus('off');
+    notifyLocationOff();
+  }
+}
+
+function startHealthCheck(): void {
+  if (healthCheckId) return;
+  healthCheckId = setInterval(checkLocationHealth, HEALTH_CHECK_INTERVAL_MS);
+  checkLocationHealth();
+}
+
+function stopHealthCheck(): void {
+  if (!healthCheckId) return;
+  clearInterval(healthCheckId);
+  healthCheckId = null;
 }
 
 export async function startLiveTracking(token: string, vehicleId: string): Promise<void> {
@@ -102,6 +132,7 @@ export async function startLiveTracking(token: string, vehicleId: string): Promi
           });
       },
     );
+    startHealthCheck();
   } catch {
     setStatus('off');
     notifyLocationOff();
@@ -109,6 +140,7 @@ export async function startLiveTracking(token: string, vehicleId: string): Promi
 }
 
 export async function stopLiveTracking(): Promise<void> {
+  stopHealthCheck();
   if (!watcherId) return;
   await BackgroundGeolocation.removeWatcher({ id: watcherId });
   watcherId = null;
@@ -127,8 +159,14 @@ function attachResumeListener(token: string, vehicleId: string) {
   if (resumeListenerAttached || !isNativeApp()) return;
   resumeListenerAttached = true;
   App.addListener('appStateChange', ({ isActive }) => {
-    if (isActive && status === 'off') {
+    if (!isActive) return;
+    if (status === 'off') {
       stopLiveTracking().then(() => startLiveTracking(token, vehicleId));
+    } else {
+      // Coming back to the foreground is exactly when a driver is most
+      // likely to have just flipped location on/off in Settings — check
+      // right away instead of waiting for the next poll tick.
+      checkLocationHealth();
     }
   });
 }
