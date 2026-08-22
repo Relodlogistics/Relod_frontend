@@ -88,6 +88,15 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const initial = (displayName || session.userType).charAt(0).toUpperCase();
   const roleLabel = session.userType === 'carrier' ? t('nav.roleCarrier') : t('nav.roleShipper');
 
+  const navItems = navItemsFor(session.userType);
+  // Every item whose href fits the current path (exact match, or a real
+  // sub-route via a trailing "/"), keeping only the longest one — otherwise
+  // "/postings" and "/postings/new" both matched "/postings/new" and lit up
+  // two nav items at once.
+  const activeHref = navItems
+    .filter(({ href }) => pathname === href || (href !== '/dashboard' && pathname.startsWith(`${href}/`)))
+    .sort((a, b) => b.href.length - a.href.length)[0]?.href;
+
   return (
     <div className="flex flex-1 bg-background md:h-screen md:overflow-hidden">
       <ChangeRequestResultPopup />
@@ -135,8 +144,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           </button>
         </div>
         <nav className="flex flex-1 flex-col gap-1">
-          {navItemsFor(session.userType).map(({ href, labelKey, icon: Icon }) => {
-            const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
+          {navItems.map(({ href, labelKey, icon: Icon }) => {
+            const active = href === activeHref;
             const showBadge = href === '/dashboard/messages' && unreadCount > 0;
             return (
               <Link
