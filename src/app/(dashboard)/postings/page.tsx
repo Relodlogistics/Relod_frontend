@@ -502,7 +502,9 @@ function PostingsSearchContent() {
               {tab === 'near_you' && <SelectItem value="nearest">{t('postings.sortNearest')}</SelectItem>}
             </SelectContent>
           </Select>
-          <div className="flex rounded-lg border">
+          {/* Below sm the table always falls back to cards regardless of this
+              toggle, so it wouldn't do anything useful there — hide it. */}
+          <div className="hidden rounded-lg border sm:flex">
             <button
               aria-label={t('postings.viewList')}
               onClick={() => setView('list')}
@@ -530,7 +532,84 @@ function PostingsSearchContent() {
       )}
 
       {view === 'list' ? (
-        <Card>
+        <>
+          {/* A 7-column table can't fit a phone screen readably no matter how
+              it's scrolled — below sm, show the same cards the grid view uses
+              instead, regardless of the list/grid toggle. Desktop/tablet keep
+              the table exactly as before. */}
+          <div className="grid gap-3 sm:hidden">
+            {displayedItems.map((posting) => {
+              const isBooked = bookedIds.has(posting.id);
+              return (
+                <Card key={posting.id} className="flex flex-col">
+                  <CardContent className="flex flex-1 flex-col gap-3 py-4">
+                    <div className="flex items-center gap-1.5 text-sm font-medium">
+                      <MapPin className="size-3.5 shrink-0 text-violet-600" />
+                      <span className="truncate">{boardLocation(posting.originCityLabel, posting.originLabel)}</span>
+                      <ArrowRight className="size-3.5 shrink-0 text-muted-foreground" />
+                      <span className="truncate">
+                        {boardLocation(posting.destinations[0]?.cityLabel, posting.destinations[0]?.label)}
+                      </span>
+                    </div>
+
+                    <p className="text-lg font-semibold">
+                      {posting.priceAmount ? formatMoney(Number(posting.priceAmount)) : t('postings.notSpecified')}
+                    </p>
+
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <Badge variant="outline">
+                        {posting.loadType === 'full' ? t('postings.loadFull') : t('postings.loadPartOk')}
+                      </Badge>
+                      {posting.distanceKm != null && (
+                        <Badge variant="secondary">{t('postings.distanceAway', { distance: posting.distanceKm.toFixed(1) })}</Badge>
+                      )}
+                      <button
+                        aria-label={posting.savedByMe ? t('postings.saved') : t('postings.save')}
+                        onClick={() => handleToggleSave(posting)}
+                        className="ml-auto text-muted-foreground hover:text-foreground"
+                      >
+                        {posting.savedByMe ? (
+                          <BookmarkCheck className="size-4 text-primary" />
+                        ) : (
+                          <Bookmark className="size-4" />
+                        )}
+                      </button>
+                    </div>
+
+                    {posting.postedBy && (
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        {posting.postedBy.name}
+                        {posting.postedBy.verified && <BadgeCheck className="size-3.5 text-primary" />}
+                        {posting.postedBy.ratingCount > 0 && (
+                          <span className="ml-1 flex items-center gap-0.5">
+                            <Star className="size-3 fill-amber-400 text-amber-400" />
+                            {posting.postedBy.rating?.toFixed(1)}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="mt-auto flex gap-2 pt-2">
+                      <Link href={`/postings/${posting.id}`} className="flex-1">
+                        <Button variant="outline" className="w-full">
+                          {t('dashboard.viewDetails')}
+                        </Button>
+                      </Link>
+                      <Button
+                        className="flex-1"
+                        disabled={isBooked || bookingId === posting.id}
+                        onClick={() => handleBook(posting.id)}
+                      >
+                        {isBooked ? t('postings.bookingConfirmed') : t('postings.book')}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          <Card className="hidden sm:block">
           <CardContent className="overflow-x-auto py-2">
             <table className="w-full text-sm">
               <thead>
@@ -698,7 +777,8 @@ function PostingsSearchContent() {
               </tbody>
             </table>
           </CardContent>
-        </Card>
+          </Card>
+        </>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {displayedItems.map((posting) => {
