@@ -7,6 +7,8 @@ import { App } from '@capacitor/app';
 import { X, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
+import { useSession } from '@/lib/session-context';
+import { useDriverSession } from '@/lib/driver-session-context';
 
 type UpdateState =
   | { kind: 'none' }
@@ -20,14 +22,19 @@ type UpdateState =
  * deployed site already); no-ops on web. Checked once per app launch against
  * a backend-controlled endpoint (not GitHub's API directly — the repo is
  * private, and this way the APK can be republished anywhere without the
- * client needing credentials).
+ * client needing credentials). Gated on being logged in (either role) —
+ * checking before login meant the popup could interrupt the login screen
+ * itself, which is the wrong moment for it.
  */
 export function AppUpdateBanner() {
   const { t } = useTranslation();
+  const { session } = useSession();
+  const { driverSession } = useDriverSession();
   const [state, setState] = useState<UpdateState>({ kind: 'none' });
+  const isLoggedIn = !!session || !!driverSession;
 
   useEffect(() => {
-    if (!Capacitor.isNativePlatform()) return;
+    if (!Capacitor.isNativePlatform() || !isLoggedIn) return;
 
     (async () => {
       try {
@@ -50,7 +57,7 @@ export function AppUpdateBanner() {
         // Best-effort — an unreachable version-check endpoint shouldn't block app usage.
       }
     })();
-  }, []);
+  }, [isLoggedIn]);
 
   const handleDownload = (url: string) => {
     // Opens the device's default browser to download the APK — Capacitor
