@@ -63,11 +63,20 @@ export function isNativeApp(): boolean {
   return Capacitor.isNativePlatform();
 }
 
+// Standard PositionError codes: 1 = PERMISSION_DENIED, 2 = POSITION_UNAVAILABLE
+// (provider/location services disabled — the real "off" case), 3 = TIMEOUT.
+// A timeout on its own is NOT proof location is off — weak GPS signal or a
+// slow fix can time out perfectly normally while location stays on, and
+// treating that as "off" was firing false popups. Only 1/2 count as off.
+const LOCATION_OFF_ERROR_CODES = new Set([1, 2]);
+
 async function checkLocationHealth(): Promise<void> {
   try {
-    await Geolocation.getCurrentPosition({ enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 });
+    await Geolocation.getCurrentPosition({ enableHighAccuracy: false, timeout: 20000, maximumAge: 120000 });
     if (status === 'off') setStatus('live');
-  } catch {
+  } catch (err) {
+    const code = (err as { code?: number } | undefined)?.code;
+    if (code !== undefined && !LOCATION_OFF_ERROR_CODES.has(code)) return;
     setStatus('off');
     notifyLocationOff();
   }
