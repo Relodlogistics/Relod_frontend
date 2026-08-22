@@ -34,12 +34,12 @@ export function LocationOffModal() {
   const status = useLiveTrackingStatus(session?.accessToken, vehicleId);
 
   useEffect(() => {
-    if (status !== 'off') {
-      setSnoozedAt(null);
-      return;
-    }
+    if (status !== 'off') return;
     const id = setInterval(() => setNow(Date.now()), 5000);
-    return () => clearInterval(id);
+    return () => {
+      clearInterval(id);
+      setSnoozedAt(null);
+    };
   }, [status]);
 
   if (!session || session.userType !== 'carrier' || !isNativeApp() || !vehicleId) return null;
