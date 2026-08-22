@@ -5,10 +5,16 @@ import { Capacitor, registerPlugin } from '@capacitor/core';
 import type { BackgroundGeolocationPlugin, Location, CallbackError } from '@capacitor-community/background-geolocation';
 import { App } from '@capacitor/app';
 import { LocalNotifications } from '@capacitor/local-notifications';
-import { Geolocation } from '@capacitor/geolocation';
 import { api } from '@/lib/api';
 
 const BackgroundGeolocation = registerPlugin<BackgroundGeolocationPlugin>('BackgroundGeolocation');
+// Custom native plugin (android/app/.../LocationStatusPlugin.java) — reports
+// the actual system Location toggle via LocationManagerCompat.isLocationEnabled.
+// Neither the watcher's error callback nor a timed GPS-fix request could
+// reliably tell "off" apart from "just slow" in both directions (that's what
+// caused the status to get stuck wrong both ways); this asks Android
+// directly instead of inferring it.
+const LocationStatus = registerPlugin<{ isEnabled(): Promise<{ enabled: boolean }> }>('LocationStatus');
 
 // Separate from the per-booking watcher in native-tracking.ts — this one
 // runs for the whole time a carrier is logged into the app (not just while
@@ -17,13 +23,8 @@ const BackgroundGeolocation = registerPlugin<BackgroundGeolocationPlugin>('Backg
 // native-tracking.ts's, so a booking page unmounting and calling
 // stopNativeTracking() there can never accidentally kill this one.
 const MIN_PING_INTERVAL_MS = 25000;
-const OFF_REMINDER_INTERVAL_MS = 2 * 60 * 60 * 1000; // background nudge, at most once every 2 hours
-// The watcher's own error callback isn't reliable at catching the OS-level
-// "Location" toggle being switched off — some Android versions keep
-// delivering a stale cached fix instead of erroring, which left the status
-// pill stuck on "Live". This polls a real GPS request on the side so "off"
-// gets caught even when the passive watcher doesn't notice.
-const HEALTH_CHECK_INTERVAL_MS = 30000;
+const OFF_REMINDER_INTERVAL_MS = 30 * 60 * 1000; // background nudge, at most once every 30 min
+const HEALTH_CHECK_INTERVAL_MS = 5000; // cheap synchronous OS check, no GPS hardware involved
 
 export type LiveTrackingStatus = 'starting' | 'live' | 'off' | 'unsupported';
 
@@ -63,22 +64,18 @@ export function isNativeApp(): boolean {
   return Capacitor.isNativePlatform();
 }
 
-// Standard PositionError codes: 1 = PERMISSION_DENIED, 2 = POSITION_UNAVAILABLE
-// (provider/location services disabled — the real "off" case), 3 = TIMEOUT.
-// A timeout on its own is NOT proof location is off — weak GPS signal or a
-// slow fix can time out perfectly normally while location stays on, and
-// treating that as "off" was firing false popups. Only 1/2 count as off.
-const LOCATION_OFF_ERROR_CODES = new Set([1, 2]);
-
 async function checkLocationHealth(): Promise<void> {
   try {
-    await Geolocation.getCurrentPosition({ enableHighAccuracy: false, timeout: 20000, maximumAge: 120000 });
-    if (status === 'off') setStatus('live');
-  } catch (err) {
-    const code = (err as { code?: number } | undefined)?.code;
-    if (code !== undefined && !LOCATION_OFF_ERROR_CODES.has(code)) return;
-    setStatus('off');
-    notifyLocationOff();
+    const { enabled } = await LocationStatus.isEnabled();
+    if (enabled) {
+      if (status === 'off') setStatus('starting'); // real GPS fix from the watcher flips this to 'live'
+    } else {
+      setStatus('off');
+      notifyLocationOff();
+    }
+  } catch {
+    // best-effort — if the native check itself fails, fall back to whatever
+    // the watcher's own callback reports rather than guessing
   }
 }
 
