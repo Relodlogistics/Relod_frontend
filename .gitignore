@@ -36,6 +36,10 @@ yarn-error.log*
 # vercel
 .vercel
 
+# android release signing (generated in CI from a secret, never committed)
+android/app/release.keystore
+*.keystore
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

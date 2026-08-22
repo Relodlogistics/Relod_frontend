@@ -17,7 +17,7 @@ const SERVER_URL = process.env.CAPACITOR_SERVER_URL || 'https://relod-frontend.v
 
 const config: CapacitorConfig = {
   appId: 'com.relod.app',
-  appName: 'ReLod',
+  appName: 'Relod',
   webDir: 'public',
   server: {
     url: SERVER_URL,

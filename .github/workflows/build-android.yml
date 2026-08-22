@@ -45,13 +45,43 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
         env:
-          CAPACITOR_SERVER_URL: https://relod-frontend.vercel.app
+          # Must include /login — the bare domain serves the public marketing
+          # landing page, not the app's actual entry point.
+          CAPACITOR_SERVER_URL: https://relod-frontend.vercel.app/login
 
-      - name: Build debug APK
+      - name: Decode release keystore
+        if: ${{ secrets.RELEASE_KEYSTORE_BASE64 != '' }}
+        working-directory: android/app
+        run: echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > release.keystore
+
+      # Signed release build once the keystore secret exists (see
+      # generate-keystore.yml); every build after the first one MUST reuse
+      # this same key or installs won't update in place. Falls back to an
+      # unsigned debug build only until that one-time setup is done.
+      - name: Build APK
         working-directory: android
-        run: chmod +x ./gradlew && ./gradlew assembleDebug
+        env:
+          RELEASE_KEYSTORE_PATH: release.keystore
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          chmod +x ./gradlew
+          if [ -n "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" ]; then
+            ./gradlew assembleRelease
+          else
+            ./gradlew assembleDebug
+          fi
 
       - uses: actions/upload-artifact@v4
+        if: ${{ secrets.RELEASE_KEYSTORE_BASE64 != '' }}
+        with:
+          name: relod-release-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 30
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ secrets.RELEASE_KEYSTORE_BASE64 == '' }}
         with:
           name: relod-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk

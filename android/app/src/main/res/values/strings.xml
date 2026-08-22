@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">ReLod</string>
-    <string name="title_activity_main">ReLod</string>
+    <string name="app_name">Relod</string>
+    <string name="title_activity_main">Relod</string>
     <string name="package_name">com.relod.app</string>
     <string name="custom_url_scheme">com.relod.app</string>
 </resources>
