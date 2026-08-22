@@ -21,6 +21,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DateField } from '@/components/DateField';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -278,13 +279,7 @@ export default function NewPostingPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
                     <Label>{t('postings.pickupDate')} *</Label>
-                    <Input
-                      type="date"
-                      value={fromDate}
-                      min={minDate}
-                      max={maxDate}
-                      onChange={(e) => setFromDate(e.target.value)}
-                    />
+                    <DateField value={fromDate} min={minDate} max={maxDate} onChange={setFromDate} />
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <Label>{t('postings.pickupTime')}</Label>
@@ -340,13 +335,7 @@ export default function NewPostingPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
                     <Label>{t('postings.deliveryDate')} *</Label>
-                    <Input
-                      type="date"
-                      value={toDate}
-                      min={fromDate || minDate}
-                      max={maxDate}
-                      onChange={(e) => setToDate(e.target.value)}
-                    />
+                    <DateField value={toDate} min={fromDate || minDate} max={maxDate} onChange={setToDate} />
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <Label>{t('postings.deliveryTime')}</Label>
@@ -601,23 +590,11 @@ export default function NewPostingPage() {
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <Label>{t('postings.fromDate')}</Label>
-              <Input
-                type="date"
-                value={fromDate}
-                min={minDate}
-                max={maxDate}
-                onChange={(e) => setFromDate(e.target.value)}
-              />
+              <DateField value={fromDate} min={minDate} max={maxDate} onChange={setFromDate} />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label>{t('postings.toDate')}</Label>
-              <Input
-                type="date"
-                value={toDate}
-                min={fromDate || minDate}
-                max={maxDate}
-                onChange={(e) => setToDate(e.target.value)}
-              />
+              <DateField value={toDate} min={fromDate || minDate} max={maxDate} onChange={setToDate} />
             </div>
           </div>
 

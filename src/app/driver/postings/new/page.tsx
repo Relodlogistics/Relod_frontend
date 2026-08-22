@@ -20,6 +20,7 @@ import { api, ApiError } from '@/lib/api';
 import { useDriverSession } from '@/lib/driver-session-context';
 import { DriverShell } from '@/components/DriverShell';
 import { PlaceAutocompleteInput, PlaceResult, cityLabel } from '@/components/PlaceAutocompleteInput';
+import { DateField } from '@/components/DateField';
 
 export default function DriverNewPostingPage() {
   const { t } = useTranslation();
@@ -132,23 +133,11 @@ export default function DriverNewPostingPage() {
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <Label>{t('postings.fromDate')}</Label>
-              <Input
-                type="date"
-                value={fromDate}
-                min={minDate}
-                max={maxDate}
-                onChange={(e) => setFromDate(e.target.value)}
-              />
+              <DateField value={fromDate} min={minDate} max={maxDate} onChange={setFromDate} />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label>{t('postings.toDate')}</Label>
-              <Input
-                type="date"
-                value={toDate}
-                min={fromDate || minDate}
-                max={maxDate}
-                onChange={(e) => setToDate(e.target.value)}
-              />
+              <DateField value={toDate} min={fromDate || minDate} max={maxDate} onChange={setToDate} />
             </div>
           </div>
 
