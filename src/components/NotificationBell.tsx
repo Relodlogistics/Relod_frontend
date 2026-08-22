@@ -3,11 +3,11 @@
 import Link from 'next/link';
 import { Bell } from 'lucide-react';
 import { useSession } from '@/lib/session-context';
-import { useUnreadCount } from '@/lib/use-unread-count';
+import { useUnreadCount } from '@/lib/notifications-store';
 
 export function NotificationBell() {
   const { session } = useSession();
-  const unreadCount = useUnreadCount();
+  const unreadCount = useUnreadCount(session?.accessToken);
 
   if (!session) return null;
 

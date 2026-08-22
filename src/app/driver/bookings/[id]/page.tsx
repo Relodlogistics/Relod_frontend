@@ -79,11 +79,11 @@ export default function DriverBookingDetailPage({ params }: { params: Promise<{ 
   if (!driverSession) return null;
 
   const badge = booking ? statusBadge(booking.status) : null;
-  // See BookingDetailPage (carrier/shipper) — an instant-accept candidate on a
-  // load posting isn't a negotiation, so messaging is hidden until it's either
-  // a negotiated offer or the booking has moved past "pending".
+  // See BookingDetailPage (carrier/shipper) — messaging only makes sense
+  // while still negotiating; once a truck is selected, Contact details
+  // below gives both sides a phone/WhatsApp number instead.
   const canMessage =
-    !!booking && !(booking.bookingType === 'instant_book' && booking.status === 'pending');
+    !!booking && booking.status === 'pending' && booking.bookingType !== 'instant_book';
 
   return (
     <DriverShell>

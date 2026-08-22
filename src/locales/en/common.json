@@ -691,9 +691,13 @@
     "laneMatch": "A posting matched one of your lanes",
     "broadcast": "A shipper broadcast a load to you",
     "bookingUpdate": "Booking update",
+    "bookingAccepted": "You've been selected! Tap to view your booking",
+    "bookingNotSelected": "Another truck was selected for this load",
+    "bookingNewCandidate": "A truck accepted your load — pick one to confirm",
     "driverAction": "Your driver made an update to a load — tap to view",
     "markRead": "Mark read",
-    "new": "New"
+    "new": "New",
+    "tapToView": "Tap to view details"
   },
   "payment": {
     "status": "Payment status",

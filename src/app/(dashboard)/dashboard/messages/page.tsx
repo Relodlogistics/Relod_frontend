@@ -10,6 +10,7 @@ import { api, Booking } from '@/lib/api';
 import { useSession } from '@/lib/session-context';
 import { boardLocation } from '@/lib/utils';
 import { statusBadge } from '@/lib/status-badge';
+import { markAllNotificationsRead } from '@/lib/notifications-store';
 
 export default function MessagesPage() {
   const { t } = useTranslation();
@@ -21,6 +22,12 @@ export default function MessagesPage() {
     // ones may too, since the thread stays open for coordination) — link
     // into each one's existing message thread on the booking detail page.
     if (session) api.listMyBookings(session.accessToken).then(setBookings).catch(() => undefined);
+  }, [session]);
+
+  useEffect(() => {
+    // The sidebar badge on this nav item is the same shared unread-notification
+    // count as the bell — opening this page counts as having seen them too.
+    if (session) markAllNotificationsRead(session.accessToken);
   }, [session]);
 
   if (!session) return null;

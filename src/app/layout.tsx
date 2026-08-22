@@ -9,6 +9,8 @@ import { AdminSessionProvider } from "@/lib/admin-session-context";
 import { GlobalTopBar } from "@/components/GlobalTopBar";
 import { AppUpdateBanner } from "@/components/AppUpdateBanner";
 import { LocationOffModal } from "@/components/LocationOffModal";
+import { PullToRefresh } from "@/components/PullToRefresh";
+import { BookingAlertPopup } from "@/components/BookingAlertPopup";
 import { SITE_URL } from "@/lib/site";
 import { getServerLocale } from "@/lib/server-i18n";
 
@@ -59,6 +61,8 @@ export default async function RootLayout({
                   <GlobalTopBar />
                   <AppUpdateBanner />
                   <LocationOffModal />
+                  <PullToRefresh />
+                  <BookingAlertPopup />
                   {children}
                 </RegistrationProvider>
               </AdminSessionProvider>

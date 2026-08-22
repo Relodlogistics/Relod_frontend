@@ -593,6 +593,9 @@ export const api = {
   markNotificationRead: (token: string, id: string) =>
     request<AppNotification>(`/notifications/${id}/read`, { method: 'PATCH', token }),
 
+  markAllNotificationsRead: (token: string) =>
+    request<{ count: number }>('/notifications/read-all', { method: 'PATCH', token }),
+
   // Phase 3: Payment Tracking
   getPaymentTracking: (token: string, bookingId: string) =>
     request<PaymentTrackingLog>(`/payment-tracking/${bookingId}`, { token }),
@@ -1138,7 +1141,7 @@ export interface AppNotification {
   userId: string;
   userType: 'carrier' | 'shipper';
   type: 'lane_match' | 'broadcast' | 'booking_update' | 'driver_action';
-  payload: { postingId?: string };
+  payload: { postingId?: string; bookingId?: string; event?: 'accepted' | 'not_selected' | 'new_candidate' };
   readAt: string | null;
   createdAt: string;
 }

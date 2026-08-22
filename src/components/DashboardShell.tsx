@@ -26,6 +26,7 @@ import { useSession } from '@/lib/session-context';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
 import { useDisplayName } from '@/lib/use-display-name';
+import { useUnreadCount } from '@/lib/notifications-store';
 import { ChangeRequestResultPopup } from './ChangeRequestResultPopup';
 
 function navItemsFor(userType: 'carrier' | 'shipper') {
@@ -58,16 +59,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const { session, clearSession } = useSession();
 
   const displayName = useDisplayName();
-  const [unreadCount, setUnreadCount] = useState(0);
+  const unreadCount = useUnreadCount(session?.accessToken);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-
-  useEffect(() => {
-    if (!session) return;
-    api
-      .listNotifications(session.accessToken)
-      .then((all) => setUnreadCount(all.filter((n) => !n.readAt).length))
-      .catch(() => undefined);
-  }, [session]);
 
   // Close the mobile drawer automatically on navigation — otherwise it'd
   // stay open over the new page after tapping a nav link.

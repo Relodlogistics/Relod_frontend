@@ -229,11 +229,13 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
       (session.userType === 'shipper' && booking.posting.postedByShipperId === session.accountId));
   const myReview = booking?.reviews?.find((r) => r.reviewerType === session.userType);
   const theirReview = booking?.reviews?.find((r) => r.reviewerType !== session.userType);
-  // An instant-accept candidate on a load posting isn't a negotiation — there's
-  // nothing to discuss until the shipper picks a truck, so messaging only makes
-  // sense once it's a negotiated offer, or the booking has moved past "pending".
+  // Messaging is only useful while a booking is still being negotiated. An
+  // instant-accept candidate never negotiates at all, and once a truck is
+  // actually selected (status leaves 'pending'), both sides get each
+  // other's phone/WhatsApp in Contact details below — in-app messaging
+  // would just be a redundant second channel at that point.
   const canMessage =
-    !!booking && !(booking.bookingType === 'instant_book' && booking.status === 'pending');
+    !!booking && booking.status === 'pending' && booking.bookingType !== 'instant_book';
 
   return (
     <div className="flex flex-1 flex-col gap-4">

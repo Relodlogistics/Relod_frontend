@@ -6,10 +6,10 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Bell } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { api, AppNotification } from '@/lib/api';
 import { useSession } from '@/lib/session-context';
+import { markAllNotificationsRead } from '@/lib/notifications-store';
 
 const LABEL_KEY: Record<AppNotification['type'], string> = {
   lane_match: 'notifications.laneMatch',
@@ -18,32 +18,44 @@ const LABEL_KEY: Record<AppNotification['type'], string> = {
   driver_action: 'notifications.driverAction',
 };
 
+const BOOKING_EVENT_LABEL_KEY: Record<string, string> = {
+  accepted: 'notifications.bookingAccepted',
+  not_selected: 'notifications.bookingNotSelected',
+  new_candidate: 'notifications.bookingNewCandidate',
+};
+
+function labelKeyFor(n: AppNotification): string {
+  if (n.type === 'booking_update' && n.payload.event && BOOKING_EVENT_LABEL_KEY[n.payload.event]) {
+    return BOOKING_EVENT_LABEL_KEY[n.payload.event];
+  }
+  return LABEL_KEY[n.type];
+}
+
 export default function NotificationsPage() {
   const { t } = useTranslation();
   const router = useRouter();
   const { session, loaded } = useSession();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  // Captured once per visit so items stay tagged "New" for this viewing even
+  // after they're marked read on the backend a moment later — otherwise the
+  // badges would vanish out from under the user while they're still reading.
+  const [wasUnreadIds, setWasUnreadIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (loaded && !session) router.replace('/login');
   }, [loaded, session, router]);
 
-  const refresh = async () => {
-    if (!session) return;
-    setNotifications(await api.listNotifications(session.accessToken));
-  };
-
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (session) refresh().catch(() => undefined);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session]);
-
-  const handleMarkRead = async (id: string) => {
     if (!session) return;
-    await api.markNotificationRead(session.accessToken, id);
-    await refresh();
-  };
+    (async () => {
+      const all = await api.listNotifications(session.accessToken);
+      setNotifications(all);
+      setWasUnreadIds(new Set(all.filter((n) => !n.readAt).map((n) => n.id)));
+      // Opening this page is the "read" action — no more per-item button
+      // needed, and the sidebar/bell badge should clear immediately.
+      await markAllNotificationsRead(session.accessToken);
+    })().catch(() => undefined);
+  }, [session]);
 
   if (!session) return null;
 
@@ -67,12 +79,16 @@ export default function NotificationsPage() {
                     <Bell className="size-4" />
                   </div>
                   <div className="flex flex-col gap-1">
-                    {n.payload.postingId ? (
+                    {n.payload.bookingId ? (
+                      <Link href={`/bookings/${n.payload.bookingId}`} className="text-sm font-medium hover:underline">
+                        {t(labelKeyFor(n))}
+                      </Link>
+                    ) : n.payload.postingId ? (
                       <Link href={`/postings/${n.payload.postingId}`} className="text-sm font-medium hover:underline">
-                        {t(LABEL_KEY[n.type])}
+                        {t(labelKeyFor(n))}
                       </Link>
                     ) : (
-                      <p className="text-sm font-medium">{t(LABEL_KEY[n.type])}</p>
+                      <p className="text-sm font-medium">{t(labelKeyFor(n))}</p>
                     )}
                     <p className="text-xs text-muted-foreground">
                       {new Date(n.createdAt).toLocaleString('en-IN', {
@@ -85,12 +101,7 @@ export default function NotificationsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  {!n.readAt && <Badge>{t('notifications.new')}</Badge>}
-                  {!n.readAt && (
-                    <Button size="sm" variant="outline" onClick={() => handleMarkRead(n.id)}>
-                      {t('notifications.markRead')}
-                    </Button>
-                  )}
+                  {wasUnreadIds.has(n.id) && <Badge>{t('notifications.new')}</Badge>}
                 </div>
               </CardContent>
             </Card>
