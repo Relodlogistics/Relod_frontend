@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Capacitor } from '@capacitor/core';
 import { App } from '@capacitor/app';
+import { Browser } from '@capacitor/browser';
 import { X, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
@@ -60,11 +61,14 @@ export function AppUpdateBanner() {
   }, [isLoggedIn]);
 
   const handleDownload = (url: string) => {
-    // Opens the device's default browser to download the APK — Capacitor
-    // routes an external-origin window.open through the system browser
-    // rather than the app's own WebView, so no extra plugin is needed just
-    // for this.
-    window.open(url, '_system');
+    // window.open(url, '_system') relies on Capacitor's WebView JS bridge
+    // intercepting it, which doesn't reliably fire under the "legacy
+    // bridge" mode this app runs in (required separately for background
+    // geolocation — see capacitor.config.ts). @capacitor/browser calls the
+    // native layer directly instead, so it isn't affected by that.
+    Browser.open({ url }).catch(() => {
+      window.open(url, '_system');
+    });
   };
 
   if (state.kind === 'none') return null;
