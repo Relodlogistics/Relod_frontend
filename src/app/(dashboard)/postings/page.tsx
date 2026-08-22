@@ -251,6 +251,24 @@ function PostingsSearchContent() {
     }
   };
 
+  // Server-known status (persists across visits) takes priority over the
+  // locally just-clicked bookedIds set (which resets on reload) — otherwise
+  // revisiting the board after already applying showed "Book now" again.
+  const bookedLabel = (posting: Posting): string | null => {
+    switch (posting.myBookingStatus) {
+      case 'pending':
+        return t('postings.waitingConfirmation');
+      case 'accepted':
+      case 'in_transit':
+      case 'completed':
+        return t('postings.bookingConfirmed');
+      case 'cancelled':
+        return t('postings.bookingNotSelectedLabel');
+      default:
+        return null;
+    }
+  };
+
   const handleBook = async (postingId: string) => {
     if (!session) return;
     setBookingId(postingId);
@@ -539,7 +557,8 @@ function PostingsSearchContent() {
               the table exactly as before. */}
           <div className="grid gap-3 sm:hidden">
             {displayedItems.map((posting) => {
-              const isBooked = bookedIds.has(posting.id);
+              const bookedLbl = bookedLabel(posting);
+              const isBooked = bookedIds.has(posting.id) || bookedLbl !== null;
               return (
                 <Card key={posting.id} className="flex flex-col">
                   <CardContent className="flex flex-1 flex-col gap-3 py-4">
@@ -600,7 +619,7 @@ function PostingsSearchContent() {
                         disabled={isBooked || bookingId === posting.id}
                         onClick={() => handleBook(posting.id)}
                       >
-                        {isBooked ? t('postings.bookingConfirmed') : t('postings.book')}
+                        {bookedLbl ?? (bookedIds.has(posting.id) ? t('postings.bookingConfirmed') : t('postings.book'))}
                       </Button>
                     </div>
                   </CardContent>
@@ -782,7 +801,8 @@ function PostingsSearchContent() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {displayedItems.map((posting) => {
-            const isBooked = bookedIds.has(posting.id);
+            const bookedLbl = bookedLabel(posting);
+            const isBooked = bookedIds.has(posting.id) || bookedLbl !== null;
             return (
               <Card key={posting.id} className="flex flex-col">
                 <CardContent className="flex flex-1 flex-col gap-3 py-4">
@@ -843,7 +863,7 @@ function PostingsSearchContent() {
                       disabled={isBooked || bookingId === posting.id}
                       onClick={() => handleBook(posting.id)}
                     >
-                      {isBooked ? t('postings.bookingConfirmed') : t('postings.book')}
+                      {bookedLbl ?? (bookedIds.has(posting.id) ? t('postings.bookingConfirmed') : t('postings.book'))}
                     </Button>
                   </div>
                 </CardContent>

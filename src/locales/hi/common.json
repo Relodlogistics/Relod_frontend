@@ -453,6 +453,8 @@
     "filterAny": "कोई भी",
     "filters": "फ़िल्टर",
     "bookingConfirmed": "बुकिंग की पुष्टि हो गई!",
+    "waitingConfirmation": "पुष्टि की प्रतीक्षा में",
+    "bookingNotSelectedLabel": "चयनित नहीं",
     "origin": "मूल स्थान (जगह का नाम)",
     "destinationOptional": "गंतव्य (वैकल्पिक)",
     "newTitle": "पोस्टिंग बनाएं",

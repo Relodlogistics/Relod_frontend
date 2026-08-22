@@ -886,6 +886,11 @@ export interface Posting {
   postedBy?: { name: string; verified: boolean; rating: number | null; ratingCount: number } | null;
   equipment?: { truckType: string | null; capacityTons: string | null; lengthFeet: string | null } | null;
   savedByMe?: boolean;
+  // The viewer's own latest booking status on this posting, if any — lets
+  // the board show "Waiting for confirmation" / "Confirmed" instead of a
+  // "Book now" button that forgets you already applied once you leave and
+  // come back to the list.
+  myBookingStatus?: Booking['status'] | null;
   // How high a carrier can negotiate a fixed-price load — computed server-side
   // from the shipper's private actual budget (priceMax) minus the platform
   // margin. priceMax itself is only ever present when you own the posting.

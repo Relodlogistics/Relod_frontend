@@ -100,14 +100,14 @@ export default function DriverBookingDetailPage({ params }: { params: Promise<{ 
             </Alert>
           )}
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-sm font-medium">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-sm font-medium">
               {booking?.posting ? (
                 <>
                   <MapPin className="size-4 shrink-0 text-violet-600" />
-                  <span>{boardLocation(booking.posting.originCityLabel, booking.posting.originLabel)}</span>
+                  <span className="min-w-0">{boardLocation(booking.posting.originCityLabel, booking.posting.originLabel)}</span>
                   <ArrowRight className="size-3.5 shrink-0 text-muted-foreground" />
-                  <span>
+                  <span className="min-w-0">
                     {boardLocation(booking.posting.destinations[0]?.cityLabel, booking.posting.destinations[0]?.label)}
                   </span>
                 </>
@@ -115,7 +115,7 @@ export default function DriverBookingDetailPage({ params }: { params: Promise<{ 
                 t('bookingDetail.title')
               )}
             </div>
-            {badge && <Badge variant={badge.variant}>{badge.label}</Badge>}
+            {badge && <Badge variant={badge.variant} className="shrink-0">{badge.label}</Badge>}
           </div>
 
           {booking?.agreedPrice && (

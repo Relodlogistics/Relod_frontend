@@ -453,6 +453,8 @@
     "filterAny": "Any",
     "filters": "Filters",
     "bookingConfirmed": "Booking confirmed!",
+    "waitingConfirmation": "Waiting for confirmation",
+    "bookingNotSelectedLabel": "Not selected",
     "origin": "Origin (place name)",
     "destinationOptional": "Destination (optional)",
     "newTitle": "Create a posting",
