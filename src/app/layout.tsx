@@ -7,6 +7,7 @@ import { SessionProvider } from "@/lib/session-context";
 import { DriverSessionProvider } from "@/lib/driver-session-context";
 import { AdminSessionProvider } from "@/lib/admin-session-context";
 import { GlobalTopBar } from "@/components/GlobalTopBar";
+import { AppUpdateBanner } from "@/components/AppUpdateBanner";
 import { SITE_URL } from "@/lib/site";
 import { getServerLocale } from "@/lib/server-i18n";
 
@@ -55,6 +56,7 @@ export default async function RootLayout({
               <AdminSessionProvider>
                 <RegistrationProvider>
                   <GlobalTopBar />
+                  <AppUpdateBanner />
                   {children}
                 </RegistrationProvider>
               </AdminSessionProvider>

@@ -678,6 +678,13 @@
     "remove": "Turn off",
     "empty": "No lanes turned on yet."
   },
+  "appUpdate": {
+    "nudgeBody": "A new version ({{version}}) is available.",
+    "forcedTitle": "Update required",
+    "forcedBody": "Version {{version}} is required to continue using the app.",
+    "updateNow": "Update now",
+    "dismiss": "Dismiss"
+  },
   "notifications": {
     "title": "Notifications",
     "empty": "No notifications yet.",

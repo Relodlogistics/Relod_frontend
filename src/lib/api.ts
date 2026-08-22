@@ -63,6 +63,16 @@ async function request<T>(
 }
 
 export const api = {
+  // Public, no auth — checked once on native app launch to see if a newer
+  // APK exists. See app-version.controller.ts.
+  getAndroidVersionInfo: () =>
+    request<{
+      latestVersionCode: number;
+      latestVersionName: string;
+      downloadUrl: string | null;
+      minSupportedVersionCode: number;
+    }>('/app-version/android'),
+
   sendOtp: (
     phone: string,
     purpose: 'signup' | 'login' | 'whatsapp_verify' | 'driver_login',
