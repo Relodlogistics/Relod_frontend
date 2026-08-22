@@ -326,9 +326,9 @@ function PostingsSearchContent() {
 
       <Card>
         <CardContent className="flex flex-col gap-3 py-4">
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="flex flex-1 items-end gap-2">
-              <div className="flex min-w-[180px] flex-1 flex-col gap-1.5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+            <div className="flex flex-col gap-2 sm:flex-1 sm:flex-row sm:items-end">
+              <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                 <Label className="text-xs">{t('postings.origin')}</Label>
                 <div className="relative">
                   <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -346,11 +346,11 @@ function PostingsSearchContent() {
                 type="button"
                 aria-label={t('postings.swapOriginDestination')}
                 onClick={handleSwap}
-                className="mb-0.5 shrink-0"
+                className="self-center sm:mb-0.5 sm:self-auto shrink-0"
               >
                 <ArrowLeftRight className="size-4" />
               </Button>
-              <div className="flex min-w-[180px] flex-1 flex-col gap-1.5">
+              <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                 <Label className="text-xs">{t('postings.destinationOptional')}</Label>
                 <div className="relative">
                   <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -366,7 +366,7 @@ function PostingsSearchContent() {
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">{t('postings.loadType')}</Label>
               <Select value={loadType} onValueChange={(v) => v && setLoadType(v as typeof loadType)}>
-                <SelectTrigger className="w-36">
+                <SelectTrigger className="w-full sm:w-36">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -379,7 +379,7 @@ function PostingsSearchContent() {
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">{t('postings.truckType')}</Label>
               <Select value={truckType} onValueChange={(v) => v && setTruckType(v)}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-full sm:w-40">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -392,7 +392,7 @@ function PostingsSearchContent() {
                 </SelectContent>
               </Select>
             </div>
-            <Button onClick={handleSearch} disabled={loading}>
+            <Button onClick={handleSearch} disabled={loading} className="w-full sm:w-auto">
               {isShipper ? t('dashboard.searchCarrier') : t('dashboard.searchLoad')}
             </Button>
           </div>
