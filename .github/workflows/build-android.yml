@@ -49,10 +49,21 @@ jobs:
           # landing page, not the app's actual entry point.
           CAPACITOR_SERVER_URL: https://relod-frontend.vercel.app/login
 
+      # `if:` conditions can't reference `secrets` directly (GitHub disallows
+      # it) — so the presence check happens in a plain step instead, exposed
+      # as an output later steps can branch on.
+      - name: Check for release keystore
+        id: keystore_check
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+        run: echo "present=${{ env.RELEASE_KEYSTORE_BASE64 != '' }}" >> "$GITHUB_OUTPUT"
+
       - name: Decode release keystore
-        if: ${{ secrets.RELEASE_KEYSTORE_BASE64 != '' }}
+        if: steps.keystore_check.outputs.present == 'true'
         working-directory: android/app
-        run: echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > release.keystore
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+        run: echo "$RELEASE_KEYSTORE_BASE64" | base64 -d > release.keystore
 
       # Signed release build once the keystore secret exists (see
       # generate-keystore.yml); every build after the first one MUST reuse
@@ -67,21 +78,21 @@ jobs:
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
         run: |
           chmod +x ./gradlew
-          if [ -n "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" ]; then
+          if [ "${{ steps.keystore_check.outputs.present }}" = "true" ]; then
             ./gradlew assembleRelease
           else
             ./gradlew assembleDebug
           fi
 
       - uses: actions/upload-artifact@v4
-        if: ${{ secrets.RELEASE_KEYSTORE_BASE64 != '' }}
+        if: steps.keystore_check.outputs.present == 'true'
         with:
           name: relod-release-apk
           path: android/app/build/outputs/apk/release/app-release.apk
           retention-days: 30
 
       - uses: actions/upload-artifact@v4
-        if: ${{ secrets.RELEASE_KEYSTORE_BASE64 == '' }}
+        if: steps.keystore_check.outputs.present != 'true'
         with:
           name: relod-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
