@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -22,7 +22,15 @@ type OtpStep = 'phone' | 'otp';
 export default function LoginPage() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { setSession } = useSession();
+  const { session, loaded, setSession } = useSession();
+
+  // The native app boots directly on this page every cold start (see
+  // capacitor.config.ts's server.url) — without this, an already-logged-in
+  // user saw the login form again on every launch even though their session
+  // was still sitting in storage the whole time.
+  useEffect(() => {
+    if (loaded && session) router.replace('/dashboard');
+  }, [loaded, session, router]);
 
   const [loginTab, setLoginTab] = useState<'password' | 'otp'>('password');
 
