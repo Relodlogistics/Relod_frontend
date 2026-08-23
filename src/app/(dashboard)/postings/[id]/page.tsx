@@ -500,7 +500,11 @@ export default function PostingDetailPage({ params }: { params: Promise<{ id: st
                     </p>
 
                     <div className="flex items-center gap-2">
-                      <Building2 className="size-4 shrink-0 text-muted-foreground" />
+                      {posting.contact.partyType === 'shipper' ? (
+                        <Building2 className="size-4 shrink-0 text-muted-foreground" />
+                      ) : (
+                        <Truck className="size-4 shrink-0 text-muted-foreground" />
+                      )}
                       <span className="font-medium">
                         {posting.contact.businessName || posting.contact.fullName}
                       </span>
