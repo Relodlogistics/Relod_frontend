@@ -157,22 +157,40 @@ export default function NewPostingPage() {
   const handleSubmit = async () => {
     if (!session) return;
     setError(null);
+    const isShipper = session.userType === 'shipper';
+
     // Places are resolved to coordinates at selection time (autocomplete),
-    // not re-geocoded here — this just guards against submitting a typed
-    // city name that was never actually picked from the dropdown.
+    // not re-geocoded here — a typed-but-never-selected city name leaves
+    // originPlace/destPlace/stop.place null. Previously this only blocked
+    // submission via a silently disabled button with zero explanation —
+    // now it's a specific, visible error either way.
     if (!originPlace) {
-      setError(t('postings.placeNotFound'));
+      setError(t('postings.selectFromDropdown', { field: t('postings.originCity') }));
       return;
     }
-    const isShipper = session.userType === 'shipper';
     if (isShipper && stops.some((s) => !s.place)) {
-      setError(t('postings.placeNotFound'));
+      setError(t('postings.selectFromDropdown', { field: t('postings.destinationCity') }));
       return;
     }
     if (!isShipper && !destPlace) {
-      setError(t('postings.placeNotFound'));
+      setError(t('postings.selectFromDropdown', { field: t('postings.destinationCity') }));
       return;
     }
+
+    const missing: string[] = [];
+    if (!fromDate) missing.push(t('postings.pickupDate'));
+    if (!toDate) missing.push(t('postings.deliveryDate'));
+    if (!priceAmount) missing.push(isShipper ? t('postings.minimumBudget') : t('postings.priceAmount'));
+    if (isShipper && !actualBudget) missing.push(t('postings.actualBudget'));
+    if (missing.length > 0) {
+      setError(t('postings.missingRequiredFields', { fields: missing.join(', ') }));
+      return;
+    }
+    if (isShipper && Number(actualBudget) < Number(priceAmount)) {
+      setError(t('postings.budgetBelowMinimum'));
+      return;
+    }
+
     setLoading(true);
     try {
       const destinations = isShipper
@@ -224,15 +242,10 @@ export default function NewPostingPage() {
   if (!session) return null;
 
   if (session.userType === 'shipper') {
-    const shipperDisabled =
-      loading ||
-      !originPlace ||
-      stops.some((s) => !s.place) ||
-      !fromDate ||
-      !toDate ||
-      !priceAmount ||
-      !actualBudget ||
-      Number(actualBudget) < Number(priceAmount);
+    // Only `loading` truly blocks the click now — everything else is
+    // validated with a specific, visible error inside handleSubmit instead
+    // of a silently disabled button that gave no clue what was missing.
+    const shipperDisabled = loading;
 
     return (
       <main className="flex flex-1 flex-col gap-6">
@@ -634,14 +647,7 @@ export default function NewPostingPage() {
 
           <Button
             onClick={handleSubmit}
-            disabled={
-              loading ||
-              !originPlace ||
-              !destPlace ||
-              !fromDate ||
-              !toDate ||
-              !priceAmount
-            }
+            disabled={loading}
           >
             {t('postings.create')}
           </Button>
