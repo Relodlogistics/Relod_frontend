@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { MapPin } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { api } from '@/lib/api';
@@ -50,9 +51,11 @@ export function PlaceAutocompleteInput({
   placeholder?: string;
   className?: string;
 }) {
+  const { t } = useTranslation();
   const { session } = useSession();
   const [suggestions, setSuggestions] = useState<{ placeId: string; label: string }[]>([]);
   const [open, setOpen] = useState(false);
+  const [searched, setSearched] = useState(false);
   const [coords, setCoords] = useState<{ top: number; left: number; width: number } | null>(null);
   const sessionTokenRef = useRef(crypto.randomUUID());
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -102,6 +105,7 @@ export function PlaceAutocompleteInput({
 
   const handleChange = (text: string) => {
     onChange(text);
+    setSearched(false);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (!session || text.trim().length < 2) {
       setSuggestions([]);
@@ -112,9 +116,14 @@ export function PlaceAutocompleteInput({
       try {
         const results = await api.geocodeAutocomplete(session.accessToken, text, sessionTokenRef.current);
         setSuggestions(results);
-        setOpen(results.length > 0);
+        // Opens even on zero results — an empty search that just silently
+        // stays closed is indistinguishable from the feature being broken.
+        // "No matches" tells the user it's a spelling/coverage issue, not a bug.
+        setOpen(true);
       } catch {
         setSuggestions([]);
+      } finally {
+        setSearched(true);
       }
     }, DEBOUNCE_MS);
   };
@@ -144,7 +153,7 @@ export function PlaceAutocompleteInput({
           placeholder={placeholder}
           value={value}
           onChange={(e) => handleChange(e.target.value)}
-          onFocus={() => setOpen(suggestions.length > 0)}
+          onFocus={() => setOpen(suggestions.length > 0 || searched)}
         />
       </div>
       {open && coords && typeof document !== 'undefined' &&
@@ -154,6 +163,9 @@ export function PlaceAutocompleteInput({
             className="fixed z-50 overflow-hidden rounded-lg border bg-popover shadow-md"
             style={{ top: coords.top, left: coords.left, width: coords.width }}
           >
+            {suggestions.length === 0 && searched && (
+              <li className="px-3 py-2 text-sm text-muted-foreground">{t('postings.noPlaceMatches')}</li>
+            )}
             {suggestions.map((s) => (
               <li key={s.placeId}>
                 <button

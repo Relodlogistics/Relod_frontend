@@ -474,6 +474,7 @@
     "destinationCity": "Destination city",
     "placeNotFound": "Could not find that place. Try a more specific name.",
     "selectFromDropdown": "Pick a suggestion from the dropdown for {{field}} — typing a name isn't enough on its own.",
+    "noPlaceMatches": "No matches — check the spelling or try a nearby town.",
     "missingRequiredFields": "Please fill in: {{fields}}",
     "budgetBelowMinimum": "Actual budget must be at least the minimum budget.",
     "fromDate": "Available from",
