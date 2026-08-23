@@ -201,6 +201,16 @@ export default function DashboardPage() {
   const upcomingBookingsSorted = [...upcomingBookings]
     .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
     .slice(0, 4);
+  // Shipper-only, and deliberately excludes 'in_transit' — that's already
+  // covered by the Current Load card above, so this is just "what's next".
+  const upcomingLoadsShipper = bookings
+    .filter((b) => b.status === 'accepted')
+    .sort((a, b) => {
+      const aDate = a.posting?.availableFromDate ? new Date(a.posting.availableFromDate).getTime() : 0;
+      const bDate = b.posting?.availableFromDate ? new Date(b.posting.availableFromDate).getTime() : 0;
+      return aDate - bDate;
+    })
+    .slice(0, 4);
 
   const handleDismissNotification = async () => {
     if (!latestNotification) return;
@@ -504,6 +514,42 @@ export default function DashboardPage() {
         <div className="flex flex-col gap-4">
           {isShipper ? (
             <>
+              <Card>
+                <CardContent className="py-4">
+                  <h2 className="mb-3 font-heading text-sm font-semibold">{t('dashboard.upcomingLoadTitle')}</h2>
+                  {upcomingLoadsShipper.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">{t('tracking.empty')}</p>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      {upcomingLoadsShipper.map((b) => (
+                        <Link
+                          key={b.id}
+                          href={`/bookings/${b.id}`}
+                          className="block rounded-lg border p-2.5 hover:bg-accent/40"
+                        >
+                          <p className="text-sm font-medium">
+                            {b.posting
+                              ? `${boardLocation(b.posting.originCityLabel, b.posting.originLabel)} → ${boardLocation(b.posting.destinations[0]?.cityLabel, b.posting.destinations[0]?.label)}`
+                              : '—'}
+                          </p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {b.counterpartyContact?.name ?? t('postings.notSelected')} &middot;{' '}
+                            {b.posting?.availableFromDate
+                              ? new Date(b.posting.availableFromDate).toLocaleDateString('en-IN', {
+                                  day: '2-digit',
+                                  month: 'short',
+                                })
+                              : t('postings.notSpecified')}
+                          </p>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                  <Link href="/bookings" className="mt-3 block text-center text-sm text-primary hover:underline">
+                    {t('dashboard.viewAllBookings')}
+                  </Link>
+                </CardContent>
+              </Card>
               <Card>
                 <CardContent className="py-4">
                   <h2 className="mb-3 font-heading text-sm font-semibold">{t('dashboard.recentActivities')}</h2>
