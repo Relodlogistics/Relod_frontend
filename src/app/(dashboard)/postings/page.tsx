@@ -34,7 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { api, ApiError, Posting } from '@/lib/api';
+import { api, ApiError, Posting, Booking } from '@/lib/api';
 import { useSession } from '@/lib/session-context';
 import { boardLocation, boardLocationParts, formatMoney, timeAgo, cn } from '@/lib/utils';
 import { TRUCK_TYPES, truckTypeLabel } from '@/lib/truck-types';
@@ -94,7 +94,11 @@ function PostingsSearchContent() {
   const [error, setError] = useState<string | null>(null);
 
   const [bookingId, setBookingId] = useState<string | null>(null);
-  const [bookedIds, setBookedIds] = useState<Set<string>>(new Set());
+  // Keyed by the real status the just-created booking API response returned
+  // (pending for a load-posting candidate, accepted for a truck posting) —
+  // not a plain "booked" flag, which previously showed "Booking confirmed!"
+  // immediately after booking a load even when it was still just pending.
+  const [justBookedStatus, setJustBookedStatus] = useState<Record<string, Booking['status']>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
 
   const [tabCounts, setTabCounts] = useState<Record<TabKey, number | null>>({
@@ -251,11 +255,8 @@ function PostingsSearchContent() {
     }
   };
 
-  // Server-known status (persists across visits) takes priority over the
-  // locally just-clicked bookedIds set (which resets on reload) — otherwise
-  // revisiting the board after already applying showed "Book now" again.
-  const bookedLabel = (posting: Posting): string | null => {
-    switch (posting.myBookingStatus) {
+  const statusLabel = (status: Booking['status'] | null | undefined): string | null => {
+    switch (status) {
       case 'pending':
         return t('postings.waitingConfirmation');
       case 'accepted':
@@ -269,12 +270,19 @@ function PostingsSearchContent() {
     }
   };
 
+  // The just-clicked status (real API response) takes priority since it's
+  // more current than the last full list fetch; server-known myBookingStatus
+  // covers a revisit after leaving and coming back, when nothing was just
+  // clicked in this session.
+  const bookedLabel = (posting: Posting): string | null =>
+    statusLabel(justBookedStatus[posting.id] ?? posting.myBookingStatus);
+
   const handleBook = async (postingId: string) => {
     if (!session) return;
     setBookingId(postingId);
     try {
-      await api.instantBook(session.accessToken, postingId);
-      setBookedIds((prev) => new Set(prev).add(postingId));
+      const booking = await api.instantBook(session.accessToken, postingId);
+      setJustBookedStatus((prev) => ({ ...prev, [postingId]: booking.status }));
     } catch (e) {
       setError(e instanceof ApiError ? e.message : t('errors.generic'));
     } finally {
@@ -558,7 +566,7 @@ function PostingsSearchContent() {
           <div className="grid gap-3 sm:hidden">
             {displayedItems.map((posting) => {
               const bookedLbl = bookedLabel(posting);
-              const isBooked = bookedIds.has(posting.id) || bookedLbl !== null;
+              const isBooked = bookedLbl !== null;
               return (
                 <Card key={posting.id} className="flex flex-col">
                   <CardContent className="flex flex-1 flex-col gap-3 py-4">
@@ -619,7 +627,7 @@ function PostingsSearchContent() {
                         disabled={isBooked || bookingId === posting.id}
                         onClick={() => handleBook(posting.id)}
                       >
-                        {bookedLbl ?? (bookedIds.has(posting.id) ? t('postings.bookingConfirmed') : t('postings.book'))}
+                        {bookedLbl ?? t('postings.book')}
                       </Button>
                     </div>
                   </CardContent>
@@ -802,7 +810,7 @@ function PostingsSearchContent() {
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {displayedItems.map((posting) => {
             const bookedLbl = bookedLabel(posting);
-            const isBooked = bookedIds.has(posting.id) || bookedLbl !== null;
+            const isBooked = bookedLbl !== null;
             return (
               <Card key={posting.id} className="flex flex-col">
                 <CardContent className="flex flex-1 flex-col gap-3 py-4">
@@ -863,7 +871,7 @@ function PostingsSearchContent() {
                       disabled={isBooked || bookingId === posting.id}
                       onClick={() => handleBook(posting.id)}
                     >
-                      {bookedLbl ?? (bookedIds.has(posting.id) ? t('postings.bookingConfirmed') : t('postings.book'))}
+                      {bookedLbl ?? t('postings.book')}
                     </Button>
                   </div>
                 </CardContent>
