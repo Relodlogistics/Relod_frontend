@@ -28,7 +28,6 @@ import {
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -47,8 +46,6 @@ import { truckTypeLabel } from '@/lib/truck-types';
 import { useSpeak } from '@/lib/use-speak';
 import { MatchingCarrierCard } from '@/components/MatchingCarrierCard';
 import { TruckDetailsModal } from '@/components/TruckDetailsModal';
-
-const NEGOTIATE_STEP = 500;
 
 const CARGO_TYPE_LABEL_KEYS: Record<CargoType, string> = {
   general: 'vehicle.cargoTypeGeneral',
@@ -105,10 +102,8 @@ export default function PostingDetailPage({ params }: { params: Promise<{ id: st
   const { speak, stop, speaking, supported: speechSupported } = useSpeak();
 
   const [posting, setPosting] = useState<Posting | null>(null);
-  const [message, setMessage] = useState('');
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [selectedVehicleId, setSelectedVehicleId] = useState('');
-  const [proposedPrice, setProposedPrice] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -143,13 +138,6 @@ export default function PostingDetailPage({ params }: { params: Promise<{ id: st
       })
       .catch(() => undefined);
   }, [session]);
-
-  useEffect(() => {
-    if (posting?.priceAmount) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setProposedPrice(Number(posting.priceAmount));
-    }
-  }, [posting]);
 
   useEffect(() => {
     if (!session || session.userType !== 'shipper' || !posting) return;
@@ -200,21 +188,6 @@ export default function PostingDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
-  const isFixedPrice = posting?.priceAmount != null;
-  // Only a carrier negotiating a shipper's fixed-price load gets the templated
-  // message + slider — that's the only side with a private ceiling to slide up to.
-  const useSliderUI = isFixedPrice && session?.userType === 'carrier' && !isOwner;
-  const minPrice = isFixedPrice ? Number(posting!.priceAmount) : 0;
-  const ceiling = posting?.negotiationCeiling ?? minPrice;
-  const selectedVehicle = vehicles.find((v) => v.id === selectedVehicleId);
-  const autoMessage = selectedVehicle
-    ? t('postings.negotiateTemplate', {
-        truckType: truckTypeLabel(selectedVehicle.truckType),
-        capacity: selectedVehicle.capacityTons,
-        regNumber: selectedVehicle.registrationNumber,
-      })
-    : t('postings.negotiateTemplateFallback');
-
   // A carrier accepting a shipper's LOAD needs to say which of their trucks is
   // taking it (the shipper's candidate list shows this per truck) — a shipper
   // booking a carrier's TRUCK posting doesn't, the vehicle is already fixed on
@@ -232,23 +205,6 @@ export default function PostingDetailPage({ params }: { params: Promise<{ id: st
         id,
         bookNeedsVehicle ? selectedVehicleId : undefined,
       );
-      router.push(`/bookings/${booking.id}`);
-    } catch (e) {
-      setError(e instanceof ApiError ? e.message : t('errors.generic'));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleNegotiate = async () => {
-    if (!session || !posting) return;
-    const finalMessage = useSliderUI ? autoMessage : message;
-    if (!finalMessage) return;
-    setError(null);
-    setLoading(true);
-    try {
-      const finalPrice = isFixedPrice ? (useSliderUI ? proposedPrice : minPrice) : undefined;
-      const booking = await api.negotiate(session.accessToken, id, finalMessage, finalPrice);
       router.push(`/bookings/${booking.id}`);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : t('errors.generic'));
@@ -643,73 +599,6 @@ export default function PostingDetailPage({ params }: { params: Promise<{ id: st
                 <Button onClick={handleBook} disabled={loading || (bookNeedsVehicle && !selectedVehicleId)}>
                   {t('postings.book')}
                 </Button>
-
-                <div className="rounded-md border p-3">
-                  <p className="mb-2 text-sm font-medium">{t('postings.negotiateSectionTitle')}</p>
-
-                  {useSliderUI ? (
-                    <>
-                      <p className="rounded-md bg-muted/50 p-2.5 text-sm text-muted-foreground">{autoMessage}</p>
-                      {vehicles.length === 0 && (
-                        <p className="mt-1.5 text-xs text-muted-foreground">
-                          {t('postings.negotiateNoVehicleHint')}
-                        </p>
-                      )}
-                      {vehicles.length > 1 && (
-                        <div className="mt-2 flex flex-col gap-1.5">
-                          <Label className="text-xs">{t('postings.selectVehicle')}</Label>
-                          <Select value={selectedVehicleId} onValueChange={(v) => v && setSelectedVehicleId(v)}>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {vehicles.map((v) => (
-                                <SelectItem key={v.id} value={v.id}>
-                                  {v.registrationNumber}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      )}
-
-                      <div className="mt-3">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">{t('postings.yourOffer')}</span>
-                          <span className="text-lg font-semibold text-primary">{formatMoney(proposedPrice)}</span>
-                        </div>
-                        {ceiling > minPrice ? (
-                          <input
-                            type="range"
-                            min={minPrice}
-                            max={ceiling}
-                            step={NEGOTIATE_STEP}
-                            value={proposedPrice}
-                            onChange={(e) => setProposedPrice(Number(e.target.value))}
-                            className="mt-2 w-full accent-primary"
-                          />
-                        ) : (
-                          <p className="mt-2 text-xs text-muted-foreground">{t('postings.noNegotiationRoom')}</p>
-                        )}
-                      </div>
-                    </>
-                  ) : (
-                    <Textarea
-                      placeholder={t('postings.negotiateMessage')}
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value)}
-                    />
-                  )}
-
-                  <Button
-                    variant="outline"
-                    className="mt-3 w-full"
-                    onClick={handleNegotiate}
-                    disabled={loading || (useSliderUI ? false : !message)}
-                  >
-                    {t('postings.sendOffer')}
-                  </Button>
-                </div>
               </>
             )}
 
