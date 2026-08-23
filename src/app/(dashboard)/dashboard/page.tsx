@@ -27,6 +27,9 @@ import LiveTrackingMap from '@/components/LiveTrackingMap';
 
 const TRACKING_POLL_INTERVAL_MS = 20000;
 
+const DASHBOARD_TABS = ['current', 'upcoming', 'recent'] as const;
+type DashboardTab = (typeof DASHBOARD_TABS)[number];
+
 const NOTIFICATION_LABEL_KEY: Record<AppNotification['type'], string> = {
   lane_match: 'notifications.laneMatch',
   broadcast: 'notifications.broadcast',
@@ -94,6 +97,7 @@ export default function DashboardPage() {
 
   const [postings, setPostings] = useState<Posting[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [dashboardTab, setDashboardTab] = useState<DashboardTab>('current');
   const [paymentLogs, setPaymentLogs] = useState<PaymentTrackingLog[]>([]);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [bannerPosting, setBannerPosting] = useState<Posting | null>(null);
@@ -407,149 +411,219 @@ export default function DashboardPage() {
         </Card>
       )}
 
-      {isShipper && currentLoad && (
-        <Card className="border-primary/30">
-          <CardContent className="flex flex-col gap-3 py-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="font-heading text-sm font-semibold">{t('tracking.currentLoadsTitle')}</h2>
-              <Link href="/dashboard/tracking" className="text-xs text-primary hover:underline">
-                {t('dashboard.viewAll')}
-              </Link>
-            </div>
-            <div className="flex items-center gap-1.5 text-sm font-medium">
-              <MapPin className="size-4 shrink-0 text-violet-600" />
-              {boardLocation(currentLoad.posting?.originCityLabel, currentLoad.posting?.originLabel)}
-              <ArrowRight className="size-3.5 shrink-0 text-muted-foreground" />
-              {boardLocation(currentLoad.posting?.destinations[0]?.cityLabel, currentLoad.posting?.destinations[0]?.label)}
-            </div>
-            {currentLoadTracking?.latestPing && currentLoad.posting?.destinations[0] ? (
-              <>
-                <LiveTrackingMap
-                  className="h-48 w-full overflow-hidden rounded-md"
-                  origin={{ lat: Number(currentLoad.posting.originLat), lng: Number(currentLoad.posting.originLng) }}
-                  destination={{
-                    lat: Number(currentLoad.posting.destinations[0].lat),
-                    lng: Number(currentLoad.posting.destinations[0].lng),
-                  }}
-                  current={{ lat: Number(currentLoadTracking.latestPing.lat), lng: Number(currentLoadTracking.latestPing.lng) }}
-                  trail={currentLoadTracking.history.map((h) => ({ lat: Number(h.lat), lng: Number(h.lng) }))}
-                />
-                <p className="text-xs text-muted-foreground">
-                  {t('bookingDetail.lastUpdated', { time: timeAgo(currentLoadTracking.latestPing.recordedAt) })}
-                </p>
-              </>
-            ) : (
-              <p className="text-sm text-muted-foreground">{t('bookingDetail.noLocationYet')}</p>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
       <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardContent className="py-4">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="font-heading text-sm font-semibold">
-                {isShipper ? t('dashboard.recentLoads') : t('dashboard.recentBookings')}
-              </h2>
-              <Link href="/postings" className="text-xs text-primary hover:underline">
-                {t('dashboard.viewAll')}
-              </Link>
-            </div>
-            {recentPostings.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t('dashboard.empty')}</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b text-left text-xs text-muted-foreground">
-                      <th className="py-2 pr-3 font-medium">{t('dashboard.tableLoadId')}</th>
-                      <th className="py-2 pr-3 font-medium">{t('dashboard.tableRoute')}</th>
-                      <th className="py-2 pr-3 font-medium">{t('dashboard.tableLoadType')}</th>
-                      <th className="py-2 pr-3 font-medium">{t('dashboard.tablePrice')}</th>
-                      <th className="py-2 pr-3 font-medium">{t('dashboard.tableStatus')}</th>
-                      <th className="py-2 font-medium">{t('dashboard.tablePostedOn')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recentPostings.map((p) => {
-                      const badge = statusBadge(p.status);
-                      return (
-                        <tr key={p.id} className="border-b last:border-0 hover:bg-accent/40">
-                          <td className="py-2.5 pr-3">
-                            <Link href={`/postings/${p.id}`} className="text-primary hover:underline">
-                              RL-{p.id.slice(0, 6).toUpperCase()}
-                            </Link>
-                          </td>
-                          <td className="py-2.5 pr-3 whitespace-nowrap">
-                            {boardLocation(p.originCityLabel, p.originLabel)} &rarr;{' '}
-                            {boardLocation(p.destinations[0]?.cityLabel, p.destinations[0]?.label)}
-                          </td>
-                          <td className="py-2.5 pr-3">
-                            {p.loadType === 'full' ? t('postings.loadFull') : t('postings.loadPartOk')}
-                          </td>
-                          <td className="py-2.5 pr-3">
-                            {p.priceAmount ? formatMoney(Number(p.priceAmount)) : t('postings.notSpecified')}
-                          </td>
-                          <td className="py-2.5 pr-3">
-                            <Badge variant={badge.variant}>{badge.label}</Badge>
-                          </td>
-                          <td className="py-2.5 whitespace-nowrap text-muted-foreground">
-                            {new Date(p.createdAt).toLocaleDateString('en-IN', {
-                              day: '2-digit',
-                              month: 'short',
-                              year: 'numeric',
-                            })}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+        {isShipper ? (
+          <Card className="lg:col-span-2">
+            <CardContent className="py-4">
+              <div className="mb-3 flex items-center gap-5 border-b">
+                {DASHBOARD_TABS.map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setDashboardTab(tab)}
+                    className={cn(
+                      'relative pb-2.5 text-sm font-medium transition-colors',
+                      dashboardTab === tab ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
+                    )}
+                  >
+                    {t(`dashboard.tab${tab.charAt(0).toUpperCase()}${tab.slice(1)}`)}
+                    {dashboardTab === tab && (
+                      <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-primary" />
+                    )}
+                  </button>
+                ))}
               </div>
-            )}
-          </CardContent>
-        </Card>
+
+              {dashboardTab === 'current' &&
+                (currentLoad ? (
+                  <div className="flex flex-col gap-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 text-sm font-medium">
+                        <MapPin className="size-4 shrink-0 text-violet-600" />
+                        {boardLocation(currentLoad.posting?.originCityLabel, currentLoad.posting?.originLabel)}
+                        <ArrowRight className="size-3.5 shrink-0 text-muted-foreground" />
+                        {boardLocation(currentLoad.posting?.destinations[0]?.cityLabel, currentLoad.posting?.destinations[0]?.label)}
+                      </div>
+                      <Link href="/dashboard/tracking" className="text-xs text-primary hover:underline">
+                        {t('dashboard.viewAll')}
+                      </Link>
+                    </div>
+                    {currentLoadTracking?.latestPing && currentLoad.posting?.destinations[0] ? (
+                      <>
+                        <LiveTrackingMap
+                          className="h-48 w-full overflow-hidden rounded-md"
+                          origin={{ lat: Number(currentLoad.posting.originLat), lng: Number(currentLoad.posting.originLng) }}
+                          destination={{
+                            lat: Number(currentLoad.posting.destinations[0].lat),
+                            lng: Number(currentLoad.posting.destinations[0].lng),
+                          }}
+                          current={{ lat: Number(currentLoadTracking.latestPing.lat), lng: Number(currentLoadTracking.latestPing.lng) }}
+                          trail={currentLoadTracking.history.map((h) => ({ lat: Number(h.lat), lng: Number(h.lng) }))}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          {t('bookingDetail.lastUpdated', { time: timeAgo(currentLoadTracking.latestPing.recordedAt) })}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">{t('bookingDetail.noLocationYet')}</p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">{t('tracking.empty')}</p>
+                ))}
+
+              {dashboardTab === 'upcoming' &&
+                (upcomingLoadsShipper.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">{t('tracking.empty')}</p>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    {upcomingLoadsShipper.map((b) => (
+                      <Link
+                        key={b.id}
+                        href={`/bookings/${b.id}`}
+                        className="block rounded-lg border p-2.5 hover:bg-accent/40"
+                      >
+                        <p className="text-sm font-medium">
+                          {b.posting
+                            ? `${boardLocation(b.posting.originCityLabel, b.posting.originLabel)} → ${boardLocation(b.posting.destinations[0]?.cityLabel, b.posting.destinations[0]?.label)}`
+                            : '—'}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {b.counterpartyContact?.name ?? t('postings.notSelected')} &middot;{' '}
+                          {b.posting?.availableFromDate
+                            ? new Date(b.posting.availableFromDate).toLocaleDateString('en-IN', {
+                                day: '2-digit',
+                                month: 'short',
+                              })
+                            : t('postings.notSpecified')}
+                        </p>
+                      </Link>
+                    ))}
+                  </div>
+                ))}
+
+              {dashboardTab === 'recent' &&
+                (recentPostings.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">{t('dashboard.empty')}</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b text-left text-xs text-muted-foreground">
+                          <th className="py-2 pr-3 font-medium">{t('dashboard.tableLoadId')}</th>
+                          <th className="py-2 pr-3 font-medium">{t('dashboard.tableRoute')}</th>
+                          <th className="py-2 pr-3 font-medium">{t('dashboard.tableLoadType')}</th>
+                          <th className="py-2 pr-3 font-medium">{t('dashboard.tablePrice')}</th>
+                          <th className="py-2 pr-3 font-medium">{t('dashboard.tableStatus')}</th>
+                          <th className="py-2 font-medium">{t('dashboard.tablePostedOn')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {recentPostings.map((p) => {
+                          const badge = statusBadge(p.status);
+                          return (
+                            <tr key={p.id} className="border-b last:border-0 hover:bg-accent/40">
+                              <td className="py-2.5 pr-3">
+                                <Link href={`/postings/${p.id}`} className="text-primary hover:underline">
+                                  RL-{p.id.slice(0, 6).toUpperCase()}
+                                </Link>
+                              </td>
+                              <td className="py-2.5 pr-3 whitespace-nowrap">
+                                {boardLocation(p.originCityLabel, p.originLabel)} &rarr;{' '}
+                                {boardLocation(p.destinations[0]?.cityLabel, p.destinations[0]?.label)}
+                              </td>
+                              <td className="py-2.5 pr-3">
+                                {p.loadType === 'full' ? t('postings.loadFull') : t('postings.loadPartOk')}
+                              </td>
+                              <td className="py-2.5 pr-3">
+                                {p.priceAmount ? formatMoney(Number(p.priceAmount)) : t('postings.notSpecified')}
+                              </td>
+                              <td className="py-2.5 pr-3">
+                                <Badge variant={badge.variant}>{badge.label}</Badge>
+                              </td>
+                              <td className="py-2.5 whitespace-nowrap text-muted-foreground">
+                                {new Date(p.createdAt).toLocaleDateString('en-IN', {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  year: 'numeric',
+                                })}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                ))}
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="lg:col-span-2">
+            <CardContent className="py-4">
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="font-heading text-sm font-semibold">{t('dashboard.recentBookings')}</h2>
+                <Link href="/postings" className="text-xs text-primary hover:underline">
+                  {t('dashboard.viewAll')}
+                </Link>
+              </div>
+              {recentPostings.length === 0 ? (
+                <p className="text-sm text-muted-foreground">{t('dashboard.empty')}</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b text-left text-xs text-muted-foreground">
+                        <th className="py-2 pr-3 font-medium">{t('dashboard.tableLoadId')}</th>
+                        <th className="py-2 pr-3 font-medium">{t('dashboard.tableRoute')}</th>
+                        <th className="py-2 pr-3 font-medium">{t('dashboard.tableLoadType')}</th>
+                        <th className="py-2 pr-3 font-medium">{t('dashboard.tablePrice')}</th>
+                        <th className="py-2 pr-3 font-medium">{t('dashboard.tableStatus')}</th>
+                        <th className="py-2 font-medium">{t('dashboard.tablePostedOn')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recentPostings.map((p) => {
+                        const badge = statusBadge(p.status);
+                        return (
+                          <tr key={p.id} className="border-b last:border-0 hover:bg-accent/40">
+                            <td className="py-2.5 pr-3">
+                              <Link href={`/postings/${p.id}`} className="text-primary hover:underline">
+                                RL-{p.id.slice(0, 6).toUpperCase()}
+                              </Link>
+                            </td>
+                            <td className="py-2.5 pr-3 whitespace-nowrap">
+                              {boardLocation(p.originCityLabel, p.originLabel)} &rarr;{' '}
+                              {boardLocation(p.destinations[0]?.cityLabel, p.destinations[0]?.label)}
+                            </td>
+                            <td className="py-2.5 pr-3">
+                              {p.loadType === 'full' ? t('postings.loadFull') : t('postings.loadPartOk')}
+                            </td>
+                            <td className="py-2.5 pr-3">
+                              {p.priceAmount ? formatMoney(Number(p.priceAmount)) : t('postings.notSpecified')}
+                            </td>
+                            <td className="py-2.5 pr-3">
+                              <Badge variant={badge.variant}>{badge.label}</Badge>
+                            </td>
+                            <td className="py-2.5 whitespace-nowrap text-muted-foreground">
+                              {new Date(p.createdAt).toLocaleDateString('en-IN', {
+                                day: '2-digit',
+                                month: 'short',
+                                year: 'numeric',
+                              })}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <div className="flex flex-col gap-4">
           {isShipper ? (
             <>
-              <Card>
-                <CardContent className="py-4">
-                  <h2 className="mb-3 font-heading text-sm font-semibold">{t('dashboard.upcomingLoadTitle')}</h2>
-                  {upcomingLoadsShipper.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">{t('tracking.empty')}</p>
-                  ) : (
-                    <div className="flex flex-col gap-3">
-                      {upcomingLoadsShipper.map((b) => (
-                        <Link
-                          key={b.id}
-                          href={`/bookings/${b.id}`}
-                          className="block rounded-lg border p-2.5 hover:bg-accent/40"
-                        >
-                          <p className="text-sm font-medium">
-                            {b.posting
-                              ? `${boardLocation(b.posting.originCityLabel, b.posting.originLabel)} → ${boardLocation(b.posting.destinations[0]?.cityLabel, b.posting.destinations[0]?.label)}`
-                              : '—'}
-                          </p>
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            {b.counterpartyContact?.name ?? t('postings.notSelected')} &middot;{' '}
-                            {b.posting?.availableFromDate
-                              ? new Date(b.posting.availableFromDate).toLocaleDateString('en-IN', {
-                                  day: '2-digit',
-                                  month: 'short',
-                                })
-                              : t('postings.notSpecified')}
-                          </p>
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                  <Link href="/bookings" className="mt-3 block text-center text-sm text-primary hover:underline">
-                    {t('dashboard.viewAllBookings')}
-                  </Link>
-                </CardContent>
-              </Card>
               <Card>
                 <CardContent className="py-4">
                   <h2 className="mb-3 font-heading text-sm font-semibold">{t('dashboard.recentActivities')}</h2>
