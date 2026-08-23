@@ -86,12 +86,17 @@ export function PlaceAutocompleteInput({
       setCoords({ top: rect.bottom + 4, left: rect.left, width: rect.width });
     };
     updateCoords();
-    const onScroll = () => setOpen(false);
-    window.addEventListener('scroll', onScroll, true);
-    window.addEventListener('resize', onScroll);
+    // Reposition rather than close on scroll — closing on scroll (fine for
+    // DateField's button trigger) breaks this on mobile specifically:
+    // focusing this text input opens the on-screen keyboard, which the OS
+    // handles by auto-scrolling the field into view, firing a scroll event
+    // instantly and closing the list before the user can ever tap a
+    // suggestion.
+    window.addEventListener('scroll', updateCoords, true);
+    window.addEventListener('resize', updateCoords);
     return () => {
-      window.removeEventListener('scroll', onScroll, true);
-      window.removeEventListener('resize', onScroll);
+      window.removeEventListener('scroll', updateCoords, true);
+      window.removeEventListener('resize', updateCoords);
     };
   }, [open]);
 
