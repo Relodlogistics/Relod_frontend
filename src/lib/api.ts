@@ -53,8 +53,19 @@ async function request<T>(
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({ message: res.statusText }));
-    if (res.status === 401 && path.startsWith('/admin/') && path !== '/admin/auth/login' && typeof window !== 'undefined') {
-      window.dispatchEvent(new Event('admin-session-invalid'));
+    // A stale token (session invalidated server-side, or just expired) used
+    // to fail every authenticated call silently forever — nothing ever
+    // cleared the dead session or sent the user back to log in, so the
+    // whole app just looked broken. This was only ever wired up for admin;
+    // now every session type recovers the same way.
+    if (res.status === 401 && typeof window !== 'undefined') {
+      if (path.startsWith('/admin/') && path !== '/admin/auth/login') {
+        window.dispatchEvent(new Event('admin-session-invalid'));
+      } else if (path.startsWith('/driver/')) {
+        window.dispatchEvent(new Event('driver-session-invalid'));
+      } else if (token) {
+        window.dispatchEvent(new Event('session-invalid'));
+      }
     }
     throw new ApiError(body.message ?? 'Request failed', res.status);
   }

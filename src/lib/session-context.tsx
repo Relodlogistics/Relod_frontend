@@ -26,6 +26,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const raw = localStorage.getItem(STORAGE_KEY);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (raw) setSessionRaw(JSON.parse(raw));
     setLoaded(true);
   }, []);
@@ -39,6 +40,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem(STORAGE_KEY);
     setSessionRaw(null);
   };
+
+  useEffect(() => {
+    const onInvalid = () => clearSession();
+    window.addEventListener('session-invalid', onInvalid);
+    return () => window.removeEventListener('session-invalid', onInvalid);
+  }, []);
 
   return (
     <SessionContext.Provider value={{ session, setSession, clearSession, loaded }}>

@@ -46,6 +46,12 @@ export function DriverSessionProvider({ children }: { children: React.ReactNode 
     setDriverSessionRaw(null);
   };
 
+  useEffect(() => {
+    const onInvalid = () => clearDriverSession();
+    window.addEventListener('driver-session-invalid', onInvalid);
+    return () => window.removeEventListener('driver-session-invalid', onInvalid);
+  }, []);
+
   return (
     <DriverSessionContext.Provider
       value={{ driverSession, setDriverSession, clearDriverSession, loaded }}

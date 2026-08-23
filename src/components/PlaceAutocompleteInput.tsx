@@ -57,10 +57,6 @@ export function PlaceAutocompleteInput({
   const [open, setOpen] = useState(false);
   const [searched, setSearched] = useState(false);
   const [coords, setCoords] = useState<{ top: number; left: number; width: number } | null>(null);
-  // Temporary — remove once the mobile "no dropdown ever appears" bug is
-  // found. Shows exactly where the flow is breaking without needing
-  // devtools, since the user can't get console access on a stock APK.
-  const [debug, setDebug] = useState('idle');
   const sessionTokenRef = useRef(crypto.randomUUID());
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -110,17 +106,13 @@ export function PlaceAutocompleteInput({
   const handleChange = (text: string) => {
     onChange(text);
     setSearched(false);
-    setDebug(`typed "${text}" (session: ${session ? 'yes' : 'NO'})`);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (!session || text.trim().length < 2) {
       setSuggestions([]);
       setOpen(false);
-      if (!session) setDebug('BLOCKED: no session');
       return;
     }
-    setDebug(`waiting ${DEBOUNCE_MS}ms...`);
     debounceRef.current = setTimeout(async () => {
-      setDebug('fetching...');
       try {
         const results = await api.geocodeAutocomplete(session.accessToken, text, sessionTokenRef.current);
         setSuggestions(results);
@@ -128,10 +120,11 @@ export function PlaceAutocompleteInput({
         // stays closed is indistinguishable from the feature being broken.
         // "No matches" tells the user it's a spelling/coverage issue, not a bug.
         setOpen(true);
-        setDebug(`got ${results.length} result(s), open=true`);
-      } catch (e) {
+      } catch {
+        // A 401 here now triggers a global session-invalid event (see
+        // api.ts) that clears the stale session and sends the user back to
+        // login — nothing further to do in this one field.
         setSuggestions([]);
-        setDebug(`FETCH ERROR: ${e instanceof Error ? e.message : String(e)}`);
       } finally {
         setSearched(true);
       }
@@ -166,9 +159,6 @@ export function PlaceAutocompleteInput({
           onFocus={() => setOpen(suggestions.length > 0 || searched)}
         />
       </div>
-      <p className="mt-1 border border-dashed border-amber-500 bg-amber-50 px-2 py-1 font-mono text-[10px] text-amber-900">
-        DEBUG: {debug} | open={String(open)} | coords={coords ? 'set' : 'null'} | suggestions={suggestions.length}
-      </p>
       {open && coords && typeof document !== 'undefined' &&
         createPortal(
           <ul
