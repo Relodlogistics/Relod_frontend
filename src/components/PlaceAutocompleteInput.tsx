@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { MapPin } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { api } from '@/lib/api';
@@ -52,17 +53,47 @@ export function PlaceAutocompleteInput({
   const { session } = useSession();
   const [suggestions, setSuggestions] = useState<{ placeId: string; label: string }[]>([]);
   const [open, setOpen] = useState(false);
+  const [coords, setCoords] = useState<{ top: number; left: number; width: number } | null>(null);
   const sessionTokenRef = useRef(crypto.randomUUID());
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (
+        containerRef.current && !containerRef.current.contains(target) &&
+        (!listRef.current || !listRef.current.contains(target))
+      ) {
+        setOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Every Card in this app has overflow-hidden by default (for rounded image
+  // corners) — that silently clips an inline dropdown whenever the field
+  // sits anywhere the suggestion list would overflow the card's box, exactly
+  // the invisible-calendar bug fixed for DateField. Same fix here: portal
+  // the list to document.body with fixed positioning so it can't be clipped.
+  useEffect(() => {
+    if (!open) return;
+    const updateCoords = () => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      setCoords({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+    };
+    updateCoords();
+    const onScroll = () => setOpen(false);
+    window.addEventListener('scroll', onScroll, true);
+    window.addEventListener('resize', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll, true);
+      window.removeEventListener('resize', onScroll);
+    };
+  }, [open]);
 
   const handleChange = (text: string) => {
     onChange(text);
@@ -111,22 +142,28 @@ export function PlaceAutocompleteInput({
           onFocus={() => setOpen(suggestions.length > 0)}
         />
       </div>
-      {open && (
-        <ul className="absolute z-20 mt-1 w-full overflow-hidden rounded-lg border bg-popover shadow-md">
-          {suggestions.map((s) => (
-            <li key={s.placeId}>
-              <button
-                type="button"
-                className="flex w-full items-start gap-1.5 px-3 py-2 text-left text-sm hover:bg-accent"
-                onClick={() => handleSelect(s)}
-              >
-                <MapPin className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
-                <span>{s.label}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+      {open && coords && typeof document !== 'undefined' &&
+        createPortal(
+          <ul
+            ref={listRef}
+            className="fixed z-50 overflow-hidden rounded-lg border bg-popover shadow-md"
+            style={{ top: coords.top, left: coords.left, width: coords.width }}
+          >
+            {suggestions.map((s) => (
+              <li key={s.placeId}>
+                <button
+                  type="button"
+                  className="flex w-full items-start gap-1.5 px-3 py-2 text-left text-sm hover:bg-accent"
+                  onClick={() => handleSelect(s)}
+                >
+                  <MapPin className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+                  <span>{s.label}</span>
+                </button>
+              </li>
+            ))}
+          </ul>,
+          document.body,
+        )}
     </div>
   );
 }
