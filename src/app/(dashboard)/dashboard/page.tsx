@@ -202,12 +202,9 @@ export default function DashboardPage() {
   const recentPostings = [...postings]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 5);
-  const upcomingBookingsSorted = [...upcomingBookings]
-    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-    .slice(0, 4);
-  // Shipper-only, and deliberately excludes 'in_transit' — that's already
-  // covered by the Current Load card above, so this is just "what's next".
-  const upcomingLoadsShipper = bookings
+  // Deliberately excludes 'in_transit' — that's the Current Load tab, so
+  // this is just "what's next" for either a shipper or a carrier.
+  const upcomingLoads = bookings
     .filter((b) => b.status === 'accepted')
     .sort((a, b) => {
       const aDate = a.posting?.availableFromDate ? new Date(a.posting.availableFromDate).getTime() : 0;
@@ -412,10 +409,9 @@ export default function DashboardPage() {
       )}
 
       <div className="grid gap-4 lg:grid-cols-3">
-        {isShipper ? (
-          <Card className="lg:col-span-2">
-            <CardContent className="py-4">
-              <div className="mb-3 flex items-center gap-5 border-b">
+        <Card className="lg:col-span-2">
+          <CardContent className="py-4">
+            <div className="mb-3 flex items-center gap-5 border-b">
                 {DASHBOARD_TABS.map((tab) => (
                   <button
                     key={tab}
@@ -472,11 +468,11 @@ export default function DashboardPage() {
                 ))}
 
               {dashboardTab === 'upcoming' &&
-                (upcomingLoadsShipper.length === 0 ? (
+                (upcomingLoads.length === 0 ? (
                   <p className="text-sm text-muted-foreground">{t('tracking.empty')}</p>
                 ) : (
                   <div className="flex flex-col gap-3">
-                    {upcomingLoadsShipper.map((b) => (
+                    {upcomingLoads.map((b) => (
                       <Link
                         key={b.id}
                         href={`/bookings/${b.id}`}
@@ -556,167 +552,61 @@ export default function DashboardPage() {
                 ))}
             </CardContent>
           </Card>
-        ) : (
-          <Card className="lg:col-span-2">
+
+        <div className="flex flex-col gap-4">
+          <Card>
             <CardContent className="py-4">
-              <div className="mb-3 flex items-center justify-between">
-                <h2 className="font-heading text-sm font-semibold">{t('dashboard.recentBookings')}</h2>
-                <Link href="/postings" className="text-xs text-primary hover:underline">
-                  {t('dashboard.viewAll')}
-                </Link>
-              </div>
-              {recentPostings.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{t('dashboard.empty')}</p>
+              <h2 className="mb-3 font-heading text-sm font-semibold">{t('dashboard.recentActivities')}</h2>
+              {notifications.length === 0 ? (
+                <p className="text-sm text-muted-foreground">{t('notifications.empty')}</p>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b text-left text-xs text-muted-foreground">
-                        <th className="py-2 pr-3 font-medium">{t('dashboard.tableLoadId')}</th>
-                        <th className="py-2 pr-3 font-medium">{t('dashboard.tableRoute')}</th>
-                        <th className="py-2 pr-3 font-medium">{t('dashboard.tableLoadType')}</th>
-                        <th className="py-2 pr-3 font-medium">{t('dashboard.tablePrice')}</th>
-                        <th className="py-2 pr-3 font-medium">{t('dashboard.tableStatus')}</th>
-                        <th className="py-2 font-medium">{t('dashboard.tablePostedOn')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {recentPostings.map((p) => {
-                        const badge = statusBadge(p.status);
-                        return (
-                          <tr key={p.id} className="border-b last:border-0 hover:bg-accent/40">
-                            <td className="py-2.5 pr-3">
-                              <Link href={`/postings/${p.id}`} className="text-primary hover:underline">
-                                RL-{p.id.slice(0, 6).toUpperCase()}
-                              </Link>
-                            </td>
-                            <td className="py-2.5 pr-3 whitespace-nowrap">
-                              {boardLocation(p.originCityLabel, p.originLabel)} &rarr;{' '}
-                              {boardLocation(p.destinations[0]?.cityLabel, p.destinations[0]?.label)}
-                            </td>
-                            <td className="py-2.5 pr-3">
-                              {p.loadType === 'full' ? t('postings.loadFull') : t('postings.loadPartOk')}
-                            </td>
-                            <td className="py-2.5 pr-3">
-                              {p.priceAmount ? formatMoney(Number(p.priceAmount)) : t('postings.notSpecified')}
-                            </td>
-                            <td className="py-2.5 pr-3">
-                              <Badge variant={badge.variant}>{badge.label}</Badge>
-                            </td>
-                            <td className="py-2.5 whitespace-nowrap text-muted-foreground">
-                              {new Date(p.createdAt).toLocaleDateString('en-IN', {
-                                day: '2-digit',
-                                month: 'short',
-                                year: 'numeric',
-                              })}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                <div className="flex flex-col gap-3">
+                  {notifications.slice(0, 4).map((n) => (
+                    <div key={n.id} className="flex items-start gap-2">
+                      <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-600" />
+                      <div>
+                        <p className="text-sm">{t(NOTIFICATION_LABEL_KEY[n.type])}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(n.createdAt).toLocaleString('en-IN', {
+                            day: '2-digit',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </CardContent>
           </Card>
-        )}
-
-        <div className="flex flex-col gap-4">
-          {isShipper ? (
-            <>
-              <Card>
-                <CardContent className="py-4">
-                  <h2 className="mb-3 font-heading text-sm font-semibold">{t('dashboard.recentActivities')}</h2>
-                  {notifications.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">{t('notifications.empty')}</p>
-                  ) : (
-                    <div className="flex flex-col gap-3">
-                      {notifications.slice(0, 4).map((n) => (
-                        <div key={n.id} className="flex items-start gap-2">
-                          <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-600" />
-                          <div>
-                            <p className="text-sm">{t(NOTIFICATION_LABEL_KEY[n.type])}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {new Date(n.createdAt).toLocaleString('en-IN', {
-                                day: '2-digit',
-                                month: 'short',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="py-4">
-                  <h2 className="mb-3 font-heading text-sm font-semibold">{t('dashboard.paymentsOverview')}</h2>
-                  <p className="text-xs text-muted-foreground">{t('dashboard.statTotalSpentWeek')}</p>
-                  <p className="mb-3 text-xl font-semibold">{formatMoney(weekAmount)}</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="rounded-lg bg-muted/50 p-2.5">
-                      <p className="text-xs text-muted-foreground">{t('dashboard.statPendingPayments')}</p>
-                      <p className="text-sm font-semibold">{formatMoney(pendingAmount)}</p>
-                    </div>
-                    <div className="rounded-lg bg-muted/50 p-2.5">
-                      <p className="text-xs text-muted-foreground">{t('dashboard.statCompleted')}</p>
-                      <p className="text-sm font-semibold">
-                        {t(
-                          completedPaymentsCount === 1
-                            ? 'dashboard.completedPaymentsCount'
-                            : 'dashboard.completedPaymentsCount_other',
-                          { count: completedPaymentsCount },
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </>
-          ) : (
-            <Card>
-              <CardContent className="py-4">
-                <h2 className="mb-3 font-heading text-sm font-semibold">{t('dashboard.upcomingBookingsList')}</h2>
-                {upcomingBookingsSorted.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">{t('tracking.empty')}</p>
-                ) : (
-                  <div className="flex flex-col gap-3">
-                    {upcomingBookingsSorted.map((b) => {
-                      const badge = statusBadge(b.status);
-                      return (
-                        <Link
-                          key={b.id}
-                          href={`/bookings/${b.id}`}
-                          className="block rounded-lg border p-2.5 hover:bg-accent/40"
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <p className="text-sm font-medium">
-                              {b.posting
-                                ? `${boardLocation(b.posting.originCityLabel, b.posting.originLabel)} → ${boardLocation(b.posting.destinations[0]?.cityLabel, b.posting.destinations[0]?.label)}`
-                                : '—'}
-                            </p>
-                            <Badge variant={badge.variant} className="shrink-0 text-[10px]">
-                              {badge.label}
-                            </Badge>
-                          </div>
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            {b.agreedPrice ? formatMoney(Number(b.agreedPrice)) : t('postings.notSpecified')} &middot;{' '}
-                            {new Date(b.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
-                          </p>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                )}
-                <Link href="/bookings" className="mt-3 block text-center text-sm text-primary hover:underline">
-                  {t('dashboard.viewAllBookings')}
-                </Link>
-              </CardContent>
-            </Card>
-          )}
+          <Card>
+            <CardContent className="py-4">
+              <h2 className="mb-3 font-heading text-sm font-semibold">{t('dashboard.paymentsOverview')}</h2>
+              <p className="text-xs text-muted-foreground">
+                {t(isShipper ? 'dashboard.statTotalSpentWeek' : 'dashboard.statEarningsWeek')}
+              </p>
+              <p className="mb-3 text-xl font-semibold">{formatMoney(weekAmount)}</p>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="rounded-lg bg-muted/50 p-2.5">
+                  <p className="text-xs text-muted-foreground">{t('dashboard.statPendingPayments')}</p>
+                  <p className="text-sm font-semibold">{formatMoney(pendingAmount)}</p>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-2.5">
+                  <p className="text-xs text-muted-foreground">{t('dashboard.statCompleted')}</p>
+                  <p className="text-sm font-semibold">
+                    {t(
+                      completedPaymentsCount === 1
+                        ? 'dashboard.completedPaymentsCount'
+                        : 'dashboard.completedPaymentsCount_other',
+                      { count: completedPaymentsCount },
+                    )}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
