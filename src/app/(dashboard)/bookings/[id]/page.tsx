@@ -419,7 +419,10 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
                 </a>
               )}
 
-            {booking && (booking.status === 'in_transit' || booking.status === 'completed') && (
+            {booking &&
+              (booking.status === 'accepted' ||
+                booking.status === 'in_transit' ||
+                booking.status === 'completed') && (
               <div className="rounded-md border p-3">
                 <p className="mb-2 text-sm font-medium">{t('bookingDetail.trackingTitle')}</p>
                 {trackingError && (
