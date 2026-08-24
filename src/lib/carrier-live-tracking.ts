@@ -25,6 +25,11 @@ const LocationStatus = registerPlugin<{ isEnabled(): Promise<{ enabled: boolean 
 const MIN_PING_INTERVAL_MS = 25000;
 const OFF_REMINDER_INTERVAL_MS = 30 * 60 * 1000; // background nudge, at most once every 30 min
 const HEALTH_CHECK_INTERVAL_MS = 5000; // cheap synchronous OS check, no GPS hardware involved
+// The OS location toggle can stay "on" while the watcher's fix goes stale
+// (weak signal, Doze/battery throttling killing updates without erroring) —
+// without this, 'live' never reverts, so the pill lies indefinitely and
+// shippers match against a truck's last-known spot from hours ago.
+const STALE_FIX_MS = 3 * 60 * 1000;
 
 export type LiveTrackingStatus = 'starting' | 'live' | 'off' | 'unsupported';
 
@@ -32,7 +37,10 @@ let status: LiveTrackingStatus = 'unsupported';
 let watcherId: string | null = null;
 let healthCheckId: ReturnType<typeof setInterval> | null = null;
 let lastSentAt = 0;
+let lastFixAt = 0;
+let lastRestartAt = 0;
 let lastOffNotifiedAt = 0;
+let trackingCreds: { token: string; vehicleId: string } | null = null;
 const listeners = new Set<(s: LiveTrackingStatus) => void>();
 
 function setStatus(next: LiveTrackingStatus) {
@@ -67,11 +75,27 @@ export function isNativeApp(): boolean {
 async function checkLocationHealth(): Promise<void> {
   try {
     const { enabled } = await LocationStatus.isEnabled();
-    if (enabled) {
-      if (status === 'off') setStatus('starting'); // real GPS fix from the watcher flips this to 'live'
-    } else {
+    if (!enabled) {
       setStatus('off');
       notifyLocationOff();
+      return;
+    }
+    if (status === 'off') {
+      setStatus('starting'); // real GPS fix from the watcher flips this to 'live'
+      return;
+    }
+    if (status === 'live' && lastFixAt > 0 && Date.now() - lastFixAt > STALE_FIX_MS) {
+      // The provider is stuck on an old fix rather than erroring outright —
+      // restarting the watcher is what actually unsticks it on Android.
+      const now = Date.now();
+      if (now - lastRestartAt < STALE_FIX_MS) return;
+      lastRestartAt = now;
+      setStatus('starting');
+      const creds = trackingCreds;
+      if (creds) {
+        await stopLiveTracking();
+        await startLiveTracking(creds.token, creds.vehicleId);
+      }
     }
   } catch {
     // best-effort — if the native check itself fails, fall back to whatever
@@ -98,6 +122,7 @@ export async function startLiveTracking(token: string, vehicleId: string): Promi
   }
   if (watcherId) return;
   setStatus('starting');
+  trackingCreds = { token, vehicleId };
 
   try {
     await LocalNotifications.requestPermissions();
@@ -121,6 +146,7 @@ export async function startLiveTracking(token: string, vehicleId: string): Promi
         }
         if (!position) return;
         setStatus('live');
+        lastFixAt = Date.now();
 
         const now = Date.now();
         if (now - lastSentAt < MIN_PING_INTERVAL_MS) return;
@@ -147,6 +173,9 @@ export async function startLiveTracking(token: string, vehicleId: string): Promi
 
 export async function stopLiveTracking(): Promise<void> {
   stopHealthCheck();
+  trackingCreds = null;
+  lastFixAt = 0;
+  lastSentAt = 0;
   if (!watcherId) return;
   await BackgroundGeolocation.removeWatcher({ id: watcherId });
   watcherId = null;
