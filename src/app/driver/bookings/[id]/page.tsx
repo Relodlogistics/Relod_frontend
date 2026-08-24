@@ -76,6 +76,25 @@ export default function DriverBookingDetailPage({ params }: { params: Promise<{ 
     }
   };
 
+  const [tripOtp, setTripOtp] = useState('');
+  const [startTripError, setStartTripError] = useState<string | null>(null);
+  const [startingTrip, setStartingTrip] = useState(false);
+
+  const handleStartTrip = async () => {
+    if (!driverSession) return;
+    setStartTripError(null);
+    setStartingTrip(true);
+    try {
+      const updated = await api.driverStartTrip(driverSession.accessToken, id, tripOtp);
+      setBooking(updated);
+      setTripOtp('');
+    } catch (e) {
+      setStartTripError(e instanceof ApiError ? e.message : t('errors.generic'));
+    } finally {
+      setStartingTrip(false);
+    }
+  };
+
   if (!driverSession) return null;
 
   const badge = booking ? statusBadge(booking.status) : null;
@@ -120,6 +139,28 @@ export default function DriverBookingDetailPage({ params }: { params: Promise<{ 
 
           {booking?.agreedPrice && (
             <p className="text-2xl font-semibold">{formatMoney(Number(booking.agreedPrice))}</p>
+          )}
+
+          {booking?.status === 'accepted' && (
+            <div className="rounded-md border p-3">
+              <p className="text-sm font-medium">{t('bookingDetail.startTripTitle')}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{t('bookingDetail.startTripHint')}</p>
+              {startTripError && <p className="mt-2 text-xs text-destructive">{startTripError}</p>}
+              <div className="mt-2 flex gap-2">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={4}
+                  value={tripOtp}
+                  onChange={(e) => setTripOtp(e.target.value.replace(/\D/g, ''))}
+                  placeholder="0000"
+                  className="w-24 rounded-md border border-input px-3 py-2 text-center text-lg tracking-widest"
+                />
+                <Button className="flex-1" disabled={startingTrip || tripOtp.length !== 4} onClick={handleStartTrip}>
+                  {t('bookingDetail.startTripButton')}
+                </Button>
+              </div>
+            </div>
           )}
 
           {booking && booking.status !== 'cancelled' && (

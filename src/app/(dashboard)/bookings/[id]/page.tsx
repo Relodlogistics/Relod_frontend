@@ -205,6 +205,25 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
+  const [tripOtp, setTripOtp] = useState('');
+  const [startTripError, setStartTripError] = useState<string | null>(null);
+  const [startingTrip, setStartingTrip] = useState(false);
+
+  const handleStartTrip = async () => {
+    if (!session) return;
+    setStartTripError(null);
+    setStartingTrip(true);
+    try {
+      const updated = await api.startTrip(session.accessToken, id, tripOtp);
+      setBooking(updated);
+      setTripOtp('');
+    } catch (e) {
+      setStartTripError(e instanceof ApiError ? e.message : t('errors.generic'));
+    } finally {
+      setStartingTrip(false);
+    }
+  };
+
   const handleSubmitReview = async () => {
     if (!session || !reviewRating) return;
     setReviewError(null);
@@ -280,6 +299,40 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
               <div className="flex items-center justify-between rounded-md border p-3">
                 <p className="text-sm font-medium">{t('payment.status')}</p>
                 <Badge variant={paymentBadge.variant}>{paymentBadge.label}</Badge>
+              </div>
+            )}
+
+            {booking?.status === 'accepted' && session.userType === 'shipper' && booking.pickupOtp && (
+              <div className="rounded-md border border-primary/30 bg-primary/5 p-3">
+                <p className="text-sm font-medium">{t('bookingDetail.pickupOtpTitle')}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{t('bookingDetail.pickupOtpHint')}</p>
+                <p className="mt-2 text-center text-3xl font-bold tracking-[0.3em]">{booking.pickupOtp}</p>
+              </div>
+            )}
+
+            {booking?.status === 'accepted' && session.userType === 'carrier' && (
+              <div className="rounded-md border p-3">
+                <p className="text-sm font-medium">{t('bookingDetail.startTripTitle')}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{t('bookingDetail.startTripHint')}</p>
+                {startTripError && <p className="mt-2 text-xs text-destructive">{startTripError}</p>}
+                <div className="mt-2 flex gap-2">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={4}
+                    value={tripOtp}
+                    onChange={(e) => setTripOtp(e.target.value.replace(/\D/g, ''))}
+                    placeholder="0000"
+                    className="w-24 rounded-md border border-input px-3 py-2 text-center text-lg tracking-widest"
+                  />
+                  <Button
+                    className="flex-1"
+                    disabled={startingTrip || tripOtp.length !== 4}
+                    onClick={handleStartTrip}
+                  >
+                    {t('bookingDetail.startTripButton')}
+                  </Button>
+                </div>
               </div>
             )}
 

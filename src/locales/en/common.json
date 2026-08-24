@@ -651,6 +651,11 @@
   "bookingDetail": {
     "title": "Booking",
     "loading": "Loading…",
+    "pickupOtpTitle": "Pickup code",
+    "pickupOtpHint": "Read this out to the driver at pickup — they'll enter it to start the trip.",
+    "startTripTitle": "Start trip",
+    "startTripHint": "Ask the shipper for the pickup code and enter it here to confirm pickup.",
+    "startTripButton": "Start Trip",
     "messages": "Messages",
     "typeMessage": "Type a message…",
     "send": "Send",

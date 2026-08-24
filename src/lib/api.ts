@@ -530,6 +530,13 @@ export const api = {
   driverAcceptBooking: (token: string, bookingId: string) =>
     request<Booking>(`/driver/bookings/${bookingId}/accept`, { method: 'POST', token }),
 
+  driverStartTrip: (token: string, bookingId: string, otp: string) =>
+    request<Booking>(`/driver/bookings/${bookingId}/start-trip`, {
+      method: 'POST',
+      token,
+      body: JSON.stringify({ otp }),
+    }),
+
   driverSendBookingMessage: (token: string, bookingId: string, body: string) =>
     request<BookingMessage>(`/driver/bookings/${bookingId}/messages`, {
       method: 'POST',
@@ -563,6 +570,13 @@ export const api = {
 
   acceptBooking: (token: string, bookingId: string) =>
     request<Booking>(`/bookings/${bookingId}/accept`, { method: 'POST', token }),
+
+  startTrip: (token: string, bookingId: string, otp: string) =>
+    request<Booking>(`/bookings/${bookingId}/start-trip`, {
+      method: 'POST',
+      token,
+      body: JSON.stringify({ otp }),
+    }),
 
   submitReview: (token: string, bookingId: string, rating: number, comment?: string) =>
     request<Review>(`/bookings/${bookingId}/review`, {
@@ -1030,6 +1044,9 @@ export interface Booking {
   status: 'pending' | 'accepted' | 'in_transit' | 'completed' | 'cancelled';
   bookingType: 'instant_book' | 'negotiated';
   agreedPrice: string | null;
+  // Only ever present in the shipper's own view of their own booking — see
+  // BookingsService.getOne/listMine. Never sent to the carrier side.
+  pickupOtp?: string | null;
   createdAt: string;
   updatedAt: string;
   posting?: Posting;
