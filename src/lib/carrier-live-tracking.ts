@@ -25,6 +25,14 @@ const BatteryOptimization = registerPlugin<{
   isIgnoringBatteryOptimizations(): Promise<{ ignoring: boolean }>;
   requestIgnoreBatteryOptimizations(): Promise<{ requested: boolean }>;
 }>('BatteryOptimization');
+// Custom native plugin (android/app/.../OemAutostartPlugin.java) — beyond
+// stock Android's battery-optimization exemption above, several OEMs layer
+// their own proprietary "autostart" toggle on top with no public API, which
+// is what actually lets tracking survive the phone sitting idle for hours.
+const OemAutostart = registerPlugin<{
+  getManufacturer(): Promise<{ manufacturer: string; isKnownRestrictive: boolean }>;
+  openAutostartSettings(): Promise<{ opened: boolean }>;
+}>('OemAutostart');
 
 // Separate from the per-booking watcher in native-tracking.ts — this one
 // runs for the whole time a carrier is logged into the app (not just while
@@ -202,6 +210,23 @@ export async function stopLiveTracking(): Promise<void> {
 
 export async function openLocationSettings(): Promise<void> {
   await BackgroundGeolocation.openSettings();
+}
+
+export async function getOemAutostartInfo(): Promise<{ manufacturer: string; isKnownRestrictive: boolean } | null> {
+  if (!isNativeApp()) return null;
+  try {
+    return await OemAutostart.getManufacturer();
+  } catch {
+    return null;
+  }
+}
+
+export async function openOemAutostartSettings(): Promise<void> {
+  try {
+    await OemAutostart.openAutostartSettings();
+  } catch {
+    // best-effort — worst case the carrier ends up on the app's own settings page
+  }
 }
 
 // If the driver leaves the app to flip location back on in Settings, the

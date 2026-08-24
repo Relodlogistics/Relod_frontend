@@ -9,6 +9,7 @@ import { AdminSessionProvider } from "@/lib/admin-session-context";
 import { GlobalTopBar } from "@/components/GlobalTopBar";
 import { AppUpdateBanner } from "@/components/AppUpdateBanner";
 import { LocationOffModal } from "@/components/LocationOffModal";
+import { OemAutostartPrompt } from "@/components/OemAutostartPrompt";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { BookingAlertPopup } from "@/components/BookingAlertPopup";
 import { SITE_URL } from "@/lib/site";
@@ -61,6 +62,7 @@ export default async function RootLayout({
                   <GlobalTopBar />
                   <AppUpdateBanner />
                   <LocationOffModal />
+                  <OemAutostartPrompt />
                   <PullToRefresh />
                   <BookingAlertPopup />
                   {children}
