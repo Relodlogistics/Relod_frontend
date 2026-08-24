@@ -15,6 +15,16 @@ const BackgroundGeolocation = registerPlugin<BackgroundGeolocationPlugin>('Backg
 // caused the status to get stuck wrong both ways); this asks Android
 // directly instead of inferring it.
 const LocationStatus = registerPlugin<{ isEnabled(): Promise<{ enabled: boolean }> }>('LocationStatus');
+// Custom native plugin (android/app/.../BatteryOptimizationPlugin.java) —
+// most Indian-market OEMs (Xiaomi, Vivo, Oppo, Realme) kill this foreground
+// service within hours of the screen going off, despite its persistent
+// notification, unless the app is explicitly exempted from battery
+// optimization. Requesting this is what actually makes tracking survive the
+// app being backgrounded for a whole shift, not just a few minutes.
+const BatteryOptimization = registerPlugin<{
+  isIgnoringBatteryOptimizations(): Promise<{ ignoring: boolean }>;
+  requestIgnoreBatteryOptimizations(): Promise<{ requested: boolean }>;
+}>('BatteryOptimization');
 
 // Separate from the per-booking watcher in native-tracking.ts — this one
 // runs for the whole time a carrier is logged into the app (not just while
@@ -128,6 +138,14 @@ export async function startLiveTracking(token: string, vehicleId: string): Promi
     await LocalNotifications.requestPermissions();
   } catch {
     // notifications are a nice-to-have here — tracking still proceeds without them
+  }
+
+  try {
+    const { ignoring } = await BatteryOptimization.isIgnoringBatteryOptimizations();
+    if (!ignoring) await BatteryOptimization.requestIgnoreBatteryOptimizations();
+  } catch {
+    // best-effort — tracking still starts even if this device/OS version
+    // doesn't support the exemption dialog, or the carrier declines it
   }
 
   try {

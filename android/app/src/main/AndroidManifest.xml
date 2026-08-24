@@ -32,4 +32,10 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Lets us ask the OS to exempt Relod from battery-optimization killing
+    the live-tracking foreground service. Most Indian-market OEMs (Xiaomi,
+    Vivo, Oppo, Realme) suspend background services within hours of the
+    screen going off unless the app is explicitly whitelisted, regardless of
+    the persistent notification a foreground service normally guarantees. -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 </manifest>
