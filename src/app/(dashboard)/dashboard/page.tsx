@@ -18,14 +18,15 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { api, AppNotification, Posting, Booking, BookingTracking, PaymentTrackingLog } from '@/lib/api';
+import { api, ApiError, AppNotification, Posting, Booking, BookingTracking, PaymentTrackingLog } from '@/lib/api';
 import { useSession } from '@/lib/session-context';
 import { useDisplayName } from '@/lib/use-display-name';
-import { boardLocation, cn, formatMoney, timeAgo } from '@/lib/utils';
+import { boardLocation, cn, formatMoney, haversineKm, timeAgo } from '@/lib/utils';
 import { statusBadge } from '@/lib/status-badge';
 import LiveTrackingMap from '@/components/LiveTrackingMap';
 
 const TRACKING_POLL_INTERVAL_MS = 20000;
+const DELIVERY_RADIUS_KM = 5;
 
 const DASHBOARD_TABS = ['current', 'upcoming', 'recent'] as const;
 type DashboardTab = (typeof DASHBOARD_TABS)[number];
@@ -103,6 +104,8 @@ export default function DashboardPage() {
   const [bannerPosting, setBannerPosting] = useState<Posting | null>(null);
   const [currentLoadTracking, setCurrentLoadTracking] = useState<BookingTracking | null>(null);
   const [pendingTruckCount, setPendingTruckCount] = useState(0);
+  const [completingDelivery, setCompletingDelivery] = useState(false);
+  const [completeError, setCompleteError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!session) return;
@@ -168,6 +171,17 @@ export default function DashboardPage() {
   if (!session) return null;
 
   const isShipper = session.userType === 'shipper';
+  const currentLoadDestination = currentLoad?.posting?.destinations[0];
+  const distanceToDeliveryKm =
+    currentLoadTracking?.latestPing && currentLoadDestination
+      ? haversineKm(
+          Number(currentLoadTracking.latestPing.lat),
+          Number(currentLoadTracking.latestPing.lng),
+          Number(currentLoadDestination.lat),
+          Number(currentLoadDestination.lng),
+        )
+      : null;
+  const withinDeliveryRadius = distanceToDeliveryKm != null && distanceToDeliveryKm <= DELIVERY_RADIUS_KM;
   const now = new Date();
   const weekStart = startOfWeek(now);
   const weekEnd = endOfWeek(now);
@@ -226,6 +240,20 @@ export default function DashboardPage() {
     await api.instantBook(session.accessToken, bannerPosting.id);
     await handleDismissNotification();
     api.listMyBookings(session.accessToken).then(setBookings).catch(() => undefined);
+  };
+
+  const handleCompleteDelivery = async () => {
+    if (!session || !currentLoad) return;
+    setCompleteError(null);
+    setCompletingDelivery(true);
+    try {
+      const updated = await api.completeDelivery(session.accessToken, currentLoad.id);
+      setBookings((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
+    } catch (e) {
+      setCompleteError(e instanceof ApiError ? e.message : t('errors.generic'));
+    } finally {
+      setCompletingDelivery(false);
+    }
   };
 
   const isOwnPosting =
@@ -461,6 +489,29 @@ export default function DashboardPage() {
                       </>
                     ) : (
                       <p className="text-sm text-muted-foreground">{t('bookingDetail.noLocationYet')}</p>
+                    )}
+
+                    {!isShipper && (
+                      <div className="border-t pt-3">
+                        {completeError && (
+                          <p className="mb-2 text-xs text-destructive">{completeError}</p>
+                        )}
+                        {withinDeliveryRadius ? (
+                          <Button
+                            className="w-full"
+                            disabled={completingDelivery}
+                            onClick={handleCompleteDelivery}
+                          >
+                            {t('bookingDetail.markDelivered')}
+                          </Button>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">
+                            {distanceToDeliveryKm != null
+                              ? t('bookingDetail.tooFarToDeliver', { distance: distanceToDeliveryKm.toFixed(1) })
+                              : t('bookingDetail.deliverNeedsLocation')}
+                          </p>
+                        )}
+                      </div>
                     )}
                   </div>
                 ) : (

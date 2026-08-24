@@ -537,6 +537,9 @@ export const api = {
       body: JSON.stringify({ otp }),
     }),
 
+  driverCompleteDelivery: (token: string, bookingId: string) =>
+    request<Booking>(`/driver/bookings/${bookingId}/complete`, { method: 'POST', token }),
+
   driverSendBookingMessage: (token: string, bookingId: string, body: string) =>
     request<BookingMessage>(`/driver/bookings/${bookingId}/messages`, {
       method: 'POST',
@@ -577,6 +580,9 @@ export const api = {
       token,
       body: JSON.stringify({ otp }),
     }),
+
+  completeDelivery: (token: string, bookingId: string) =>
+    request<Booking>(`/bookings/${bookingId}/complete`, { method: 'POST', token }),
 
   submitReview: (token: string, bookingId: string, rating: number, comment?: string) =>
     request<Review>(`/bookings/${bookingId}/review`, {
@@ -1174,7 +1180,7 @@ export interface AppNotification {
   userId: string;
   userType: 'carrier' | 'shipper';
   type: 'lane_match' | 'broadcast' | 'booking_update' | 'driver_action';
-  payload: { postingId?: string; bookingId?: string; event?: 'accepted' | 'not_selected' | 'new_candidate' };
+  payload: { postingId?: string; bookingId?: string; event?: 'accepted' | 'not_selected' | 'new_candidate' | 'completed' };
   readAt: string | null;
   createdAt: string;
 }

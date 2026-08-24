@@ -12,12 +12,13 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { api, ApiError, Booking, BookingMessage, BookingTracking, PaymentTrackingLog } from '@/lib/api';
 import { useSession } from '@/lib/session-context';
-import { boardLocation, formatMoney, timeAgo } from '@/lib/utils';
+import { boardLocation, formatMoney, haversineKm, timeAgo } from '@/lib/utils';
 import { statusBadge } from '@/lib/status-badge';
 import LiveTrackingMap from '@/components/LiveTrackingMap';
 import { isNativeApp, startNativeTracking, stopNativeTracking } from '@/lib/native-tracking';
 
 const TRACKING_POLL_INTERVAL_MS = 20000;
+const DELIVERY_RADIUS_KM = 5;
 // watchPosition can fire far more often than we want to hit the API — only
 // forward a ping if at least this long has passed since the last one sent.
 const MIN_PING_INTERVAL_MS = 25000;
@@ -224,6 +225,23 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
+  const [completingDelivery, setCompletingDelivery] = useState(false);
+  const [completeError, setCompleteError] = useState<string | null>(null);
+
+  const handleCompleteDelivery = async () => {
+    if (!session) return;
+    setCompleteError(null);
+    setCompletingDelivery(true);
+    try {
+      const updated = await api.completeDelivery(session.accessToken, id);
+      setBooking(updated);
+    } catch (e) {
+      setCompleteError(e instanceof ApiError ? e.message : t('errors.generic'));
+    } finally {
+      setCompletingDelivery(false);
+    }
+  };
+
   const handleSubmitReview = async () => {
     if (!session || !reviewRating) return;
     setReviewError(null);
@@ -255,6 +273,18 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
   // would just be a redundant second channel at that point.
   const canMessage =
     !!booking && booking.status === 'pending' && booking.bookingType !== 'instant_book';
+
+  const destination = booking?.posting?.destinations[0];
+  const distanceToDeliveryKm =
+    tracking?.latestPing && destination
+      ? haversineKm(
+          Number(tracking.latestPing.lat),
+          Number(tracking.latestPing.lng),
+          Number(destination.lat),
+          Number(destination.lng),
+        )
+      : null;
+  const withinDeliveryRadius = distanceToDeliveryKm != null && distanceToDeliveryKm <= DELIVERY_RADIUS_KM;
 
   return (
     <div className="flex flex-1 flex-col gap-4">
@@ -451,6 +481,25 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">{t('bookingDetail.noLocationYet')}</p>
+                )}
+
+                {session.userType === 'carrier' && booking.status === 'in_transit' && (
+                  <div className="mt-3 border-t pt-3">
+                    {completeError && (
+                      <p className="mb-2 text-xs text-destructive">{completeError}</p>
+                    )}
+                    {withinDeliveryRadius ? (
+                      <Button className="w-full" disabled={completingDelivery} onClick={handleCompleteDelivery}>
+                        {t('bookingDetail.markDelivered')}
+                      </Button>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        {distanceToDeliveryKm != null
+                          ? t('bookingDetail.tooFarToDeliver', { distance: distanceToDeliveryKm.toFixed(1) })
+                          : t('bookingDetail.deliverNeedsLocation')}
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
             )}

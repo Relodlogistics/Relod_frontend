@@ -681,7 +681,10 @@
     "noLocationYet": "No location shared yet.",
     "locationShareDisclosure": "Shared with this shipper to track the delivery, and may also help match you to nearby loads while you're free.",
     "trackedByDevice": "This truck has a GPS tracker installed — location updates automatically.",
-    "locationPermissionDenied": "Couldn't access your location — check location permission for this site."
+    "locationPermissionDenied": "Couldn't access your location — check location permission for this site.",
+    "markDelivered": "Load Delivered",
+    "tooFarToDeliver": "Still {{distance}}km from the delivery point — get within 5km to mark it delivered.",
+    "deliverNeedsLocation": "Share your location to mark this delivered once you're near the delivery point."
   },
   "lanes": {
     "title": "Your lanes",
@@ -709,6 +712,7 @@
     "bookingAccepted": "You've been selected! Tap to view your booking",
     "bookingNotSelected": "Another truck was selected for this load",
     "bookingNewCandidate": "A truck accepted your load — pick one to confirm",
+    "bookingCompleted": "Your load has been delivered!",
     "driverAction": "Your driver made an update to a load — tap to view",
     "markRead": "Mark read",
     "new": "New",

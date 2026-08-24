@@ -95,6 +95,23 @@ export default function DriverBookingDetailPage({ params }: { params: Promise<{ 
     }
   };
 
+  const [completingDelivery, setCompletingDelivery] = useState(false);
+  const [completeError, setCompleteError] = useState<string | null>(null);
+
+  const handleCompleteDelivery = async () => {
+    if (!driverSession) return;
+    setCompleteError(null);
+    setCompletingDelivery(true);
+    try {
+      const updated = await api.driverCompleteDelivery(driverSession.accessToken, id);
+      setBooking(updated);
+    } catch (e) {
+      setCompleteError(e instanceof ApiError ? e.message : t('errors.generic'));
+    } finally {
+      setCompletingDelivery(false);
+    }
+  };
+
   if (!driverSession) return null;
 
   const badge = booking ? statusBadge(booking.status) : null;
@@ -160,6 +177,16 @@ export default function DriverBookingDetailPage({ params }: { params: Promise<{ 
                   {t('bookingDetail.startTripButton')}
                 </Button>
               </div>
+            </div>
+          )}
+
+          {booking?.status === 'in_transit' && (
+            <div className="rounded-md border p-3">
+              <p className="text-sm font-medium">{t('bookingDetail.markDelivered')}</p>
+              {completeError && <p className="mt-2 text-xs text-destructive">{completeError}</p>}
+              <Button className="mt-2 w-full" disabled={completingDelivery} onClick={handleCompleteDelivery}>
+                {t('bookingDetail.markDelivered')}
+              </Button>
             </div>
           )}
 

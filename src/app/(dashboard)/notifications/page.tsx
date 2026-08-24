@@ -22,6 +22,7 @@ const BOOKING_EVENT_LABEL_KEY: Record<string, string> = {
   accepted: 'notifications.bookingAccepted',
   not_selected: 'notifications.bookingNotSelected',
   new_candidate: 'notifications.bookingNewCandidate',
+  completed: 'notifications.bookingCompleted',
 };
 
 function labelKeyFor(n: AppNotification): string {
