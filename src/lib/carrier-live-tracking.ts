@@ -160,7 +160,10 @@ export async function startLiveTracking(token: string, vehicleId: string): Promi
     watcherId = await BackgroundGeolocation.addWatcher(
       {
         backgroundTitle: 'Relod is sharing your location',
-        backgroundMessage: 'Your live location helps shippers match loads to you.',
+        // Swiping the app away from Recent Apps kills tracking outright —
+        // this notification is the one thing still visible to the driver at
+        // that moment, so it's the only place that warning can actually land.
+        backgroundMessage: "Don't swipe Relod away from Recent Apps — it stops sharing your location with shippers.",
         requestPermissions: true,
         distanceFilter: 25,
       },
