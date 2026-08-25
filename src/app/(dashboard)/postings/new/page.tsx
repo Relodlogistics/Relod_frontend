@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import {
-  MapPin,
   IndianRupee,
   EyeOff,
   Truck as TruckIcon,
@@ -107,15 +106,11 @@ export default function NewPostingPage() {
   const [originPlace, setOriginPlace] = useState<PlaceResult | null>(null);
   const [destCity, setDestCity] = useState('');
   const [destPlace, setDestPlace] = useState<PlaceResult | null>(null);
-  const [stops, setStops] = useState<{ city: string; address: string; place: PlaceResult | null }[]>([
-    { city: '', address: '', place: null },
-  ]);
+  const [stops, setStops] = useState<{ city: string; place: PlaceResult | null }[]>([{ city: '', place: null }]);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [pickupTime, setPickupTime] = useState('');
   const [deliveryTime, setDeliveryTime] = useState('');
-  const [pickupAddress, setPickupAddress] = useState('');
-  const [deliveryAddress, setDeliveryAddress] = useState('');
 
   const updateStopCity = (index: number, city: string) => {
     setStops((prev) => prev.map((s, i) => (i === index ? { ...s, city, place: null } : s)));
@@ -123,10 +118,7 @@ export default function NewPostingPage() {
   const selectStopPlace = (index: number, place: PlaceResult) => {
     setStops((prev) => prev.map((s, i) => (i === index ? { ...s, city: place.label, place } : s)));
   };
-  const updateStopAddress = (index: number, address: string) => {
-    setStops((prev) => prev.map((s, i) => (i === index ? { ...s, address } : s)));
-  };
-  const addStop = () => setStops((prev) => [...prev, { city: '', address: '', place: null }]);
+  const addStop = () => setStops((prev) => [...prev, { city: '', place: null }]);
   const removeStop = (index: number) => setStops((prev) => prev.filter((_, i) => i !== index));
 
   const today = new Date();
@@ -165,11 +157,11 @@ export default function NewPostingPage() {
     // submission via a silently disabled button with zero explanation —
     // now it's a specific, visible error either way.
     if (!originPlace) {
-      setError(t('postings.selectFromDropdown', { field: t('postings.originCity') }));
+      setError(t('postings.selectFromDropdown', { field: t(isShipper ? 'postings.pickupLocation' : 'postings.originCity') }));
       return;
     }
     if (isShipper && stops.some((s) => !s.place)) {
-      setError(t('postings.selectFromDropdown', { field: t('postings.destinationCity') }));
+      setError(t('postings.selectFromDropdown', { field: t('postings.deliveryLocation') }));
       return;
     }
     if (!isShipper && !destPlace) {
@@ -197,21 +189,21 @@ export default function NewPostingPage() {
         ? stops.map((s) => ({
             lat: s.place!.lat,
             lng: s.place!.lng,
-            label: s.address ? `${s.address}, ${s.place!.label}` : s.place!.label,
+            label: s.place!.label,
             cityLabel: cityLabel(s.place),
           }))
         : [
             {
               lat: destPlace!.lat,
               lng: destPlace!.lng,
-              label: deliveryAddress ? `${deliveryAddress}, ${destPlace!.label}` : destPlace!.label,
+              label: destPlace!.label,
               cityLabel: cityLabel(destPlace),
             },
           ];
       const posting = await api.createPosting(session.accessToken, {
         originLat: originPlace.lat,
         originLng: originPlace.lng,
-        originLabel: pickupAddress ? `${pickupAddress}, ${originPlace.label}` : originPlace.label,
+        originLabel: originPlace.label,
         originCityLabel: cityLabel(originPlace),
         destinations,
         availableFromDate: new Date(pickupTime ? `${fromDate}T${pickupTime}:00` : fromDate).toISOString(),
@@ -267,9 +259,9 @@ export default function NewPostingPage() {
                 <SectionHeading step={1} title={t('postings.routeDetailsSection')} />
 
                 <div className="flex flex-col gap-1.5">
-                  <Label>{t('postings.originCity')} *</Label>
+                  <Label>{t('postings.pickupLocation')} *</Label>
                   <PlaceAutocompleteInput
-                    placeholder={t('postings.originPlaceholder')}
+                    placeholder={t('postings.pickupLocationPlaceholder')}
                     value={originCity}
                     onChange={(text) => {
                       setOriginCity(text);
@@ -280,14 +272,7 @@ export default function NewPostingPage() {
                       setOriginCity(place.label);
                     }}
                   />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <Label>{t('postings.pickupAddress')}</Label>
-                  <Input
-                    placeholder={t('postings.pickupAddressPlaceholder')}
-                    value={pickupAddress}
-                    onChange={(e) => setPickupAddress(e.target.value)}
-                  />
+                  <p className="text-xs text-muted-foreground">{t('postings.pickupLocationHint')}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
@@ -301,16 +286,16 @@ export default function NewPostingPage() {
                 </div>
 
                 {stops.map((stop, i) => (
-                  <div key={i} className="flex flex-col gap-4 border-t-2 border-primary/20 pt-4 first:border-t-0 first:pt-0">
+                  <div key={i} className="flex flex-col gap-1.5 border-t-2 border-primary/20 pt-4 first:border-t-0 first:pt-0">
                     <div className="flex items-end gap-2">
                       <div className="flex flex-1 flex-col gap-1.5">
                         <Label>
                           {stops.length > 1
                             ? t('postings.stopNumber', { number: i + 1 })
-                            : `${t('postings.destinationCity')} *`}
+                            : `${t('postings.deliveryLocation')} *`}
                         </Label>
                         <PlaceAutocompleteInput
-                          placeholder={t('postings.destinationPlaceholder')}
+                          placeholder={t('postings.deliveryLocationPlaceholder')}
                           value={stop.city}
                           onChange={(text) => updateStopCity(i, text)}
                           onSelect={(place) => selectStopPlace(i, place)}
@@ -329,14 +314,7 @@ export default function NewPostingPage() {
                         </Button>
                       )}
                     </div>
-                    <div className="flex flex-col gap-1.5">
-                      <Label>{t('postings.deliveryAddress')}</Label>
-                      <Input
-                        placeholder={t('postings.deliveryAddressPlaceholder')}
-                        value={stop.address}
-                        onChange={(e) => updateStopAddress(i, e.target.value)}
-                      />
-                    </div>
+                    {i === 0 && <p className="text-xs text-muted-foreground">{t('postings.deliveryLocationHint')}</p>}
                   </div>
                 ))}
 
