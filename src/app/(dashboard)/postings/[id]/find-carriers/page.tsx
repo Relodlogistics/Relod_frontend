@@ -1,10 +1,10 @@
 'use client';
 
-import { use, useEffect, useState } from 'react';
+import { Fragment, use, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { X, MapPin, Truck, BadgeCheck, Star, Phone, MessageCircle } from 'lucide-react';
+import { X, MapPin, Truck, BadgeCheck, Star, Phone, MessageCircle, Navigation } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,7 @@ import { api, ApiError, MatchingCarrier, Posting } from '@/lib/api';
 import { useSession } from '@/lib/session-context';
 import { formatMoney, boardLocationParts } from '@/lib/utils';
 import { truckTypeLabel } from '@/lib/truck-types';
+import LiveTrackingMap from '@/components/LiveTrackingMap';
 
 export default function FindCarriersPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -27,6 +28,8 @@ export default function FindCarriersPage({ params }: { params: Promise<{ id: str
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  // Temporary diagnostic — see MatchingCarrier.matchLat/matchLng.
+  const [trackingCarrierId, setTrackingCarrierId] = useState<string | null>(null);
 
   useEffect(() => {
     if (loaded && !session) router.replace('/login');
@@ -158,16 +161,18 @@ export default function FindCarriersPage({ params }: { params: Promise<{ id: str
                   <th className="py-2 pr-3 font-medium">{t('postings.tableTruck')}</th>
                   <th className="py-2 pr-3 font-medium">{t('postings.tableDistance')}</th>
                   <th className="py-2 pr-3 font-medium">{t('postings.tableMatch')}</th>
-                  <th className="py-2 font-medium">{t('postings.tableContact')}</th>
+                  <th className="py-2 pr-3 font-medium">{t('postings.tableContact')}</th>
+                  <th className="py-2 font-medium" />
                 </tr>
               </thead>
               <tbody>
                 {carriers.map((carrier) => {
                   const selected = selectedCarrierIds.has(carrier.carrierId);
+                  const isTracking = trackingCarrierId === carrier.carrierId;
                   return (
+                    <Fragment key={carrier.carrierId}>
                     <tr
-                      key={carrier.carrierId}
-                      className="border-b border-l-4 border-l-primary bg-primary/5 last:border-b-0 align-top hover:bg-accent/40"
+                      className="border-b border-l-4 border-l-primary bg-primary/5 align-top hover:bg-accent/40"
                     >
                       <td className="py-3 pr-1 pl-2">
                         <input
@@ -220,7 +225,7 @@ export default function FindCarriersPage({ params }: { params: Promise<{ id: str
                           )}
                         </div>
                       </td>
-                      <td className="py-3">
+                      <td className="py-3 pr-3">
                         <a
                           href={`tel:${carrier.phone}`}
                           className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
@@ -229,7 +234,39 @@ export default function FindCarriersPage({ params }: { params: Promise<{ id: str
                           {carrier.phone}
                         </a>
                       </td>
+                      <td className="py-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setTrackingCarrierId(isTracking ? null : carrier.carrierId)}
+                        >
+                          <Navigation className="size-3.5" />
+                          {isTracking ? t('postings.trackTruckHide') : t('postings.trackTruck')}
+                        </Button>
+                      </td>
                     </tr>
+                    {isTracking && posting && (
+                      <tr className="border-b border-l-4 border-l-primary bg-primary/5 last:border-b-0">
+                        <td colSpan={7} className="p-3">
+                          <LiveTrackingMap
+                            className="h-64 w-full rounded-md"
+                            origin={{
+                              lat: Number(posting.originLat),
+                              lng: Number(posting.originLng),
+                              label: 'Pickup',
+                            }}
+                            destination={{
+                              lat: Number(posting.destinations[0]?.lat ?? posting.originLat),
+                              lng: Number(posting.destinations[0]?.lng ?? posting.originLng),
+                              label: 'Delivery',
+                            }}
+                            current={{ lat: carrier.matchLat, lng: carrier.matchLng, label: carrier.fullName }}
+                          />
+                          <p className="mt-2 text-xs text-muted-foreground">{t('postings.trackTruckHint')}</p>
+                        </td>
+                      </tr>
+                    )}
+                    </Fragment>
                   );
                 })}
               </tbody>

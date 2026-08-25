@@ -966,6 +966,11 @@ export interface MatchingCarrier {
   hasDeclaredAvailability: boolean;
   onRegisteredLane: boolean;
   usedLiveLocation: boolean;
+  // Temporary diagnostic fields — remove along with the "Track truck" button
+  // in find-carriers/page.tsx once the live-location pipeline's accuracy
+  // isn't in question anymore.
+  matchLat: number;
+  matchLng: number;
   score: number;
   reasons: string[];
 }
