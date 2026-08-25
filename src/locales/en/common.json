@@ -286,6 +286,8 @@
     "newLoadAvailable": "New Load Available!",
     "loadIsLive": "Your Load is Live!",
     "loadIsLiveDesc": "Truckers can now view and accept your load.",
+    "carrierWantsLoad": "A carrier wants your load!",
+    "carrierWantsLoadDesc": "Review their offer and confirm to lock it in.",
     "justNow": "Just now",
     "viewDetails": "View Details",
     "acceptLoad": "Accept Load",

@@ -286,6 +286,8 @@
     "newLoadAvailable": "नया लोड उपलब्ध है!",
     "loadIsLive": "आपका लोड लाइव है!",
     "loadIsLiveDesc": "ट्रक चालक अब आपका लोड देख और स्वीकार कर सकते हैं।",
+    "carrierWantsLoad": "एक वाहक को आपका लोड चाहिए!",
+    "carrierWantsLoadDesc": "उनका ऑफर देखें और इसे पक्का करने के लिए पुष्टि करें।",
     "justNow": "अभी अभी",
     "viewDetails": "विवरण देखें",
     "acceptLoad": "लोड स्वीकार करें",

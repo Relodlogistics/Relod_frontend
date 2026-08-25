@@ -390,7 +390,11 @@ export default function DashboardPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-medium text-emerald-900 dark:text-emerald-100">
-                    {isOwnPosting ? t('dashboard.loadIsLive') : t('dashboard.newLoadAvailable')}
+                    {isOwnPosting
+                      ? latestNotification.type === 'booking_update'
+                        ? t('dashboard.carrierWantsLoad')
+                        : t('dashboard.loadIsLive')
+                      : t('dashboard.newLoadAvailable')}
                   </p>
                   <Badge variant="outline" className="border-emerald-300 text-[10px] text-emerald-700">
                     {t('dashboard.justNow')}
@@ -418,6 +422,9 @@ export default function DashboardPage() {
                 )}
                 {!isOwnPosting && (
                   <p className="text-xs text-muted-foreground">{t('dashboard.loadIsLiveDesc')}</p>
+                )}
+                {isOwnPosting && latestNotification.type === 'booking_update' && (
+                  <p className="text-xs text-muted-foreground">{t('dashboard.carrierWantsLoadDesc')}</p>
                 )}
               </div>
             </div>
