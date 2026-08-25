@@ -60,6 +60,29 @@ export function haversineKm(lat1: number, lng1: number, lat2: number, lng2: numb
   return EARTH_RADIUS_KM * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
+type LatLng = { lat: number; lng: number }
+
+/**
+ * Directions link between two points, optionally routed through a third
+ * (e.g. the truck's current position) — opens in Google's own app/website
+ * rather than our embedded Leaflet/MapTiler map. Added alongside the
+ * embedded map, not yet a replacement for it — see LiveTrackingMap.
+ */
+export function googleMapsDirectionsUrl(origin: LatLng, destination: LatLng, waypoint?: LatLng): string {
+  const params = new URLSearchParams({
+    api: '1',
+    origin: `${origin.lat},${origin.lng}`,
+    destination: `${destination.lat},${destination.lng}`,
+  })
+  if (waypoint) params.set('waypoints', `${waypoint.lat},${waypoint.lng}`)
+  return `https://www.google.com/maps/dir/?${params.toString()}`
+}
+
+/** A single pin at one point, rather than a route between two. */
+export function googleMapsPinUrl(point: LatLng): string {
+  return `https://www.google.com/maps/search/?api=1&query=${point.lat},${point.lng}`
+}
+
 /** Relative time for "posted 15 min ago" style labels. */
 export function timeAgo(iso: string): string {
   const seconds = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000)

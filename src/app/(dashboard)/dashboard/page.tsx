@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   ArrowRight,
   MapPin,
+  ExternalLink,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,7 +22,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { api, ApiError, AppNotification, Posting, Booking, BookingTracking, PaymentTrackingLog } from '@/lib/api';
 import { useSession } from '@/lib/session-context';
 import { useDisplayName } from '@/lib/use-display-name';
-import { boardLocation, cn, formatMoney, haversineKm, timeAgo } from '@/lib/utils';
+import { boardLocation, cn, formatMoney, googleMapsDirectionsUrl, haversineKm, timeAgo } from '@/lib/utils';
 import { statusBadge } from '@/lib/status-badge';
 import LiveTrackingMap from '@/components/LiveTrackingMap';
 
@@ -483,9 +484,27 @@ export default function DashboardPage() {
                           current={{ lat: Number(currentLoadTracking.latestPing.lat), lng: Number(currentLoadTracking.latestPing.lng) }}
                           trail={currentLoadTracking.history.map((h) => ({ lat: Number(h.lat), lng: Number(h.lng) }))}
                         />
-                        <p className="text-xs text-muted-foreground">
-                          {t('bookingDetail.lastUpdated', { time: timeAgo(currentLoadTracking.latestPing.recordedAt) })}
-                        </p>
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs text-muted-foreground">
+                            {t('bookingDetail.lastUpdated', { time: timeAgo(currentLoadTracking.latestPing.recordedAt) })}
+                          </p>
+                          <a
+                            href={googleMapsDirectionsUrl(
+                              { lat: Number(currentLoad.posting.originLat), lng: Number(currentLoad.posting.originLng) },
+                              {
+                                lat: Number(currentLoad.posting.destinations[0].lat),
+                                lng: Number(currentLoad.posting.destinations[0].lng),
+                              },
+                              { lat: Number(currentLoadTracking.latestPing.lat), lng: Number(currentLoadTracking.latestPing.lng) },
+                            )}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-xs text-primary hover:underline"
+                          >
+                            <ExternalLink className="size-3" />
+                            {t('bookingDetail.openInMaps')}
+                          </a>
+                        </div>
                       </>
                     ) : (
                       <p className="text-sm text-muted-foreground">{t('bookingDetail.noLocationYet')}</p>

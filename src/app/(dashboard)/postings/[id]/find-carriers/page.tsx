@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { api, ApiError, MatchingCarrier, Posting } from '@/lib/api';
 import { useSession } from '@/lib/session-context';
-import { formatMoney, boardLocationParts } from '@/lib/utils';
+import { formatMoney, boardLocationParts, googleMapsDirectionsUrl } from '@/lib/utils';
 import { truckTypeLabel } from '@/lib/truck-types';
 import LiveTrackingMap from '@/components/LiveTrackingMap';
 
@@ -262,7 +262,21 @@ export default function FindCarriersPage({ params }: { params: Promise<{ id: str
                             }}
                             current={{ lat: carrier.matchLat, lng: carrier.matchLng, label: carrier.fullName }}
                           />
-                          <p className="mt-2 text-xs text-muted-foreground">{t('postings.trackTruckHint')}</p>
+                          <div className="mt-2 flex items-center justify-between gap-3">
+                            <p className="text-xs text-muted-foreground">{t('postings.trackTruckHint')}</p>
+                            <a
+                              href={googleMapsDirectionsUrl(
+                                { lat: Number(posting.originLat), lng: Number(posting.originLng) },
+                                { lat: carrier.matchLat, lng: carrier.matchLng },
+                              )}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex shrink-0 items-center gap-1 text-xs text-primary hover:underline"
+                            >
+                              <MapPin className="size-3" />
+                              {t('bookingDetail.openInMaps')}
+                            </a>
+                          </div>
                         </td>
                       </tr>
                     )}

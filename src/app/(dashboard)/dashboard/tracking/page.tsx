@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { api, Booking, BookingTracking } from '@/lib/api';
 import { useSession } from '@/lib/session-context';
-import { boardLocation, formatMoney, timeAgo } from '@/lib/utils';
+import { boardLocation, formatMoney, googleMapsDirectionsUrl, timeAgo } from '@/lib/utils';
 import { statusBadge } from '@/lib/status-badge';
 import LiveTrackingMap from '@/components/LiveTrackingMap';
 
@@ -46,10 +46,25 @@ function CurrentLoadCard({ booking, tracking }: { booking: Booking; tracking: Bo
         )}
 
         <div className="flex items-center justify-between gap-2">
-          {tracking?.latestPing ? (
-            <p className="text-xs text-muted-foreground">
-              {t('bookingDetail.lastUpdated', { time: timeAgo(tracking.latestPing.recordedAt) })}
-            </p>
+          {tracking?.latestPing && booking.posting && destination ? (
+            <div className="flex items-center gap-3">
+              <p className="text-xs text-muted-foreground">
+                {t('bookingDetail.lastUpdated', { time: timeAgo(tracking.latestPing.recordedAt) })}
+              </p>
+              <a
+                href={googleMapsDirectionsUrl(
+                  { lat: Number(booking.posting.originLat), lng: Number(booking.posting.originLng) },
+                  { lat: Number(destination.lat), lng: Number(destination.lng) },
+                  { lat: Number(tracking.latestPing.lat), lng: Number(tracking.latestPing.lng) },
+                )}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1 text-xs text-primary hover:underline"
+              >
+                <MapPin className="size-3" />
+                {t('bookingDetail.openInMaps')}
+              </a>
+            </div>
           ) : (
             <span />
           )}

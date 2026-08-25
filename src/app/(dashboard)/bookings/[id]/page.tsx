@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { api, ApiError, Booking, BookingMessage, BookingTracking, PaymentTrackingLog } from '@/lib/api';
 import { useSession } from '@/lib/session-context';
-import { boardLocation, formatMoney, haversineKm, timeAgo } from '@/lib/utils';
+import { boardLocation, formatMoney, googleMapsDirectionsUrl, haversineKm, timeAgo } from '@/lib/utils';
 import { statusBadge } from '@/lib/status-badge';
 import LiveTrackingMap from '@/components/LiveTrackingMap';
 import { isNativeApp, startNativeTracking, stopNativeTracking } from '@/lib/native-tracking';
@@ -473,7 +473,14 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
                       {t('bookingDetail.lastUpdated', { time: timeAgo(tracking.latestPing.recordedAt) })}
                     </p>
                     <a
-                      href={`https://www.google.com/maps?q=${tracking.latestPing.lat},${tracking.latestPing.lng}`}
+                      href={googleMapsDirectionsUrl(
+                        { lat: Number(booking.posting.originLat), lng: Number(booking.posting.originLng) },
+                        {
+                          lat: Number(booking.posting.destinations[0]?.lat),
+                          lng: Number(booking.posting.destinations[0]?.lng),
+                        },
+                        { lat: Number(tracking.latestPing.lat), lng: Number(tracking.latestPing.lng) },
+                      )}
                       target="_blank"
                       rel="noreferrer"
                       className="flex items-center gap-1.5 text-primary hover:underline"
