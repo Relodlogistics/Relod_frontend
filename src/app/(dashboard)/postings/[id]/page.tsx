@@ -25,6 +25,7 @@ import {
   ChevronDown,
   ChevronUp,
   User,
+  AlertTriangle,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -115,6 +116,7 @@ export default function PostingDetailPage({ params }: { params: Promise<{ id: st
   const [expandedCandidateId, setExpandedCandidateId] = useState<string | null>(null);
   const [selectingCandidateId, setSelectingCandidateId] = useState<string | null>(null);
   const [viewingDetailsBookingId, setViewingDetailsBookingId] = useState<string | null>(null);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   useEffect(() => {
     if (loaded && !session) router.replace('/login');
@@ -252,6 +254,7 @@ export default function PostingDetailPage({ params }: { params: Promise<{ id: st
 
   const handleCancel = async () => {
     if (!session) return;
+    setShowCancelConfirm(false);
     setError(null);
     setLoading(true);
     try {
@@ -613,13 +616,37 @@ export default function PostingDetailPage({ params }: { params: Promise<{ id: st
                     {t('postings.broadcast')}
                   </Button>
                 )}
-                <Button variant="destructive" onClick={handleCancel} disabled={loading}>
+                <Button variant="destructive" onClick={() => setShowCancelConfirm(true)} disabled={loading}>
                   {t('postings.cancel')}
                 </Button>
               </>
             )}
           </CardContent>
         </Card>
+
+        {showCancelConfirm && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-4">
+            <div className="flex w-full max-w-sm flex-col items-center gap-3 rounded-xl bg-card p-6 text-center shadow-lg">
+              <AlertTriangle className="size-8 text-destructive" />
+              <h2 className="font-heading text-lg font-semibold">{t('postings.cancelConfirmTitle')}</h2>
+              <ul className="w-full list-disc space-y-1.5 pl-5 text-left text-sm text-muted-foreground">
+                <li>{t('postings.cancelConfirmPoint1')}</li>
+                <li>{t('postings.cancelConfirmPoint2')}</li>
+                <li>{t('postings.cancelConfirmPoint3')}</li>
+              </ul>
+              <Button variant="destructive" className="w-full" onClick={handleCancel} disabled={loading}>
+                {t('postings.cancelConfirmYes')}
+              </Button>
+              <button
+                type="button"
+                className="text-xs text-muted-foreground underline"
+                onClick={() => setShowCancelConfirm(false)}
+              >
+                {t('postings.cancelConfirmNo')}
+              </button>
+            </div>
+          </div>
+        )}
 
         {isOwnActiveLoad && candidates.length > 0 && (
           <Card className="mt-4">
