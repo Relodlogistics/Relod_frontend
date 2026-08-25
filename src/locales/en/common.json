@@ -318,7 +318,21 @@
     "title": "Tracking",
     "empty": "No bookings yet.",
     "with": "with",
-    "currentLoadsTitle": "Current loads"
+    "currentLoadsTitle": "Current loads",
+    "notNow": "Not now",
+    "liveNotifTitle": "Relod is sharing your location",
+    "liveNotifMessage": "Don't swipe Relod away from Recent Apps — it stops sharing your location with shippers.",
+    "locationOffTitle": "Location is off",
+    "locationOffMessage": "Turn on location so shippers can keep matching loads to your truck. Without it, your truck won't show up in searches.",
+    "locationOffButton": "Turn on location",
+    "locationOffNotifTitle": "Location is off",
+    "locationOffNotifBody": "Turn on location so shippers can keep matching loads to you.",
+    "oemAutostartTitle": "One more step for reliable tracking",
+    "oemAutostartMessage": "{{manufacturer}} phones can stop sharing your location in the background after a while unless you allow Relod to auto-start. Turn this on so shippers can always find your truck, even hours into a trip.",
+    "oemAutostartButton": "Allow auto-start",
+    "swipeAwayTitle": "Keep Relod running in the background",
+    "swipeAwayMessage": "You can lock your phone or switch to other apps — Relod keeps sharing your location. But if you swipe Relod away from your Recent Apps list, it stops sharing your location completely until you reopen it.",
+    "swipeAwayButton": "Got it"
   },
   "bookingsPage": {
     "title": "Bookings",

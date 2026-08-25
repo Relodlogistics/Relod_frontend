@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ShieldAlert } from 'lucide-react';
 import { useSession } from '@/lib/session-context';
 import { getOemAutostartInfo, isNativeApp, openOemAutostartSettings } from '@/lib/carrier-live-tracking';
@@ -18,6 +19,7 @@ const DISMISSED_KEY = 'relod_oem_autostart_dismissed';
  * straight to it instead of leaving the carrier to find it themselves.
  */
 export function OemAutostartPrompt() {
+  const { t } = useTranslation();
   const { session } = useSession();
   const [manufacturer, setManufacturer] = useState<string | null>(null);
   const [dismissed, setDismissed] = useState(true);
@@ -44,11 +46,8 @@ export function OemAutostartPrompt() {
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-4">
       <div className="flex w-full max-w-sm flex-col items-center gap-3 rounded-xl bg-card p-6 text-center shadow-lg">
         <ShieldAlert className="size-8 text-amber-500" />
-        <h2 className="font-heading text-lg font-semibold">One more step for reliable tracking</h2>
-        <p className="text-sm text-muted-foreground">
-          {manufacturer} phones can stop sharing your location in the background after a while unless you allow
-          Relod to auto-start. Turn this on so shippers can always find your truck, even hours into a trip.
-        </p>
+        <h2 className="font-heading text-lg font-semibold">{t('tracking.oemAutostartTitle')}</h2>
+        <p className="text-sm text-muted-foreground">{t('tracking.oemAutostartMessage', { manufacturer })}</p>
         <Button
           className="w-full"
           onClick={() => {
@@ -56,10 +55,10 @@ export function OemAutostartPrompt() {
             dismiss();
           }}
         >
-          Allow auto-start
+          {t('tracking.oemAutostartButton')}
         </Button>
         <button type="button" className="text-xs text-muted-foreground underline" onClick={dismiss}>
-          Not now
+          {t('tracking.notNow')}
         </button>
       </div>
     </div>

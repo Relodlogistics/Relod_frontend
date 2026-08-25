@@ -6,6 +6,7 @@ import type { BackgroundGeolocationPlugin, Location, CallbackError } from '@capa
 import { App } from '@capacitor/app';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { api } from '@/lib/api';
+import i18next from '@/lib/i18n';
 
 const BackgroundGeolocation = registerPlugin<BackgroundGeolocationPlugin>('BackgroundGeolocation');
 // Custom native plugin (android/app/.../LocationStatusPlugin.java) — reports
@@ -76,8 +77,8 @@ async function notifyLocationOff() {
       notifications: [
         {
           id: 1,
-          title: 'Location is off',
-          body: 'Turn on location so shippers can keep matching loads to you.',
+          title: i18next.t('tracking.locationOffNotifTitle'),
+          body: i18next.t('tracking.locationOffNotifBody'),
         },
       ],
     });
@@ -159,11 +160,11 @@ export async function startLiveTracking(token: string, vehicleId: string): Promi
   try {
     watcherId = await BackgroundGeolocation.addWatcher(
       {
-        backgroundTitle: 'Relod is sharing your location',
+        backgroundTitle: i18next.t('tracking.liveNotifTitle'),
         // Swiping the app away from Recent Apps kills tracking outright —
         // this notification is the one thing still visible to the driver at
         // that moment, so it's the only place that warning can actually land.
-        backgroundMessage: "Don't swipe Relod away from Recent Apps — it stops sharing your location with shippers.",
+        backgroundMessage: i18next.t('tracking.liveNotifMessage'),
         requestPermissions: true,
         distanceFilter: 25,
       },

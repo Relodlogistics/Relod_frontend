@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { SmartphoneNfc } from 'lucide-react';
 import { useSession } from '@/lib/session-context';
 import { isNativeApp } from '@/lib/carrier-live-tracking';
@@ -19,6 +20,7 @@ const DISMISSED_KEY = 'relod_swipe_away_dismissed';
  * sure the driver actually sees it.
  */
 export function SwipeAwayWarningPrompt() {
+  const { t } = useTranslation();
   const { session } = useSession();
   const [dismissed, setDismissed] = useState(true);
 
@@ -40,13 +42,10 @@ export function SwipeAwayWarningPrompt() {
     <div className="fixed inset-0 z-[190] flex items-center justify-center bg-black/60 p-4">
       <div className="flex w-full max-w-sm flex-col items-center gap-3 rounded-xl bg-card p-6 text-center shadow-lg">
         <SmartphoneNfc className="size-8 text-primary" />
-        <h2 className="font-heading text-lg font-semibold">Keep Relod running in the background</h2>
-        <p className="text-sm text-muted-foreground">
-          You can lock your phone or switch to other apps — Relod keeps sharing your location. But if you swipe
-          Relod away from your Recent Apps list, it stops sharing your location completely until you reopen it.
-        </p>
+        <h2 className="font-heading text-lg font-semibold">{t('tracking.swipeAwayTitle')}</h2>
+        <p className="text-sm text-muted-foreground">{t('tracking.swipeAwayMessage')}</p>
         <Button className="w-full" onClick={dismiss}>
-          Got it
+          {t('tracking.swipeAwayButton')}
         </Button>
       </div>
     </div>

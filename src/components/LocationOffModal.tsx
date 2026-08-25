@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MapPinOff } from 'lucide-react';
 import { useSession } from '@/lib/session-context';
 import { api, Vehicle } from '@/lib/api';
@@ -18,6 +19,7 @@ const SNOOZE_MS = 5 * 60 * 1000;
  * carrier-live-tracking.ts but for while the app is actually open.
  */
 export function LocationOffModal() {
+  const { t } = useTranslation();
   const { session } = useSession();
   const [vehicleId, setVehicleId] = useState<string | undefined>(undefined);
   const [snoozedAt, setSnoozedAt] = useState<number | null>(null);
@@ -50,19 +52,17 @@ export function LocationOffModal() {
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-4">
       <div className="flex w-full max-w-sm flex-col items-center gap-3 rounded-xl bg-card p-6 text-center shadow-lg">
         <MapPinOff className="size-8 text-destructive" />
-        <h2 className="font-heading text-lg font-semibold">Location is off</h2>
-        <p className="text-sm text-muted-foreground">
-          Turn on location so shippers can keep matching loads to your truck. Without it, your truck won&apos;t show up in searches.
-        </p>
+        <h2 className="font-heading text-lg font-semibold">{t('tracking.locationOffTitle')}</h2>
+        <p className="text-sm text-muted-foreground">{t('tracking.locationOffMessage')}</p>
         <Button className="w-full" onClick={() => openLocationSettings()}>
-          Turn on location
+          {t('tracking.locationOffButton')}
         </Button>
         <button
           type="button"
           className="text-xs text-muted-foreground underline"
           onClick={() => setSnoozedAt(Date.now())}
         >
-          Not now
+          {t('tracking.notNow')}
         </button>
       </div>
     </div>
