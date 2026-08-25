@@ -660,6 +660,15 @@ export const api = {
       { token },
     ),
 
+  // Silent one-shot resolve for a freely-typed pickup/delivery address —
+  // always Google, independent of GEOCODING_PROVIDER (see backend
+  // GoogleAddressResolver). Returns null if Google can't resolve it at all.
+  geocodeResolve: (token: string, address: string) =>
+    request<{ label: string; lat: number; lng: number } | null>(
+      `/geocode/resolve?address=${encodeURIComponent(address)}`,
+      { token },
+    ),
+
   createSupportTicket: (token: string, data: { issueSummary: string; relatedBookingId?: string }) =>
     request<SupportTicket>('/support-tickets', { method: 'POST', token, body: JSON.stringify(data) }),
 

@@ -106,11 +106,18 @@ export default function NewPostingPage() {
   const [originPlace, setOriginPlace] = useState<PlaceResult | null>(null);
   const [destCity, setDestCity] = useState('');
   const [destPlace, setDestPlace] = useState<PlaceResult | null>(null);
-  const [stops, setStops] = useState<{ city: string; place: PlaceResult | null }[]>([{ city: '', place: null }]);
+  const [stops, setStops] = useState<{ city: string; address: string; place: PlaceResult | null }[]>([
+    { city: '', address: '', place: null },
+  ]);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [pickupTime, setPickupTime] = useState('');
   const [deliveryTime, setDeliveryTime] = useState('');
+  // Free text — resolved to real coordinates via api.geocodeResolve() at
+  // submit time (always Google; see backend GoogleAddressResolver). The
+  // origin/destination "city" dropdowns above are for a friendly label
+  // only and never determine the stored lat/lng.
+  const [pickupAddress, setPickupAddress] = useState('');
 
   const updateStopCity = (index: number, city: string) => {
     setStops((prev) => prev.map((s, i) => (i === index ? { ...s, city, place: null } : s)));
@@ -118,7 +125,10 @@ export default function NewPostingPage() {
   const selectStopPlace = (index: number, place: PlaceResult) => {
     setStops((prev) => prev.map((s, i) => (i === index ? { ...s, city: place.label, place } : s)));
   };
-  const addStop = () => setStops((prev) => [...prev, { city: '', place: null }]);
+  const updateStopAddress = (index: number, address: string) => {
+    setStops((prev) => prev.map((s, i) => (i === index ? { ...s, address } : s)));
+  };
+  const addStop = () => setStops((prev) => [...prev, { city: '', address: '', place: null }]);
   const removeStop = (index: number) => setStops((prev) => prev.filter((_, i) => i !== index));
 
   const today = new Date();
@@ -151,17 +161,17 @@ export default function NewPostingPage() {
     setError(null);
     const isShipper = session.userType === 'shipper';
 
-    // Places are resolved to coordinates at selection time (autocomplete),
-    // not re-geocoded here — a typed-but-never-selected city name leaves
+    // The city dropdowns are resolved to coordinates at selection time
+    // (autocomplete) — a typed-but-never-selected city name leaves
     // originPlace/destPlace/stop.place null. Previously this only blocked
     // submission via a silently disabled button with zero explanation —
     // now it's a specific, visible error either way.
     if (!originPlace) {
-      setError(t('postings.selectFromDropdown', { field: t(isShipper ? 'postings.pickupLocation' : 'postings.originCity') }));
+      setError(t('postings.selectFromDropdown', { field: t('postings.originCity') }));
       return;
     }
     if (isShipper && stops.some((s) => !s.place)) {
-      setError(t('postings.selectFromDropdown', { field: t('postings.deliveryLocation') }));
+      setError(t('postings.selectFromDropdown', { field: t('postings.destinationCity') }));
       return;
     }
     if (!isShipper && !destPlace) {
@@ -174,6 +184,8 @@ export default function NewPostingPage() {
     if (!toDate) missing.push(t('postings.deliveryDate'));
     if (!priceAmount) missing.push(isShipper ? t('postings.minimumBudget') : t('postings.priceAmount'));
     if (isShipper && !actualBudget) missing.push(t('postings.actualBudget'));
+    if (isShipper && !pickupAddress.trim()) missing.push(t('postings.pickupLocation'));
+    if (isShipper && stops.some((s) => !s.address.trim())) missing.push(t('postings.deliveryLocation'));
     if (missing.length > 0) {
       setError(t('postings.missingRequiredFields', { fields: missing.join(', ') }));
       return;
@@ -185,11 +197,35 @@ export default function NewPostingPage() {
 
     setLoading(true);
     try {
+      // The precise pickup/delivery address the shipper actually typed is
+      // what drives real coordinates — the city dropdowns above only
+      // provide the friendly city label. Always resolved via Google (see
+      // GoogleAddressResolver): MapTiler/Nominatim ranked the correct
+      // result low or missed it entirely on real addresses we tested.
+      let originResolved: { lat: number; lng: number; label: string } | null = null;
+      let destResolved: ({ lat: number; lng: number; label: string } | null)[] = [];
+      if (isShipper) {
+        [originResolved, ...destResolved] = await Promise.all([
+          api.geocodeResolve(session.accessToken, pickupAddress),
+          ...stops.map((s) => api.geocodeResolve(session.accessToken, s.address)),
+        ]);
+        if (!originResolved) {
+          setError(t('postings.addressNotResolved', { field: t('postings.pickupLocation') }));
+          setLoading(false);
+          return;
+        }
+        if (destResolved.some((r) => !r)) {
+          setError(t('postings.addressNotResolved', { field: t('postings.deliveryLocation') }));
+          setLoading(false);
+          return;
+        }
+      }
+
       const destinations = isShipper
-        ? stops.map((s) => ({
-            lat: s.place!.lat,
-            lng: s.place!.lng,
-            label: s.place!.label,
+        ? stops.map((s, i) => ({
+            lat: destResolved[i]!.lat,
+            lng: destResolved[i]!.lng,
+            label: destResolved[i]!.label,
             cityLabel: cityLabel(s.place),
           }))
         : [
@@ -201,9 +237,9 @@ export default function NewPostingPage() {
             },
           ];
       const posting = await api.createPosting(session.accessToken, {
-        originLat: originPlace.lat,
-        originLng: originPlace.lng,
-        originLabel: originPlace.label,
+        originLat: isShipper ? originResolved!.lat : originPlace.lat,
+        originLng: isShipper ? originResolved!.lng : originPlace.lng,
+        originLabel: isShipper ? originResolved!.label : originPlace.label,
         originCityLabel: cityLabel(originPlace),
         destinations,
         availableFromDate: new Date(pickupTime ? `${fromDate}T${pickupTime}:00` : fromDate).toISOString(),
@@ -259,9 +295,9 @@ export default function NewPostingPage() {
                 <SectionHeading step={1} title={t('postings.routeDetailsSection')} />
 
                 <div className="flex flex-col gap-1.5">
-                  <Label>{t('postings.pickupLocation')} *</Label>
+                  <Label>{t('postings.originCity')} *</Label>
                   <PlaceAutocompleteInput
-                    placeholder={t('postings.pickupLocationPlaceholder')}
+                    placeholder={t('postings.originPlaceholder')}
                     value={originCity}
                     onChange={(text) => {
                       setOriginCity(text);
@@ -271,6 +307,14 @@ export default function NewPostingPage() {
                       setOriginPlace(place);
                       setOriginCity(place.label);
                     }}
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label>{t('postings.pickupLocation')} *</Label>
+                  <Input
+                    placeholder={t('postings.pickupLocationPlaceholder')}
+                    value={pickupAddress}
+                    onChange={(e) => setPickupAddress(e.target.value)}
                   />
                   <p className="text-xs text-muted-foreground">{t('postings.pickupLocationHint')}</p>
                 </div>
@@ -286,16 +330,16 @@ export default function NewPostingPage() {
                 </div>
 
                 {stops.map((stop, i) => (
-                  <div key={i} className="flex flex-col gap-1.5 border-t-2 border-primary/20 pt-4 first:border-t-0 first:pt-0">
+                  <div key={i} className="flex flex-col gap-4 border-t-2 border-primary/20 pt-4 first:border-t-0 first:pt-0">
                     <div className="flex items-end gap-2">
                       <div className="flex flex-1 flex-col gap-1.5">
                         <Label>
                           {stops.length > 1
                             ? t('postings.stopNumber', { number: i + 1 })
-                            : `${t('postings.deliveryLocation')} *`}
+                            : `${t('postings.destinationCity')} *`}
                         </Label>
                         <PlaceAutocompleteInput
-                          placeholder={t('postings.deliveryLocationPlaceholder')}
+                          placeholder={t('postings.destinationPlaceholder')}
                           value={stop.city}
                           onChange={(text) => updateStopCity(i, text)}
                           onSelect={(place) => selectStopPlace(i, place)}
@@ -314,7 +358,15 @@ export default function NewPostingPage() {
                         </Button>
                       )}
                     </div>
-                    {i === 0 && <p className="text-xs text-muted-foreground">{t('postings.deliveryLocationHint')}</p>}
+                    <div className="flex flex-col gap-1.5">
+                      <Label>{t('postings.deliveryLocation')} *</Label>
+                      <Input
+                        placeholder={t('postings.deliveryLocationPlaceholder')}
+                        value={stop.address}
+                        onChange={(e) => updateStopAddress(i, e.target.value)}
+                      />
+                      {i === 0 && <p className="text-xs text-muted-foreground">{t('postings.deliveryLocationHint')}</p>}
+                    </div>
                   </div>
                 ))}
 
