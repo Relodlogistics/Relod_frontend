@@ -431,8 +431,18 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
                   </Alert>
                 )}
 
+                {/*
+                  In the native app, Live tracking (see carrier-live-tracking.ts)
+                  already runs continuously for the whole time the carrier is
+                  logged in, independent of any specific booking — the map
+                  below just reads whatever it's already reported, no action
+                  needed here. This manual toggle only matters on plain web,
+                  where a background watcher isn't possible at all and
+                  watchPosition() is the sole way to share anything.
+                */}
                 {session.userType === 'carrier' &&
                   booking.status === 'in_transit' &&
+                  !isNativeApp() &&
                   (tracking?.hasDevice ? (
                     <p className="mb-2 flex items-center gap-1.5 text-xs text-muted-foreground">
                       <Navigation className="size-3.5 shrink-0" />

@@ -28,7 +28,8 @@ export default function FindCarriersPage({ params }: { params: Promise<{ id: str
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
-  // Temporary diagnostic — see MatchingCarrier.matchLat/matchLng.
+  // A matched carrier is visible before any booking — being matched is
+  // treated as enough of a relationship to see roughly where the truck is.
   const [trackingCarrierId, setTrackingCarrierId] = useState<string | null>(null);
 
   useEffect(() => {
