@@ -158,6 +158,16 @@ export default function PhonePage() {
         >
           {t('errors.logInInstead')}
         </Link>
+        <p className="mt-3 text-center text-xs text-muted-foreground">
+          {t('phone.legalPrefix')}{' '}
+          <Link href="/terms" className="text-primary underline">
+            {t('marketing.footer.terms')}
+          </Link>{' '}
+          {t('phone.legalAnd')}{' '}
+          <Link href="/privacy" className="text-primary underline">
+            {t('marketing.footer.privacy')}
+          </Link>
+        </p>
       </div>
     </AuthBackground>
   );

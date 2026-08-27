@@ -23,7 +23,9 @@
     "verify": "Verify",
     "resend": "Resend code",
     "devCode": "Dev code (mock SMS): {{code}}",
-    "changeNumber": "Change number"
+    "changeNumber": "Change number",
+    "legalPrefix": "By continuing, you agree to our",
+    "legalAnd": "and"
   },
   "profile": {
     "title": "Tell us about yourself",

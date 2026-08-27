@@ -23,7 +23,9 @@
     "verify": "सत्यापित करें",
     "resend": "फिर से भेजें",
     "devCode": "डेव कोड (मॉक एसएमएस): {{code}}",
-    "changeNumber": "नंबर बदलें"
+    "changeNumber": "नंबर बदलें",
+    "legalPrefix": "जारी रखकर, आप हमारी",
+    "legalAnd": "और"
   },
   "profile": {
     "title": "अपने बारे में बताएं",
