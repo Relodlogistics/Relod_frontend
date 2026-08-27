@@ -10,5 +10,5 @@ export const metadata: Metadata = {
 };
 
 export default function PrivacyPage() {
-  return <LegalContent docKey="privacy" sectionCount={6} />;
+  return <LegalContent docKey="privacy" sectionCount={15} />;
 }
