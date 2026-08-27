@@ -1192,6 +1192,14 @@
       "stillCta": "Contact support",
       "eyebrow": "FAQ"
     },
+    "chatWidget": {
+      "title": "Ask Relod",
+      "greeting": "Hi! Pick a question below, or type your own.",
+      "inputPlaceholder": "Type your question...",
+      "send": "Send",
+      "close": "Close chat",
+      "fallback": "I don't have an answer for that yet — please reach out to our team directly and we'll help."
+    },
     "legal": {
       "draftNotice": "This page is a working draft describing our intended policy structure. It is not yet final or legally binding, and is pending review by legal counsel before Relod's public launch.",
       "lastUpdated": "Draft last updated: {{date}}",
