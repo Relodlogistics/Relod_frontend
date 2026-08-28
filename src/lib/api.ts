@@ -34,9 +34,9 @@ export class ApiError extends Error {
 
 async function request<T>(
   path: string,
-  options: RequestInit & { token?: string } = {},
+  options: RequestInit & { token?: string; silentAuthFailure?: boolean } = {},
 ): Promise<T> {
-  const { token, headers, ...rest } = options;
+  const { token, headers, silentAuthFailure, ...rest } = options;
   const res = await fetch(`${API_BASE_URL}${path}`, {
     ...rest,
     headers: {
@@ -58,7 +58,12 @@ async function request<T>(
     // cleared the dead session or sent the user back to log in, so the
     // whole app just looked broken. This was only ever wired up for admin;
     // now every session type recovers the same way.
-    if (res.status === 401 && typeof window !== 'undefined') {
+    //
+    // silentAuthFailure opts a call out of this — for a best-effort
+    // background call (like push-token registration) whose own caller
+    // already swallows the error, a transient/unrelated 401 on that one
+    // request should never be able to log the user out of the whole app.
+    if (res.status === 401 && typeof window !== 'undefined' && !silentAuthFailure) {
       if (path.startsWith('/admin/') && path !== '/admin/auth/login') {
         window.dispatchEvent(new Event('admin-session-invalid'));
       } else if (path.startsWith('/driver/')) {
@@ -674,6 +679,7 @@ export const api = {
       method: 'POST',
       token,
       body: JSON.stringify({ token: fcmToken }),
+      silentAuthFailure: true,
     }),
 
   createSupportTicket: (token: string, data: { issueSummary: string; relatedBookingId?: string }) =>
