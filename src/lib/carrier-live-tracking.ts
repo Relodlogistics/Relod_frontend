@@ -100,7 +100,24 @@ async function checkLocationHealth(): Promise<void> {
       return;
     }
     if (status === 'off') {
-      setStatus('starting'); // real GPS fix from the watcher flips this to 'live'
+      // The watcher that was live when the OS toggle got switched off is
+      // usually dead, not just paused — Android's fused location provider
+      // doesn't reliably resume delivering fixes to an existing watcher just
+      // because the toggle flipped back on. Waiting for it to recover on its
+      // own is what left the pill stuck on "starting" until the app was
+      // force-closed and reopened (which recreates the watcher from
+      // scratch). Restarting explicitly here — same recovery already used
+      // for a stale-but-not-off fix below — is what actually gets a fresh
+      // GPS fix flowing again without needing a manual reopen.
+      const now = Date.now();
+      if (now - lastRestartAt < STALE_FIX_MS) return;
+      lastRestartAt = now;
+      setStatus('starting');
+      const creds = trackingCreds;
+      if (creds) {
+        await stopLiveTracking();
+        await startLiveTracking(creds.token, creds.vehicleId);
+      }
       return;
     }
     if (status === 'live' && lastFixAt > 0 && Date.now() - lastFixAt > STALE_FIX_MS) {
@@ -234,22 +251,20 @@ export async function openOemAutostartSettings(): Promise<void> {
 }
 
 // If the driver leaves the app to flip location back on in Settings, the
-// watcher's error callback doesn't retry on its own — restart it when the
-// app comes back to the foreground so recovery doesn't need a manual reopen.
+// watcher's error callback doesn't retry on its own — checking right away
+// when the app comes back to the foreground means recovery doesn't have to
+// wait for the next 5s poll tick. Delegates entirely to checkLocationHealth
+// (which now does the actual off->on watcher restart itself) rather than
+// duplicating that logic here with its own closure-captured token/vehicleId
+// — those could go stale across a re-login while trackingCreds (read inside
+// checkLocationHealth) always reflects whatever tracking is actually active.
 let resumeListenerAttached = false;
-function attachResumeListener(token: string, vehicleId: string) {
+function attachResumeListener() {
   if (resumeListenerAttached || !isNativeApp()) return;
   resumeListenerAttached = true;
   App.addListener('appStateChange', ({ isActive }) => {
     if (!isActive) return;
-    if (status === 'off') {
-      stopLiveTracking().then(() => startLiveTracking(token, vehicleId));
-    } else {
-      // Coming back to the foreground is exactly when a driver is most
-      // likely to have just flipped location on/off in Settings — check
-      // right away instead of waiting for the next poll tick.
-      checkLocationHealth();
-    }
+    checkLocationHealth();
   });
 }
 
@@ -266,7 +281,7 @@ export function useLiveTrackingStatus(token: string | undefined, vehicleId: stri
   useEffect(() => {
     if (!token || !vehicleId || !isNativeApp()) return;
     startLiveTracking(token, vehicleId);
-    attachResumeListener(token, vehicleId);
+    attachResumeListener();
   }, [token, vehicleId]);
 
   return current;
