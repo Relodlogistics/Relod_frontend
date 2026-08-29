@@ -41,15 +41,14 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       # No static export exists (this app is SSR) — the native shell just
-      # points at the live deployed site. Debug builds point at the real
-      # Vercel URL by default (see capacitor.config.ts); switch to
-      # https://relod.in here once that domain's DNS is confirmed live.
+      # points at the live deployed site, now the branded relod.in domain
+      # (DNS confirmed live and pointed at Vercel).
       - name: Sync Capacitor
         run: npx cap sync android
         env:
           # Must include /login — the bare domain serves the public marketing
           # landing page, not the app's actual entry point.
-          CAPACITOR_SERVER_URL: https://relod-frontend.vercel.app/login
+          CAPACITOR_SERVER_URL: https://relod.in/login
 
       # `if:` conditions can't reference `secrets` directly (GitHub disallows
       # it) — so the presence check happens in a plain step instead, exposed
