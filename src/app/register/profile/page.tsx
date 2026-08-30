@@ -177,6 +177,7 @@ export default function ProfilePage() {
   const canSubmit =
     fullName.length >= 2 &&
     (userType === 'shipper' || aadhaarNumber.length === 12) &&
+    (userType === 'shipper' || panNumber.length === 10) &&
     (userType === 'shipper' || isOwnerOperator
       ? whatsappStep === 'verified'
       : Number(truckCount) >= 1);
@@ -376,7 +377,6 @@ export default function ProfilePage() {
                         value={panNumber}
                         onChange={(e) => setPanNumber(e.target.value.toUpperCase())}
                       />
-                      <p className="text-xs text-muted-foreground">{t('profile.panHint')}</p>
                     </div>
                   </div>
                 </>
