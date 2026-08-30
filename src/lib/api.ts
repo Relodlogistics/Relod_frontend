@@ -1,4 +1,13 @@
+import { Capacitor } from '@capacitor/core';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3000';
+
+// Identifies native-app requests to the backend so it can skip Turnstile —
+// unreliable inside an embedded Android WebView (see AuthController). Must
+// match isNativeAppRequest's expected header value there exactly.
+const NATIVE_APP_HEADERS: Record<string, string> = Capacitor.isNativePlatform()
+  ? { 'X-App-Client': 'relod-android' }
+  : {};
 
 // Uploaded documents/photos come back as either a relative /uploads/... path
 // (LocalStorageProvider) or a full signed URL (a real object-storage provider) —
@@ -96,6 +105,7 @@ export const api = {
   ) =>
     request<{ message: string; expiresInSeconds: number; devCode?: string }>('/auth/send-otp', {
       method: 'POST',
+      headers: NATIVE_APP_HEADERS,
       body: JSON.stringify({ phone, purpose, turnstileToken }),
     }),
 
@@ -138,7 +148,7 @@ export const api = {
   loginPassword: (data: { username: string; password: string; turnstileToken: string }) =>
     request<{ accessToken: string; accountId: string; userType: 'carrier' | 'shipper' }>(
       '/auth/login-password',
-      { method: 'POST', body: JSON.stringify(data) },
+      { method: 'POST', headers: NATIVE_APP_HEADERS, body: JSON.stringify(data) },
     ),
 
   forgotPassword: (phone: string) =>

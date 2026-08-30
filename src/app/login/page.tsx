@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Capacitor } from '@capacitor/core';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +19,11 @@ import { PhoneInput } from '@/components/PhoneInput';
 import { TurnstileWidget } from '@/components/TurnstileWidget';
 
 type OtpStep = 'phone' | 'otp';
+
+// Cloudflare Turnstile is unreliable inside an embedded Android WebView
+// ("Unable to connect to website") — skip it entirely on native, matching
+// the backend's isNativeAppRequest check (header sent by api.ts).
+const isNative = Capacitor.isNativePlatform();
 
 export default function LoginPage() {
   const { t } = useTranslation();
@@ -144,7 +150,7 @@ export default function LoginPage() {
             </TabsList>
           </Tabs>
 
-          <TurnstileWidget key={turnstileKey} onVerify={setTurnstileToken} />
+          {!isNative && <TurnstileWidget key={turnstileKey} onVerify={setTurnstileToken} />}
 
           {loginTab === 'password' && (
             <div className="flex flex-col gap-4">
@@ -172,7 +178,7 @@ export default function LoginPage() {
                   passwordLoading ||
                   !username ||
                   !password ||
-                  (!!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !turnstileToken)
+                  (!isNative && !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !turnstileToken)
                 }
               >
                 {t('login.loginButton')}
@@ -227,7 +233,7 @@ export default function LoginPage() {
                     disabled={
                       otpLoading ||
                       phone.length < 10 ||
-                      (!!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !turnstileToken)
+                      (!isNative && !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !turnstileToken)
                     }
                   >
                     {t('phone.sendOtp')}

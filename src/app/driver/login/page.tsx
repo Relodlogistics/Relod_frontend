@@ -14,8 +14,14 @@ import { AuthBackground } from '@/components/auth/AuthBackground';
 import { Logo } from '@/components/Logo';
 import { PhoneInput } from '@/components/PhoneInput';
 import { TurnstileWidget } from '@/components/TurnstileWidget';
+import { Capacitor } from '@capacitor/core';
 
 type Step = 'phone' | 'otp';
+
+// Cloudflare Turnstile is unreliable inside an embedded Android WebView
+// ("Unable to connect to website") — skip it entirely on native, matching
+// the backend's isNativeAppRequest check (header sent by api.ts).
+const isNative = Capacitor.isNativePlatform();
 
 // Drivers never sign up separately — their login identity is the phone
 // number the owner already WhatsApp-verified while onboarding their truck
@@ -111,7 +117,7 @@ export default function DriverLoginPage() {
               </Alert>
             )}
 
-            <TurnstileWidget key={turnstileKey} onVerify={setTurnstileToken} />
+            {!isNative && <TurnstileWidget key={turnstileKey} onVerify={setTurnstileToken} />}
 
             {step === 'phone' ? (
               <>
@@ -129,7 +135,7 @@ export default function DriverLoginPage() {
                   disabled={
                     loading ||
                     phone.length < 10 ||
-                    (!!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !turnstileToken)
+                    (!isNative && !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !turnstileToken)
                   }
                 >
                   {t('phone.sendOtp')}

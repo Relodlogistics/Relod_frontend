@@ -16,8 +16,14 @@ import { AuthBackground } from '@/components/auth/AuthBackground';
 import { Logo } from '@/components/Logo';
 import { PhoneInput } from '@/components/PhoneInput';
 import { TurnstileWidget } from '@/components/TurnstileWidget';
+import { Capacitor } from '@capacitor/core';
 
 type Step = 'phone' | 'otp';
+
+// Cloudflare Turnstile is unreliable inside an embedded Android WebView
+// ("Unable to connect to website") — skip it entirely on native, matching
+// the backend's isNativeAppRequest check (header sent by api.ts).
+const isNative = Capacitor.isNativePlatform();
 
 export default function PhonePage() {
   const { t } = useTranslation();
@@ -105,7 +111,7 @@ export default function PhonePage() {
                 the same widget instance is still available if the user hits
                 "Resend" — Turnstile tokens are single-use, and re-rendering it
                 fresh here gives a new token automatically after each solve. */}
-            <TurnstileWidget key={turnstileKey} onVerify={setTurnstileToken} />
+            {!isNative && <TurnstileWidget key={turnstileKey} onVerify={setTurnstileToken} />}
 
             {step === 'phone' ? (
               <>
@@ -120,7 +126,7 @@ export default function PhonePage() {
                 </div>
                 <Button
                   onClick={handleSendOtp}
-                  disabled={loading || phone.length < 10 || (!!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !turnstileToken)}
+                  disabled={loading || phone.length < 10 || (!isNative && !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !turnstileToken)}
                 >
                   {t('phone.sendOtp')}
                 </Button>
