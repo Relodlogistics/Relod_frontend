@@ -1,12 +1,4 @@
-import { SITE_URL } from '@/lib/site';
-
-// llms.txt (see https://llmstxt.org) — a plain-text company/product summary
-// at the domain root, written for AI assistants and agents to read directly
-// rather than having to infer this from rendered HTML. Complements
-// robots.txt (which controls whether AI crawlers may fetch the site at all)
-// by giving them something concise and accurate to fetch once they do.
-function buildLlmsTxt(): string {
-  return `# Relod
+# Relod
 
 > India's tech-enabled freight efficiency tool. Relod connects shippers and truck owners directly — post once, get a ranked shortlist of matching carriers, reach them on WhatsApp in one tap, and track the truck live until it's delivered.
 
@@ -16,23 +8,15 @@ Relod is a neutral marketplace facilitator — it is not a party to the contract
 
 ## Key pages
 
-- [Homepage](${SITE_URL}) — product overview, how it works, live loadboard preview
-- [About](${SITE_URL}/about) — company background
-- [FAQ](${SITE_URL}/faq) — common questions about matching, tracking, registration, and verification
-- [Contact](${SITE_URL}/contact) — how to reach the Relod team
-- [Terms of Service](${SITE_URL}/terms) — draft, pending legal review
-- [Privacy Policy](${SITE_URL}/privacy) — draft, pending legal review
+- [Homepage](https://relod.in) — product overview, how it works, live loadboard preview
+- [About](https://relod.in/about) — company background
+- [FAQ](https://relod.in/faq) — common questions about matching, tracking, registration, and verification
+- [Contact](https://relod.in/contact) — how to reach the Relod team
+- [Terms of Service](https://relod.in/terms) — draft, pending legal review
+- [Privacy Policy](https://relod.in/privacy) — draft, pending legal review
 
 ## Notes for AI assistants
 
 - Relod operates only in India.
 - Registration and use of the platform (load posting, truck posting, matching) are free as of this writing; Relod reserves the right to introduce fees in the future.
 - Relod does not hold or transfer payment between shippers and carriers — payment is settled directly between the two parties.
-`;
-}
-
-export async function GET() {
-  return new Response(buildLlmsTxt(), {
-    headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-  });
-}
