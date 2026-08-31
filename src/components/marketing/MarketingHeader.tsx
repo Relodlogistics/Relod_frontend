@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, ChevronDown } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { Button } from '@/components/ui/button';
@@ -15,16 +15,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuLinkItem,
+} from '@/components/ui/dropdown-menu';
 import { useMarketingRole } from '@/lib/marketing-role-context';
 import { cn } from '@/lib/utils';
 
+// Flat, most-clicked items only — mirrors how peer sites (e.g. BlackBuck) keep
+// the header to a handful of visual slots by grouping lower-traffic pages
+// into a single dropdown instead of listing everything flat.
 const NAV_LINKS = [
   { href: '/#loadboard', labelKey: 'marketing.nav.loadboard' },
   { href: '/#features', labelKey: 'marketing.nav.features' },
-  { href: '/#how-it-works', labelKey: 'marketing.nav.howItWorks' },
-  { href: '/about', labelKey: 'marketing.nav.about' },
-  { href: '/faq', labelKey: 'marketing.nav.faq' },
+  { href: '/blog', labelKey: 'marketing.nav.blog' },
   { href: '/contact', labelKey: 'marketing.nav.contact' },
+];
+
+const COMPANY_LINKS = [
+  { href: '/about', labelKey: 'marketing.nav.about' },
+  { href: '/#how-it-works', labelKey: 'marketing.nav.howItWorks' },
+  { href: '/faq', labelKey: 'marketing.nav.faq' },
 ];
 
 function RoleSwitcher({ className }: { className?: string }) {
@@ -74,6 +87,24 @@ export function MarketingHeader() {
               {t(link.labelKey)}
             </Link>
           ))}
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              className={cn(
+                'flex items-center gap-1 text-sm font-medium text-muted-foreground outline-none transition-colors hover:text-foreground data-[popup-open]:text-foreground',
+                COMPANY_LINKS.some((link) => pathname === link.href) && 'text-foreground',
+              )}
+            >
+              {t('marketing.nav.company')}
+              <ChevronDown className="size-3.5" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              {COMPANY_LINKS.map((link) => (
+                <DropdownMenuLinkItem key={link.href} render={<Link href={link.href} />}>
+                  {t(link.labelKey)}
+                </DropdownMenuLinkItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </nav>
 
         <div className="hidden items-center gap-2 md:flex">
@@ -115,6 +146,18 @@ export function MarketingHeader() {
                 {t(link.labelKey)}
               </Link>
             ))}
+            <div className="mt-1 flex flex-col gap-3 border-t pt-3">
+              {COMPANY_LINKS.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMenuOpen(false)}
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground"
+                >
+                  {t(link.labelKey)}
+                </Link>
+              ))}
+            </div>
           </nav>
           <div className="mt-4 flex items-center gap-2">
             <RoleSwitcher />

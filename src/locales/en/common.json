@@ -986,7 +986,9 @@
       "login": "Log in",
       "register": "Get started",
       "toggleMenu": "Toggle menu",
-      "contact": "Contact"
+      "contact": "Contact",
+      "blog": "Blog",
+      "company": "Company"
     },
     "footer": {
       "tagline": "A tech-enabled efficiency tool connecting shippers with multimodal transporting fleets — ranked matching, WhatsApp outreach, and live tracking in one place.",
