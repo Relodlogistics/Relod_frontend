@@ -31,11 +31,11 @@ const NAV_LINKS = [
   { href: '/#loadboard', labelKey: 'marketing.nav.loadboard' },
   { href: '/#features', labelKey: 'marketing.nav.features' },
   { href: '/blog', labelKey: 'marketing.nav.blog' },
-  { href: '/contact', labelKey: 'marketing.nav.contact' },
+  { href: '/about', labelKey: 'marketing.nav.about' },
 ];
 
 const COMPANY_LINKS = [
-  { href: '/about', labelKey: 'marketing.nav.about' },
+  { href: '/contact', labelKey: 'marketing.nav.contact' },
   { href: '/#how-it-works', labelKey: 'marketing.nav.howItWorks' },
   { href: '/faq', labelKey: 'marketing.nav.faq' },
 ];
