@@ -43,3 +43,11 @@ export function useWalletBalance(token: string | undefined): string | null {
 
   return value;
 }
+
+// Below this, a low balance is flagged red so a shipper notices before it
+// blocks their next booking; at or above it, green.
+export const LOW_BALANCE_THRESHOLD = 5000;
+
+export function balanceColorClass(balance: number): string {
+  return balance < LOW_BALANCE_THRESHOLD ? 'text-destructive' : 'text-emerald-600';
+}

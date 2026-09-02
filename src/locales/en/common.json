@@ -362,6 +362,7 @@
   },
   "walletPage": {
     "title": "Wallet",
+    "loading": "Loading…",
     "balance": "Available balance",
     "rechargeTitle": "Add money",
     "rechargeSubtitle": "Transfer via NEFT/RTGS to our bank account, then submit the UTR below. We'll verify it and credit your wallet.",

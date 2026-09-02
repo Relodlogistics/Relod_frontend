@@ -9,17 +9,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { api, ApiError, WalletTransaction, WalletTopupRequest } from '@/lib/api';
 import { useSession } from '@/lib/session-context';
-import { useWalletBalance, refreshWalletBalance } from '@/lib/wallet-store';
+import { useWalletBalance, refreshWalletBalance, balanceColorClass } from '@/lib/wallet-store';
 import { formatMoney } from '@/lib/utils';
 
-// Real values must come from env — a hardcoded/placeholder account number
-// here would be actively dangerous (a shipper could wire real money to a
-// wrong or nonexistent account). Shows a clear "not set up yet" state
-// instead of ever guessing.
-const BANK_NAME = process.env.NEXT_PUBLIC_RELOD_BANK_ACCOUNT_NAME;
-const BANK_ACCOUNT_NUMBER = process.env.NEXT_PUBLIC_RELOD_BANK_ACCOUNT_NUMBER;
-const BANK_IFSC = process.env.NEXT_PUBLIC_RELOD_BANK_IFSC;
-const BANK_DETAILS_CONFIGURED = !!(BANK_NAME && BANK_ACCOUNT_NUMBER && BANK_IFSC);
+// Real values come from env once set on Vercel. Until then, these are
+// OBVIOUSLY-placeholder strings (all X's — never plausible-looking digits)
+// so the page reads as complete during testing without any risk of someone
+// mistaking them for a real account and wiring money to it. Swap the env
+// vars in, and these fallbacks stop being used automatically.
+const BANK_NAME = process.env.NEXT_PUBLIC_RELOD_BANK_ACCOUNT_NAME ?? 'Relod Logistics Pvt Ltd';
+const BANK_ACCOUNT_NUMBER = process.env.NEXT_PUBLIC_RELOD_BANK_ACCOUNT_NUMBER ?? 'XXXXXXXXXXXX';
+const BANK_IFSC = process.env.NEXT_PUBLIC_RELOD_BANK_IFSC ?? 'XXXX0XXXXXX';
 
 function topupStatusVariant(status: WalletTopupRequest['status']) {
   if (status === 'credited') return 'secondary' as const;
@@ -91,7 +91,9 @@ export default function WalletPage() {
       <Card>
         <CardContent className="py-4">
           <p className="text-sm text-muted-foreground">{t('walletPage.balance')}</p>
-          <p className="font-heading text-2xl font-bold">
+          <p
+            className={`font-heading text-2xl font-bold ${balance === null ? '' : balanceColorClass(Number(balance))}`}
+          >
             {balance === null ? '—' : formatMoney(Number(balance))}
           </p>
         </CardContent>
@@ -105,21 +107,17 @@ export default function WalletPage() {
         <CardContent className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5 rounded-lg border bg-muted/30 p-3">
             <p className="text-sm font-medium">{t('walletPage.bankDetailsTitle')}</p>
-            {BANK_DETAILS_CONFIGURED ? (
-              <div className="text-sm text-muted-foreground">
-                <p>
-                  {t('walletPage.bankAccountName')}: {BANK_NAME}
-                </p>
-                <p>
-                  {t('walletPage.bankAccountNumber')}: {BANK_ACCOUNT_NUMBER}
-                </p>
-                <p>
-                  {t('walletPage.bankIfsc')}: {BANK_IFSC}
-                </p>
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">{t('walletPage.bankDetailsNotConfigured')}</p>
-            )}
+            <div className="text-sm text-muted-foreground">
+              <p>
+                {t('walletPage.bankAccountName')}: {BANK_NAME}
+              </p>
+              <p>
+                {t('walletPage.bankAccountNumber')}: {BANK_ACCOUNT_NUMBER}
+              </p>
+              <p>
+                {t('walletPage.bankIfsc')}: {BANK_IFSC}
+              </p>
+            </div>
           </div>
 
           {submitError && <p className="text-sm text-destructive">{submitError}</p>}
@@ -155,7 +153,9 @@ export default function WalletPage() {
           <CardTitle className="text-base">{t('walletPage.myRequestsTitle')}</CardTitle>
         </CardHeader>
         <CardContent>
-          {topups.length === 0 ? (
+          {loading ? (
+            <p className="text-sm text-muted-foreground">{t('walletPage.loading')}</p>
+          ) : topups.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t('walletPage.noRequests')}</p>
           ) : (
             <div className="overflow-x-auto">
@@ -195,7 +195,9 @@ export default function WalletPage() {
           <CardTitle className="text-base">{t('walletPage.transactionsTitle')}</CardTitle>
         </CardHeader>
         <CardContent>
-          {transactions.length === 0 ? (
+          {loading ? (
+            <p className="text-sm text-muted-foreground">{t('walletPage.loading')}</p>
+          ) : transactions.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t('walletPage.noTransactions')}</p>
           ) : (
             <div className="overflow-x-auto">
