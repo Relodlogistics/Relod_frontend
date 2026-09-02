@@ -13,6 +13,7 @@ import {
   Truck,
   Route,
   Wallet,
+  WalletCards,
   FileText,
   MessageSquare,
   Headphones,
@@ -44,6 +45,11 @@ function navItemsFor(userType: 'carrier' | 'shipper') {
       ? [{ href: '/dashboard/tracking', labelKey: 'nav.trackShipments', icon: Truck }]
       : []),
     { href: '/lanes', labelKey: 'nav.lanes', icon: Route },
+    // Wallet (pre-loaded credits) is a shipper concept only — carriers get
+    // paid via CarrierPayout, not a wallet.
+    ...(userType === 'shipper'
+      ? [{ href: '/dashboard/wallet', labelKey: 'nav.wallet', icon: WalletCards }]
+      : []),
     { href: '/dashboard/payments', labelKey: 'nav.payments', icon: Wallet },
     { href: '/dashboard/documents', labelKey: 'nav.documents', icon: FileText },
     { href: '/dashboard/messages', labelKey: 'nav.messages', icon: MessageSquare },

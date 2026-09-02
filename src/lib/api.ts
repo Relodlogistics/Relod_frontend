@@ -804,6 +804,55 @@ export const api = {
       token,
     }),
 
+  // Wallet — shipper-facing
+  getMyWallet: (token: string) => request<Wallet>('/wallet/mine', { token }),
+
+  listMyWalletTransactions: (token: string) =>
+    request<WalletTransaction[]>('/wallet/mine/transactions', { token }),
+
+  createManualTopup: (token: string, amount: string, utr: string) =>
+    request<WalletTopupRequest>('/wallet/topups', {
+      method: 'POST',
+      token,
+      body: JSON.stringify({ amount, utr }),
+    }),
+
+  listMyTopups: (token: string) => request<WalletTopupRequest[]>('/wallet/topups/mine', { token }),
+
+  // Wallet top-ups — admin
+  adminListWalletTopupQueue: (token: string) =>
+    request<AdminWalletTopupRequest[]>('/admin/wallet-topups/queue', { token }),
+
+  adminListWalletTopups: (token: string) =>
+    request<AdminWalletTopupRequest[]>('/admin/wallet-topups', { token }),
+
+  adminVerifyWalletTopup: (token: string, id: string) =>
+    request<AdminWalletTopupRequest>(`/admin/wallet-topups/${id}/verify`, {
+      method: 'PATCH',
+      token,
+    }),
+
+  adminRejectWalletTopup: (token: string, id: string, reason?: string) =>
+    request<AdminWalletTopupRequest>(`/admin/wallet-topups/${id}/reject`, {
+      method: 'PATCH',
+      token,
+      body: JSON.stringify({ reason }),
+    }),
+
+  // Carrier payouts — admin
+  adminListCarrierPayoutQueue: (token: string) =>
+    request<AdminCarrierPayout[]>('/admin/carrier-payouts/queue', { token }),
+
+  adminListCarrierPayouts: (token: string) =>
+    request<AdminCarrierPayout[]>('/admin/carrier-payouts', { token }),
+
+  adminMarkCarrierPayoutPaid: (token: string, id: string, utr: string) =>
+    request<AdminCarrierPayout>(`/admin/carrier-payouts/${id}/paid`, {
+      method: 'PATCH',
+      token,
+      body: JSON.stringify({ utr }),
+    }),
+
   adminListShippers: (token: string) => request<Shipper[]>('/admin/shippers', { token }),
 
   adminGetShipper: (token: string, id: string) => request<Shipper>(`/admin/shippers/${id}`, { token }),
@@ -1382,6 +1431,81 @@ export interface AdminPaymentTrackingLog {
   discrepancyNotes: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface Wallet {
+  id: string;
+  shipperId: string;
+  balance: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type WalletTransactionType =
+  | 'topup_online'
+  | 'topup_manual'
+  | 'booking_debit'
+  | 'booking_refund'
+  | 'admin_adjustment';
+
+export interface WalletTransaction {
+  id: string;
+  walletId: string;
+  type: WalletTransactionType;
+  amount: string;
+  balanceAfter: string;
+  bookingId: string | null;
+  topupRequestId: string | null;
+  adjustedByAdminId: string | null;
+  description: string | null;
+  createdAt: string;
+}
+
+export type WalletTopupRequestStatus = 'pending' | 'credited' | 'rejected' | 'failed';
+
+export interface WalletTopupRequest {
+  id: string;
+  shipperId: string;
+  channel: 'online' | 'manual';
+  amount: string;
+  status: WalletTopupRequestStatus;
+  utr: string | null;
+  verifiedAt: string | null;
+  verifiedByAdminId: string | null;
+  rejectedAt: string | null;
+  rejectionReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminWalletTopupRequest extends WalletTopupRequest {
+  shipper: { id: string; fullName: string; phone: string } | null;
+}
+
+export type CarrierPayoutStatus = 'pending' | 'paid';
+
+export interface CarrierPayout {
+  id: string;
+  bookingId: string;
+  carrierId: string;
+  amount: string;
+  status: CarrierPayoutStatus;
+  paidAt: string | null;
+  paidUtr: string | null;
+  paidByAdminId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminCarrierPayout extends CarrierPayout {
+  carrier: {
+    id: string;
+    fullName: string;
+    phone: string;
+    payoutAccountNumber: string | null;
+    payoutIfsc: string | null;
+    payoutAccountHolderName: string | null;
+  } | null;
 }
 
 export type AdminRole = 'support' | 'ops' | 'super_admin' | 'ceo' | 'cto' | 'cmo' | 'coo' | 'cfo';

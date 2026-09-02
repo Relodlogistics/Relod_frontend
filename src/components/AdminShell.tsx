@@ -5,7 +5,18 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
-import { Users, ClipboardList, Wallet, Headphones, ShieldCheck, ClipboardCheck, History, LogOut } from 'lucide-react';
+import {
+  Users,
+  ClipboardList,
+  Wallet,
+  WalletCards,
+  Banknote,
+  Headphones,
+  ShieldCheck,
+  ClipboardCheck,
+  History,
+  LogOut,
+} from 'lucide-react';
 import { useAdminSession } from '@/lib/admin-session-context';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
@@ -16,6 +27,8 @@ const NAV_ITEMS = [
   { href: '/admin/accounts', labelKey: 'admin.navAccounts', icon: Users },
   { href: '/admin/oversight', labelKey: 'admin.navOversight', icon: ClipboardList },
   { href: '/admin/payments', labelKey: 'admin.navPayments', icon: Wallet },
+  { href: '/admin/wallet-topups', labelKey: 'admin.navWalletTopups', icon: WalletCards },
+  { href: '/admin/carrier-payouts', labelKey: 'admin.navCarrierPayouts', icon: Banknote },
   { href: '/admin/support', labelKey: 'admin.navSupport', icon: Headphones },
   { href: '/admin/change-requests', labelKey: 'admin.navChangeRequests', icon: ClipboardCheck },
   { href: '/admin/activity', labelKey: 'admin.navActivity', icon: History, execOnly: true },
