@@ -363,6 +363,10 @@
   "walletPage": {
     "title": "Wallet",
     "loading": "Loading…",
+    "onlineRechargeTitle": "Add credits",
+    "onlineRechargeSubtitle": "Recharge instantly online — choose UPI, card, or netbanking at checkout.",
+    "addCredits": "Add credits",
+    "onlineComingSoon": "Online payment is coming soon — we're still setting this up. Please use bank transfer below for now.",
     "balance": "Available balance",
     "rechargeTitle": "Add money",
     "rechargeSubtitle": "Transfer via NEFT/RTGS to our bank account, then submit the UTR below. We'll verify it and credit your wallet.",

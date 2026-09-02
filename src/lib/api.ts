@@ -819,6 +819,12 @@ export const api = {
 
   listMyTopups: (token: string) => request<WalletTopupRequest[]>('/wallet/topups/mine', { token }),
 
+  createOnlineTopup: (token: string, amount: string) =>
+    request<{ requestId: string; orderId: string; clientPayload: Record<string, unknown> }>(
+      '/wallet/topups/online',
+      { method: 'POST', token, body: JSON.stringify({ amount }) },
+    ),
+
   // Wallet top-ups — admin
   adminListWalletTopupQueue: (token: string) =>
     request<AdminWalletTopupRequest[]>('/admin/wallet-topups/queue', { token }),
