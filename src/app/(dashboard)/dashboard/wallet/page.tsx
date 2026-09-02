@@ -42,19 +42,6 @@ export default function WalletPage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
 
-  const [onlineAmount, setOnlineAmount] = useState('');
-  const [onlineSubmitting, setOnlineSubmitting] = useState(false);
-  const [onlineError, setOnlineError] = useState<string | null>(null);
-  // Set once the backend confirms the request was created — the backend
-  // side of online recharge is real and tested end-to-end, but no payment
-  // vendor (Razorpay/Cashfree/etc.) is wired in yet, so there's no real
-  // checkout to open. Showing a "coming soon" notice here is the honest
-  // choice — anything that looked like a working payment screen without a
-  // vendor behind it would risk a shipper thinking they'd paid when nothing
-  // happened. Swap this state for actually opening the vendor's checkout
-  // once one is chosen — the API call above it doesn't need to change.
-  const [onlinePending, setOnlinePending] = useState(false);
-
   const load = () => {
     if (!session) return;
     setLoading(true);
@@ -95,24 +82,6 @@ export default function WalletPage() {
     }
   };
 
-  const submitOnlineTopup = async () => {
-    if (!session) return;
-    setOnlineSubmitting(true);
-    setOnlineError(null);
-    setOnlinePending(false);
-    try {
-      // Real API call, real WalletTopupRequest row created on the backend —
-      // only the "open a checkout" step is missing, since no vendor is
-      // wired in yet.
-      await api.createOnlineTopup(session.accessToken, onlineAmount);
-      setOnlinePending(true);
-    } catch (e) {
-      setOnlineError(e instanceof ApiError ? e.message : t('errors.generic'));
-    } finally {
-      setOnlineSubmitting(false);
-    }
-  };
-
   if (!session) return null;
 
   return (
@@ -127,35 +96,6 @@ export default function WalletPage() {
           >
             {balance === null ? '—' : formatMoney(Number(balance))}
           </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">{t('walletPage.onlineRechargeTitle')}</CardTitle>
-          <p className="text-sm text-muted-foreground">{t('walletPage.onlineRechargeSubtitle')}</p>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          {onlineError && <p className="text-sm text-destructive">{onlineError}</p>}
-          {onlinePending && (
-            <p className="text-sm text-amber-600">{t('walletPage.onlineComingSoon')}</p>
-          )}
-          <div className="flex flex-col gap-1.5 sm:max-w-xs">
-            <Label htmlFor="onlineAmount">{t('walletPage.amount')}</Label>
-            <Input
-              id="onlineAmount"
-              type="number"
-              value={onlineAmount}
-              onChange={(e) => setOnlineAmount(e.target.value)}
-            />
-          </div>
-          <Button
-            className="w-fit"
-            disabled={onlineSubmitting || !onlineAmount}
-            onClick={submitOnlineTopup}
-          >
-            {t('walletPage.addCredits')}
-          </Button>
         </CardContent>
       </Card>
 
