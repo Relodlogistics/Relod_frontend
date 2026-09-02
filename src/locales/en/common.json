@@ -364,7 +364,7 @@
     "title": "Wallet",
     "loading": "Loading…",
     "balance": "Available credits",
-    "rechargeTitle": "Add money",
+    "rechargeTitle": "Add money to get credits",
     "rechargeSubtitle": "Transfer via NEFT/RTGS to our bank account, then submit the UTR below. We'll verify it and add the credits to your wallet.",
     "bankDetailsTitle": "Bank account for transfer",
     "bankAccountName": "Account name",
