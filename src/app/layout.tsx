@@ -42,6 +42,17 @@ export const metadata: Metadata = {
     "GPS truck tracking",
     "shipper carrier matching",
   ],
+  // Served from /public (not the app/ file convention) so the URL is
+  // stable across deploys — Next.js's file-convention icons get a
+  // cache-busting hash appended on every build, which was likely stopping
+  // Google from ever settling on and caching the favicon for search results.
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.png", type: "image/png" },
+    ],
+    apple: "/apple-icon.png",
+  },
 };
 
 export default async function RootLayout({
