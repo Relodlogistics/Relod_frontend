@@ -973,6 +973,7 @@
     "clearDiscrepancy": "Clear discrepancy",
     "walletTopupsSubtitle": "Verify manual NEFT/RTGS wallet top-ups against the bank statement",
     "carrierPayoutsSubtitle": "Pay carriers via RTGS/NEFT after delivery, and record the UTR",
+    "tabCompletedTopups": "Completed",
     "tabAllTopups": "All requests",
     "tabAllPayouts": "All payouts",
     "colChannel": "Channel",

@@ -41,12 +41,17 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { adminSession, clearAdminSession } = useAdminSession();
   const [unseenChangeRequests, setUnseenChangeRequests] = useState(0);
+  const [unseenWalletTopups, setUnseenWalletTopups] = useState(0);
+  const [unseenSupportTickets, setUnseenSupportTickets] = useState(0);
+  const [unseenCarrierPayouts, setUnseenCarrierPayouts] = useState(0);
 
   // Re-checked on every navigation, and also instantly on the
   // 'admin-change-requests-seen' event the Change Requests page fires right
   // after marking itself seen — without that second path the badge would
   // keep showing the stale count for as long as the admin stayed on that
   // page, since pathname alone wouldn't change until they navigated away.
+  // Wallet Top-ups, Support and Carrier Payouts follow the same pattern,
+  // each with their own event name.
   useEffect(() => {
     if (!adminSession) return;
     const refresh = () => {
@@ -58,8 +63,57 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     refresh();
     window.addEventListener('admin-change-requests-seen', refresh);
     return () => window.removeEventListener('admin-change-requests-seen', refresh);
-     
+
   }, [adminSession, pathname]);
+
+  useEffect(() => {
+    if (!adminSession) return;
+    const refresh = () => {
+      api
+        .adminCountUnseenWalletTopups(adminSession.accessToken)
+        .then((res) => setUnseenWalletTopups(res.count))
+        .catch(() => undefined);
+    };
+    refresh();
+    window.addEventListener('admin-wallet-topups-seen', refresh);
+    return () => window.removeEventListener('admin-wallet-topups-seen', refresh);
+
+  }, [adminSession, pathname]);
+
+  useEffect(() => {
+    if (!adminSession) return;
+    const refresh = () => {
+      api
+        .adminCountUnseenSupportTickets(adminSession.accessToken)
+        .then((res) => setUnseenSupportTickets(res.count))
+        .catch(() => undefined);
+    };
+    refresh();
+    window.addEventListener('admin-support-seen', refresh);
+    return () => window.removeEventListener('admin-support-seen', refresh);
+
+  }, [adminSession, pathname]);
+
+  useEffect(() => {
+    if (!adminSession) return;
+    const refresh = () => {
+      api
+        .adminCountUnseenCarrierPayouts(adminSession.accessToken)
+        .then((res) => setUnseenCarrierPayouts(res.count))
+        .catch(() => undefined);
+    };
+    refresh();
+    window.addEventListener('admin-carrier-payouts-seen', refresh);
+    return () => window.removeEventListener('admin-carrier-payouts-seen', refresh);
+
+  }, [adminSession, pathname]);
+
+  const unseenCountByHref: Record<string, number> = {
+    '/admin/change-requests': unseenChangeRequests,
+    '/admin/wallet-topups': unseenWalletTopups,
+    '/admin/support': unseenSupportTickets,
+    '/admin/carrier-payouts': unseenCarrierPayouts,
+  };
 
   if (!adminSession) return null;
 
@@ -88,7 +142,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           {NAV_ITEMS.filter((item) => !item.execOnly || isExec).map(
             ({ href, labelKey, icon: Icon }) => {
               const active = pathname === href || pathname.startsWith(href + '/');
-              const showBadge = href === '/admin/change-requests' && unseenChangeRequests > 0;
+              const unseenCount = unseenCountByHref[href] ?? 0;
+              const showBadge = unseenCount > 0;
               return (
                 <Link
                   key={href}
@@ -104,7 +159,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                   <span className="flex-1">{t(labelKey)}</span>
                   {showBadge && (
                     <span className="flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
-                      {unseenChangeRequests}
+                      {unseenCount}
                     </span>
                   )}
                 </Link>

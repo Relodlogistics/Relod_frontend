@@ -832,6 +832,9 @@ export const api = {
   adminListWalletTopups: (token: string) =>
     request<AdminWalletTopupRequest[]>('/admin/wallet-topups', { token }),
 
+  adminListWalletTopupCompleted: (token: string) =>
+    request<AdminWalletTopupRequest[]>('/admin/wallet-topups/completed', { token }),
+
   adminVerifyWalletTopup: (token: string, id: string) =>
     request<AdminWalletTopupRequest>(`/admin/wallet-topups/${id}/verify`, {
       method: 'PATCH',
@@ -844,6 +847,12 @@ export const api = {
       token,
       body: JSON.stringify({ reason }),
     }),
+
+  adminCountUnseenWalletTopups: (token: string) =>
+    request<{ count: number }>('/admin/wallet-topups/unseen-count', { token }),
+
+  adminMarkWalletTopupsSeen: (token: string) =>
+    request<{ message: string }>('/admin/wallet-topups/mark-seen', { method: 'PATCH', token }),
 
   // Carrier payouts — admin
   adminListCarrierPayoutQueue: (token: string) =>
@@ -858,6 +867,12 @@ export const api = {
       token,
       body: JSON.stringify({ utr }),
     }),
+
+  adminCountUnseenCarrierPayouts: (token: string) =>
+    request<{ count: number }>('/admin/carrier-payouts/unseen-count', { token }),
+
+  adminMarkCarrierPayoutsSeen: (token: string) =>
+    request<{ message: string }>('/admin/carrier-payouts/mark-seen', { method: 'PATCH', token }),
 
   adminListShippers: (token: string) => request<Shipper[]>('/admin/shippers', { token }),
 
@@ -900,6 +915,12 @@ export const api = {
 
   adminListSupportTicketMessages: (token: string, ticketId: string) =>
     request<SupportTicketMessage[]>(`/admin/support-tickets/${ticketId}/messages`, { token }),
+
+  adminCountUnseenSupportTickets: (token: string) =>
+    request<{ count: number }>('/admin/support-tickets/unseen-count', { token }),
+
+  adminMarkSupportTicketsSeen: (token: string) =>
+    request<{ message: string }>('/admin/support-tickets/mark-seen', { method: 'PATCH', token }),
 
   adminListAdminUsers: (token: string) => request<AdminUserListItem[]>('/admin/users', { token }),
 

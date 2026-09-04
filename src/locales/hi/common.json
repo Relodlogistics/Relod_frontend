@@ -973,6 +973,7 @@
     "clearDiscrepancy": "विसंगति हटाएं",
     "walletTopupsSubtitle": "बैंक स्टेटमेंट के आधार पर मैनुअल NEFT/RTGS वॉलेट रिचार्ज सत्यापित करें",
     "carrierPayoutsSubtitle": "डिलीवरी के बाद RTGS/NEFT से कैरियर को भुगतान करें, और UTR दर्ज करें",
+    "tabCompletedTopups": "पूर्ण",
     "tabAllTopups": "सभी अनुरोध",
     "tabAllPayouts": "सभी भुगतान",
     "colChannel": "माध्यम",

@@ -57,6 +57,17 @@ export default function AdminSupportPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adminSession, status]);
 
+  // Marks the badge as seen for this admin, then tells AdminShell to clear
+  // it immediately — see the identical effect in change-requests/page.tsx.
+  useEffect(() => {
+    if (!adminSession) return;
+    api
+      .adminMarkSupportTicketsSeen(adminSession.accessToken)
+      .then(() => window.dispatchEvent(new Event('admin-support-seen')))
+      .catch(() => undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adminSession]);
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-3">

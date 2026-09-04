@@ -113,7 +113,7 @@ export default function AdminWalletTopupsPage() {
   const { t } = useTranslation();
   const { adminSession } = useAdminSession();
 
-  const [view, setView] = useState<'queue' | 'all'>('queue');
+  const [view, setView] = useState<'queue' | 'completed' | 'all'>('queue');
   const [requests, setRequests] = useState<AdminWalletTopupRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -125,7 +125,9 @@ export default function AdminWalletTopupsPage() {
     const loader =
       view === 'queue'
         ? api.adminListWalletTopupQueue(adminSession.accessToken)
-        : api.adminListWalletTopups(adminSession.accessToken);
+        : view === 'completed'
+          ? api.adminListWalletTopupCompleted(adminSession.accessToken)
+          : api.adminListWalletTopups(adminSession.accessToken);
     loader
       .then(setRequests)
       .catch((e) => setError(e instanceof ApiError ? e.message : t('errors.generic')))
@@ -134,6 +136,17 @@ export default function AdminWalletTopupsPage() {
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(load, [adminSession, view, t]);
+
+  // Marks the badge as seen for this admin, then tells AdminShell to clear
+  // it immediately — see the identical effect in change-requests/page.tsx.
+  useEffect(() => {
+    if (!adminSession) return;
+    api
+      .adminMarkWalletTopupsSeen(adminSession.accessToken)
+      .then(() => window.dispatchEvent(new Event('admin-wallet-topups-seen')))
+      .catch(() => undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adminSession]);
 
   const handleUpdated = (updated: AdminWalletTopupRequest) => {
     if (view === 'queue' && updated.status !== 'pending') {
@@ -150,9 +163,10 @@ export default function AdminWalletTopupsPage() {
         <p className="text-sm text-muted-foreground">{t('admin.walletTopupsSubtitle')}</p>
       </div>
 
-      <Tabs value={view} onValueChange={(v) => v && setView(v as 'queue' | 'all')}>
+      <Tabs value={view} onValueChange={(v) => v && setView(v as 'queue' | 'completed' | 'all')}>
         <TabsList>
           <TabsTrigger value="queue">{t('admin.tabQueue')}</TabsTrigger>
+          <TabsTrigger value="completed">{t('admin.tabCompletedTopups')}</TabsTrigger>
           <TabsTrigger value="all">{t('admin.tabAllTopups')}</TabsTrigger>
         </TabsList>
       </Tabs>

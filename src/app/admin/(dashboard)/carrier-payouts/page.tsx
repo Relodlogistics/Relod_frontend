@@ -109,6 +109,17 @@ export default function AdminCarrierPayoutsPage() {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(load, [adminSession, view, t]);
 
+  // Marks the badge as seen for this admin, then tells AdminShell to clear
+  // it immediately — see the identical effect in change-requests/page.tsx.
+  useEffect(() => {
+    if (!adminSession) return;
+    api
+      .adminMarkCarrierPayoutsSeen(adminSession.accessToken)
+      .then(() => window.dispatchEvent(new Event('admin-carrier-payouts-seen')))
+      .catch(() => undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adminSession]);
+
   const handleUpdated = (updated: AdminCarrierPayout) => {
     if (view === 'queue' && updated.status !== 'pending') {
       setPayouts((prev) => prev.filter((p) => p.id !== updated.id));
