@@ -8,13 +8,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
-import { api, ApiError, AdminUser, AdminUserListItem } from '@/lib/api';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { api, ApiError, AdminUser, AdminUserListItem, AdminActivityLogEntry } from '@/lib/api';
 import { useAdminSession } from '@/lib/admin-session-context';
 import { timeAgo } from '@/lib/utils';
 
 const ROLES: AdminUser['role'][] = ['ceo', 'cto', 'cmo', 'coo', 'cfo', 'ops', 'support', 'super_admin'];
 
-export default function AdminUsersPage() {
+function PresentEmployeesTab() {
   const { t } = useTranslation();
   const { adminSession } = useAdminSession();
 
@@ -111,11 +112,7 @@ export default function AdminUsersPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h1 className="font-heading text-xl font-bold">{t('admin.navAdminUsers')}</h1>
-          <p className="text-sm text-muted-foreground">{t('admin.usersSubtitle')}</p>
-        </div>
+      <div className="flex items-center justify-end gap-3">
         <Button size="sm" onClick={() => setShowCreate((v) => !v)}>
           {showCreate ? t('admin.cancel') : t('admin.addAdmin')}
         </Button>
@@ -298,6 +295,97 @@ export default function AdminUsersPage() {
           </CardContent>
         </Card>
       )}
+    </div>
+  );
+}
+
+function ActivityTab() {
+  const { t } = useTranslation();
+  const { adminSession } = useAdminSession();
+
+  const [entries, setEntries] = useState<AdminActivityLogEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!adminSession) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoading(true);
+
+    setError(null);
+    api
+      .adminListActivity(adminSession.accessToken)
+      .then(setEntries)
+      .catch((e) => setError(e instanceof ApiError ? e.message : t('errors.generic')))
+      .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adminSession]);
+
+  return (
+    <div className="flex flex-col gap-4">
+      {error && <p className="text-sm text-destructive">{error}</p>}
+      {loading && <p className="text-sm text-muted-foreground">{t('admin.loading')}</p>}
+
+      {!loading && entries.length === 0 && !error && (
+        <Card>
+          <CardContent className="py-6 text-center text-muted-foreground">{t('admin.activityEmpty')}</CardContent>
+        </Card>
+      )}
+
+      {!loading && entries.length > 0 && (
+        <Card>
+          <CardContent className="overflow-x-auto py-2">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-xs text-muted-foreground">
+                  <th className="py-2 pr-3 font-medium">{t('admin.activityWho')}</th>
+                  <th className="py-2 pr-3 font-medium">{t('admin.activityWhat')}</th>
+                  <th className="py-2 pr-3 font-medium">{t('admin.activityTarget')}</th>
+                  <th className="py-2 font-medium">{t('admin.activityWhen')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {entries.map((entry) => (
+                  <tr key={entry.id} className="border-b last:border-b-0 align-top hover:bg-accent/40">
+                    <td className="py-3 pr-3 whitespace-nowrap">
+                      <p className="font-medium">{entry.adminName}</p>
+                      <Badge variant="outline" className="mt-1">
+                        {t(`admin.role_${entry.adminRole}`)}
+                      </Badge>
+                    </td>
+                    <td className="py-3 pr-3">{entry.description}</td>
+                    <td className="py-3 pr-3 text-muted-foreground">{entry.targetLabel ?? '—'}</td>
+                    <td className="py-3 whitespace-nowrap text-muted-foreground">{timeAgo(entry.createdAt)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+export default function AdminEmployeesPage() {
+  const { t } = useTranslation();
+  const [tab, setTab] = useState<'present' | 'activity'>('present');
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div>
+        <h1 className="font-heading text-xl font-bold">{t('admin.navEmployees')}</h1>
+        <p className="text-sm text-muted-foreground">{t('admin.employeesSubtitle')}</p>
+      </div>
+
+      <Tabs value={tab} onValueChange={(v) => v && setTab(v as 'present' | 'activity')}>
+        <TabsList>
+          <TabsTrigger value="present">{t('admin.tabPresentEmployees')}</TabsTrigger>
+          <TabsTrigger value="activity">{t('admin.tabActivity')}</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      {tab === 'present' ? <PresentEmployeesTab /> : <ActivityTab />}
     </div>
   );
 }

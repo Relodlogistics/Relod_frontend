@@ -14,7 +14,6 @@ import {
   Headphones,
   ShieldCheck,
   ClipboardCheck,
-  History,
   LogOut,
   RefreshCcw,
 } from 'lucide-react';
@@ -22,8 +21,10 @@ import { useAdminSession } from '@/lib/admin-session-context';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
 
-// ceo/cto see two extra items no one else does: managing the team, and the
-// activity log tracking everyone's actions (including their own).
+// ceo/cto/super_admin see one extra item no one else does: the Employees
+// tab, which bundles managing the team and the activity log tracking
+// everyone's actions (including their own) into one page with sub-tabs —
+// see admin/(dashboard)/employees/page.tsx.
 const NAV_ITEMS = [
   { href: '/admin/oversight', labelKey: 'admin.navOversight', icon: ClipboardList },
   { href: '/admin/payments', labelKey: 'admin.navPayments', icon: Wallet },
@@ -34,8 +35,7 @@ const NAV_ITEMS = [
   { href: '/admin/reverifications', labelKey: 'admin.navReverifications', icon: RefreshCcw },
   // Rarely opened day-to-day, so it sits last among the always-visible items.
   { href: '/admin/accounts', labelKey: 'admin.navAccounts', icon: Users },
-  { href: '/admin/activity', labelKey: 'admin.navActivity', icon: History, execOnly: true },
-  { href: '/admin/users', labelKey: 'admin.navAdminUsers', icon: ShieldCheck, execOnly: true },
+  { href: '/admin/employees', labelKey: 'admin.navEmployees', icon: ShieldCheck, execOnly: true },
 ];
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
@@ -148,7 +148,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   const initial = adminSession.admin.name.charAt(0).toUpperCase();
   const roleLabel = t(`admin.role_${adminSession.admin.role}`);
-  const isExec = adminSession.admin.role === 'ceo' || adminSession.admin.role === 'cto';
+  const isExec =
+    adminSession.admin.role === 'ceo' ||
+    adminSession.admin.role === 'cto' ||
+    adminSession.admin.role === 'super_admin';
 
   return (
     <div className="flex flex-1 bg-background">
