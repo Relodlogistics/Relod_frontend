@@ -430,6 +430,11 @@
     "adminNote": "हमारी टीम की टिप्पणी",
     "close": "बंद करें"
   },
+  "reverificationPopup": {
+    "title": "Relod को आपसे कुछ चीज़ें दोबारा सत्यापित करने की ज़रूरत है",
+    "fixThis": "इसे ठीक करें",
+    "later": "बाद में"
+  },
   "driverLogin": {
     "title": "ड्राइवर लॉगिन",
     "subtitle": "वह फ़ोन नंबर डालें जिससे आपके ट्रक मालिक ने आपको रजिस्टर किया है",
@@ -455,6 +460,32 @@
     "noPostingsYet": "आपने अभी तक अपने ट्रक की उपलब्धता पोस्ट नहीं की है।",
     "noBookingsYet": "अभी तक कोई बुकिंग नहीं।"
   },
+  "reverifyPage": {
+    "title": "पुनः सत्यापित करें: {{field}}",
+    "backToDashboard": "डैशबोर्ड पर वापस जाएं",
+    "submit": "सबमिट करें",
+    "doneTitle": "धन्यवाद — यह अपडेट कर दिया गया है।",
+    "changeRequestSubmittedTitle": "अनुरोध सबमिट किया गया",
+    "changeRequestSubmittedBody": "Relod टीम इसकी समीक्षा करेगी और स्वीकृति मिलने पर इसे अपडेट कर देगी।",
+    "phoneExplanation": "अपना फ़ोन नंबर बदलने के लिए आपके वर्तमान और नए दोनों नंबरों का त्वरित सत्यापन आवश्यक है।",
+    "goToChangePhone": "मेरा फ़ोन नंबर बदलें",
+    "defaultReason": "Relod टीम द्वारा {{field}} के लिए पुनः सत्यापन का अनुरोध किया गया"
+  },
+  "changePhone": {
+    "title": "फ़ोन नंबर बदलें",
+    "changeButton": "फ़ोन नंबर बदलें",
+    "currentPhone": "वर्तमान फ़ोन नंबर",
+    "newPhone": "नया फ़ोन नंबर",
+    "reason": "नंबर बदलने का कारण",
+    "reasonPlaceholder": "जैसे पुराना सिम खो गया, नया ऑपरेटर लिया",
+    "continue": "जारी रखें",
+    "subtitleEnterDetails": "आपको अपने वर्तमान और नए दोनों फ़ोन नंबर को OTP से सत्यापित करना होगा।",
+    "subtitleVerifyCurrent": "अपने वर्तमान नंबर {{phone}} पर भेजा गया कोड दर्ज करें",
+    "subtitleVerifyNew": "अपने नए नंबर {{phone}} पर भेजा गया कोड दर्ज करें",
+    "successTitle": "फ़ोन नंबर अपडेट हो गया",
+    "successBody": "आपका खाता अब {{phone}} से जुड़ा है। किसी भी अन्य साइन-इन डिवाइस को लॉग आउट कर दिया गया है।",
+    "done": "पूर्ण"
+  },
   "settingsPage": {
     "title": "सेटिंग्स",
     "overview": "खाता अवलोकन",
@@ -475,6 +506,7 @@
     "saved": "प्रोफ़ाइल अपडेट हो गई",
     "logout": "लॉग आउट",
     "forgotPasswordHint": "यूज़रनेम और पासवर्ड से लॉग इन करना चाहते हैं, या अपना मौजूदा पासवर्ड भूल गए?",
+    "backToSettings": "सेटिंग्स पर वापस जाएं",
     "forgotPasswordLink": "पासवर्ड सेट या रीसेट करें",
     "identityDetails": "पहचान विवरण",
     "notSet": "दर्ज नहीं है",
@@ -1051,7 +1083,26 @@
     "never": "कभी नहीं",
     "deactivate": "निष्क्रिय करें",
     "activate": "सक्रिय करें",
-    "cannotDeactivateSelf": "आप अपना खाता निष्क्रिय नहीं कर सकते"
+    "cannotDeactivateSelf": "आप अपना खाता निष्क्रिय नहीं कर सकते",
+    "reverify": "पुनः सत्यापित करें",
+    "reverifyReasonPlaceholder": "इसे दोबारा सत्यापित करने की आवश्यकता क्यों है? (वैकल्पिक)",
+    "sendRequest": "अनुरोध भेजें",
+    "reverificationPending": "पुनः सत्यापन लंबित",
+    "reverificationAwaitingReview": "आपकी समीक्षा प्रतीक्षित",
+    "navReverifications": "पुनः सत्यापन",
+    "reverificationsSubtitle": "वे आइटम जिन्हें टीम ने उपयोगकर्ताओं से दोबारा सत्यापित करने को कहा है",
+    "tabReverifyPending": "लंबित",
+    "tabReverifyCompleted": "उपयोगकर्ता द्वारा पूर्ण",
+    "tabReverifyResolved": "हल किया गया",
+    "colField": "फ़ील्ड",
+    "colRequestedAt": "अनुरोध किया गया",
+    "colReason": "कारण",
+    "colUserCompletedAt": "उपयोगकर्ता द्वारा पूर्ण",
+    "markResolved": "हल किया गया चिह्नित करें",
+    "requestAgain": "फिर से अनुरोध करें",
+    "resolveNotePlaceholder": "नोट (वैकल्पिक)",
+    "confirmResolve": "समाधान की पुष्टि करें",
+    "noReverificationRequests": "कोई पुनः सत्यापन अनुरोध नहीं।"
   },
   "marketing": {
     "nav": {

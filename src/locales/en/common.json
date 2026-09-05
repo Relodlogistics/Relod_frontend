@@ -430,6 +430,11 @@
     "adminNote": "Note from our team",
     "close": "Close"
   },
+  "reverificationPopup": {
+    "title": "Relod needs you to reverify a few things",
+    "fixThis": "Fix this",
+    "later": "Later"
+  },
   "driverLogin": {
     "title": "Driver login",
     "subtitle": "Enter the phone number your truck owner registered you with",
@@ -455,6 +460,32 @@
     "noPostingsYet": "You haven't posted your truck's availability yet.",
     "noBookingsYet": "No bookings yet."
   },
+  "reverifyPage": {
+    "title": "Reverify: {{field}}",
+    "backToDashboard": "Back to dashboard",
+    "submit": "Submit",
+    "doneTitle": "Thanks — this has been updated.",
+    "changeRequestSubmittedTitle": "Request submitted",
+    "changeRequestSubmittedBody": "The Relod team will review this and update it once approved.",
+    "phoneExplanation": "Changing your phone number needs a quick verification of both your current and new number.",
+    "goToChangePhone": "Change my phone number",
+    "defaultReason": "Reverification requested by Relod team for {{field}}"
+  },
+  "changePhone": {
+    "title": "Change phone number",
+    "changeButton": "Change phone number",
+    "currentPhone": "Current phone number",
+    "newPhone": "New phone number",
+    "reason": "Reason for changing your number",
+    "reasonPlaceholder": "e.g. lost my old SIM, switching carriers",
+    "continue": "Continue",
+    "subtitleEnterDetails": "You'll need to verify both your current and new phone number with an OTP.",
+    "subtitleVerifyCurrent": "Enter the code sent to your current number {{phone}}",
+    "subtitleVerifyNew": "Enter the code sent to your new number {{phone}}",
+    "successTitle": "Phone number updated",
+    "successBody": "Your account is now linked to {{phone}}. Any other signed-in device has been logged out.",
+    "done": "Done"
+  },
   "settingsPage": {
     "title": "Settings",
     "overview": "Account overview",
@@ -476,6 +507,7 @@
     "logout": "Log out",
     "forgotPasswordHint": "Want to log in with a username & password, or forgot your current one?",
     "forgotPasswordLink": "Set or reset your password",
+    "backToSettings": "Back to settings",
     "identityDetails": "Identity details",
     "notSet": "Not set",
     "requestChange": "Request change",
@@ -1051,7 +1083,26 @@
     "never": "Never",
     "deactivate": "Deactivate",
     "activate": "Activate",
-    "cannotDeactivateSelf": "You cannot deactivate your own account"
+    "cannotDeactivateSelf": "You cannot deactivate your own account",
+    "reverify": "Reverify",
+    "reverifyReasonPlaceholder": "Why does this need to be reverified? (optional)",
+    "sendRequest": "Send request",
+    "reverificationPending": "Reverification pending",
+    "reverificationAwaitingReview": "Awaiting your review",
+    "navReverifications": "Reverifications",
+    "reverificationsSubtitle": "Items the team has asked users to reverify",
+    "tabReverifyPending": "Pending",
+    "tabReverifyCompleted": "Completed by user",
+    "tabReverifyResolved": "Resolved",
+    "colField": "Field",
+    "colRequestedAt": "Requested",
+    "colReason": "Reason",
+    "colUserCompletedAt": "Completed by user",
+    "markResolved": "Mark resolved",
+    "requestAgain": "Request again",
+    "resolveNotePlaceholder": "Note (optional)",
+    "confirmResolve": "Confirm resolve",
+    "noReverificationRequests": "No reverification requests."
   },
   "marketing": {
     "nav": {

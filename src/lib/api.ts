@@ -151,6 +151,26 @@ export const api = {
       { method: 'POST', headers: NATIVE_APP_HEADERS, body: JSON.stringify(data) },
     ),
 
+  // Phone change — two-step OTP (current phone, then new phone). See
+  // AuthService.requestPhoneChange for the full flow doc.
+  requestPhoneChange: (token: string, newPhone: string, reason: string) =>
+    request<{ requestId: string; message: string; expiresInSeconds: number; devCode?: string }>(
+      '/auth/change-phone/request',
+      { method: 'POST', token, body: JSON.stringify({ newPhone, reason }) },
+    ),
+
+  verifyPhoneChangeCurrent: (token: string, requestId: string, code: string) =>
+    request<{ message: string; expiresInSeconds: number; devCode?: string }>(
+      '/auth/change-phone/verify-current',
+      { method: 'POST', token, body: JSON.stringify({ requestId, code }) },
+    ),
+
+  verifyPhoneChangeNew: (token: string, requestId: string, code: string) =>
+    request<{ message: string; accessToken: string; newPhone: string }>(
+      '/auth/change-phone/verify-new',
+      { method: 'POST', token, body: JSON.stringify({ requestId, code }) },
+    ),
+
   forgotPassword: (phone: string) =>
     request<{ message: string; expiresInSeconds: number; devCode?: string }>('/auth/forgot-password', {
       method: 'POST',
@@ -874,6 +894,53 @@ export const api = {
   adminMarkCarrierPayoutsSeen: (token: string) =>
     request<{ message: string }>('/admin/carrier-payouts/mark-seen', { method: 'PATCH', token }),
 
+  // Reverifications — admin
+  adminCreateReverification: (
+    token: string,
+    data: {
+      accountType: 'carrier' | 'shipper';
+      accountId: string;
+      vehicleId?: string;
+      fieldName: string;
+      reason?: string;
+    },
+  ) =>
+    request<ReverificationRequest>('/admin/reverifications', {
+      method: 'POST',
+      token,
+      body: JSON.stringify(data),
+    }),
+
+  adminListReverifications: (token: string, params?: { status?: string; accountId?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.status) query.set('status', params.status);
+    if (params?.accountId) query.set('accountId', params.accountId);
+    const qs = query.toString();
+    return request<AdminReverificationRequest[]>(`/admin/reverifications${qs ? `?${qs}` : ''}`, {
+      token,
+    });
+  },
+
+  adminResolveReverification: (token: string, id: string, note?: string) =>
+    request<ReverificationRequest>(`/admin/reverifications/${id}/resolve`, {
+      method: 'PATCH',
+      token,
+      body: JSON.stringify({ note }),
+    }),
+
+  adminCountUnseenReverifications: (token: string) =>
+    request<{ count: number }>('/admin/reverifications/unseen-count', { token }),
+
+  adminMarkReverificationsSeen: (token: string) =>
+    request<{ message: string }>('/admin/reverifications/mark-seen', { method: 'PATCH', token }),
+
+  // Reverifications — user (carrier/shipper)
+  listMyReverifications: (token: string) =>
+    request<UserReverificationRequest[]>('/reverifications/mine', { token }),
+
+  getMyReverification: (token: string, id: string) =>
+    request<UserReverificationRequest>(`/reverifications/${id}`, { token }),
+
   adminListShippers: (token: string) => request<Shipper[]>('/admin/shippers', { token }),
 
   adminGetShipper: (token: string, id: string) => request<Shipper>(`/admin/shippers/${id}`, { token }),
@@ -1596,6 +1663,33 @@ export interface AdminSupportTicket extends SupportTicket {
   lastMessageAttachmentName: string | null;
   lastMessageSenderType: 'admin' | 'carrier' | 'shipper' | null;
   needsReply: boolean;
+}
+
+export type ReverificationStatus = 'pending' | 'user_completed' | 'resolved';
+
+export interface ReverificationRequest {
+  id: string;
+  accountType: 'carrier' | 'shipper';
+  accountId: string;
+  vehicleId: string | null;
+  fieldName: string;
+  reason: string | null;
+  status: ReverificationStatus;
+  requestedByAdminId: string;
+  requestedAt: string;
+  userCompletedAt: string | null;
+  resolvedByAdminId: string | null;
+  resolvedAt: string | null;
+  resolvedNote: string | null;
+}
+
+export interface AdminReverificationRequest extends ReverificationRequest {
+  account: { id: string; fullName: string; phone: string } | null;
+  vehicleRegistrationNumber: string | null;
+}
+
+export interface UserReverificationRequest extends ReverificationRequest {
+  vehicleRegistrationNumber: string | null;
 }
 
 export interface SupportTicketMessage {

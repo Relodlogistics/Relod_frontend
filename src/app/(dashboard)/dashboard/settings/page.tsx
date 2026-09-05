@@ -372,6 +372,17 @@ export default function SettingsPage() {
           <CardTitle>{t('settingsPage.identityDetails')}</CardTitle>
         </CardHeader>
         <CardContent className="flex max-w-md flex-col gap-3">
+          <div className="flex items-center justify-between border-t pt-3 first:border-t-0 first:pt-0">
+            <div>
+              <p className="text-sm font-medium">{t('changePhone.currentPhone')}</p>
+              <p className="text-sm text-muted-foreground">{session.phone}</p>
+            </div>
+            <Link href="/dashboard/settings/change-phone">
+              <Button variant="outline" size="sm">
+                {t('changePhone.changeButton')}
+              </Button>
+            </Link>
+          </div>
           <RequestableField
             t={t}
             label={t('profile.whatsappNumber')}

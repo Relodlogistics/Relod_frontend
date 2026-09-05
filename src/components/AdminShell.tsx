@@ -16,6 +16,7 @@ import {
   ClipboardCheck,
   History,
   LogOut,
+  RefreshCcw,
 } from 'lucide-react';
 import { useAdminSession } from '@/lib/admin-session-context';
 import { cn } from '@/lib/utils';
@@ -30,6 +31,7 @@ const NAV_ITEMS = [
   { href: '/admin/carrier-payouts', labelKey: 'admin.navCarrierPayouts', icon: Banknote },
   { href: '/admin/support', labelKey: 'admin.navSupport', icon: Headphones },
   { href: '/admin/change-requests', labelKey: 'admin.navChangeRequests', icon: ClipboardCheck },
+  { href: '/admin/reverifications', labelKey: 'admin.navReverifications', icon: RefreshCcw },
   // Rarely opened day-to-day, so it sits last among the always-visible items.
   { href: '/admin/accounts', labelKey: 'admin.navAccounts', icon: Users },
   { href: '/admin/activity', labelKey: 'admin.navActivity', icon: History, execOnly: true },
@@ -45,6 +47,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const [unseenWalletTopups, setUnseenWalletTopups] = useState(0);
   const [unseenSupportTickets, setUnseenSupportTickets] = useState(0);
   const [unseenCarrierPayouts, setUnseenCarrierPayouts] = useState(0);
+  const [unseenReverifications, setUnseenReverifications] = useState(0);
 
   // Re-checked on every navigation, and also instantly on the
   // 'admin-change-requests-seen' event the Change Requests page fires right
@@ -109,11 +112,26 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   }, [adminSession, pathname]);
 
+  useEffect(() => {
+    if (!adminSession) return;
+    const refresh = () => {
+      api
+        .adminCountUnseenReverifications(adminSession.accessToken)
+        .then((res) => setUnseenReverifications(res.count))
+        .catch(() => undefined);
+    };
+    refresh();
+    window.addEventListener('admin-reverifications-seen', refresh);
+    return () => window.removeEventListener('admin-reverifications-seen', refresh);
+
+  }, [adminSession, pathname]);
+
   const unseenCountByHref: Record<string, number> = {
     '/admin/change-requests': unseenChangeRequests,
     '/admin/wallet-topups': unseenWalletTopups,
     '/admin/support': unseenSupportTickets,
     '/admin/carrier-payouts': unseenCarrierPayouts,
+    '/admin/reverifications': unseenReverifications,
   };
 
   if (!adminSession) return null;

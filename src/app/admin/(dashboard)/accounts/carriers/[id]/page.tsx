@@ -7,9 +7,18 @@ import { ArrowLeft, ExternalLink } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { api, ApiError, AdminCarrierDetail, AdminVehicle, apiFileUrl, vehicleDocumentUrl } from '@/lib/api';
+import {
+  api,
+  ApiError,
+  AdminCarrierDetail,
+  AdminVehicle,
+  ReverificationRequest,
+  apiFileUrl,
+  vehicleDocumentUrl,
+} from '@/lib/api';
 import { useAdminSession } from '@/lib/admin-session-context';
 import { truckTypeLabel } from '@/lib/truck-types';
+import { ReverifyButton } from '@/components/admin/ReverifyButton';
 
 export default function AdminCarrierDetailPage() {
   const { t } = useTranslation();
@@ -21,6 +30,7 @@ export default function AdminCarrierDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [reverifications, setReverifications] = useState<ReverificationRequest[]>([]);
 
   const load = () => {
     if (!adminSession) return;
@@ -31,10 +41,30 @@ export default function AdminCarrierDetailPage() {
       .then(setCarrier)
       .catch((e) => setError(e instanceof ApiError ? e.message : t('errors.generic')))
       .finally(() => setLoading(false));
+    api
+      .adminListReverifications(adminSession.accessToken, { accountId: params.id })
+      .then(setReverifications)
+      .catch(() => undefined);
   };
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(load, [adminSession, params.id, t]);
+
+  // Only pending/user_completed rows matter for the button's own display —
+  // resolved ones should let the button reappear. Look up by
+  // (vehicleId, fieldName) since the same field can be requested again
+  // after a prior request was resolved.
+  const findExisting = (fieldName: string, vehicleId?: string) =>
+    reverifications.find(
+      (r) =>
+        r.fieldName === fieldName &&
+        (r.vehicleId ?? undefined) === vehicleId &&
+        r.status !== 'resolved',
+    );
+
+  const handleReverificationCreated = (created: ReverificationRequest) => {
+    setReverifications((prev) => [created, ...prev]);
+  };
 
   const toggleSuspend = async () => {
     if (!adminSession || !carrier) return;
@@ -61,6 +91,34 @@ export default function AdminCarrierDetailPage() {
       setBusy(null);
     }
   };
+
+  function ProfileFieldRow({
+    label,
+    value,
+    fieldName,
+  }: {
+    label: string;
+    value: string | null;
+    fieldName: string;
+  }) {
+    if (!carrier || !adminSession) return null;
+    return (
+      <div className="flex items-center justify-between gap-2 border-b py-1.5 text-sm last:border-b-0">
+        <div>
+          <p className="text-xs text-muted-foreground">{label}</p>
+          <p>{value ?? '—'}</p>
+        </div>
+        <ReverifyButton
+          token={adminSession.accessToken}
+          accountType="carrier"
+          accountId={carrier.id}
+          fieldName={fieldName}
+          existingRequest={findExisting(fieldName)}
+          onCreated={handleReverificationCreated}
+        />
+      </div>
+    );
+  }
 
   // Legacy fallback for the (unused-by-current-UI) generic `photoUrls` array
   // field — those weren't migrated to the authenticated document route (see
@@ -97,21 +155,64 @@ export default function AdminCarrierDetailPage() {
     docType: string;
     uploaded: boolean;
   }) {
+    if (!carrier || !adminSession) return null;
     return (
       <div className="flex items-center justify-between gap-2 border-b py-1.5 text-sm last:border-b-0">
         <span className="text-muted-foreground">{label}</span>
-        {uploaded && adminSession ? (
-          <a
-            href={vehicleDocumentUrl(vehicleId, docType, adminSession.accessToken)}
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-1 font-medium text-primary hover:underline"
-          >
-            {t('admin.view')} <ExternalLink className="size-3" />
-          </a>
-        ) : (
-          <span className="text-xs text-muted-foreground">{t('admin.notUploaded')}</span>
-        )}
+        <div className="flex items-center gap-2">
+          {uploaded ? (
+            <a
+              href={vehicleDocumentUrl(vehicleId, docType, adminSession.accessToken)}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1 font-medium text-primary hover:underline"
+            >
+              {t('admin.view')} <ExternalLink className="size-3" />
+            </a>
+          ) : (
+            <span className="text-xs text-muted-foreground">{t('admin.notUploaded')}</span>
+          )}
+          <ReverifyButton
+            token={adminSession.accessToken}
+            accountType="carrier"
+            accountId={carrier.id}
+            vehicleId={vehicleId}
+            fieldName={docType}
+            existingRequest={findExisting(docType, vehicleId)}
+            onCreated={handleReverificationCreated}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  function VehicleFieldRow({
+    label,
+    value,
+    vehicleId,
+    fieldName,
+  }: {
+    label: string;
+    value: string;
+    vehicleId: string;
+    fieldName: string;
+  }) {
+    if (!carrier || !adminSession) return null;
+    return (
+      <div className="flex items-center justify-between gap-2 border-b py-1.5 text-sm last:border-b-0">
+        <div>
+          <p className="text-xs text-muted-foreground">{label}</p>
+          <p>{value}</p>
+        </div>
+        <ReverifyButton
+          token={adminSession.accessToken}
+          accountType="carrier"
+          accountId={carrier.id}
+          vehicleId={vehicleId}
+          fieldName={fieldName}
+          existingRequest={findExisting(fieldName, vehicleId)}
+          onCreated={handleReverificationCreated}
+        />
       </div>
     );
   }
@@ -142,6 +243,26 @@ export default function AdminCarrierDetailPage() {
               <p className="text-xs text-muted-foreground">{vehicle.driverPhone}</p>
             </div>
           )}
+          <div className="flex flex-col">
+            <VehicleFieldRow
+              label={t('settingsPage.vehicleRegNumber')}
+              value={vehicle.registrationNumber}
+              vehicleId={vehicle.id}
+              fieldName="registrationNumber"
+            />
+            <VehicleFieldRow
+              label={t('settingsPage.vehicleTruckType')}
+              value={truckTypeLabel(vehicle.truckType)}
+              vehicleId={vehicle.id}
+              fieldName="truckType"
+            />
+            <VehicleFieldRow
+              label={t('settingsPage.vehicleCapacity')}
+              value={t('settingsPage.capacityTons', { tons: vehicle.capacityTons })}
+              vehicleId={vehicle.id}
+              fieldName="capacityTons"
+            />
+          </div>
           <div className="flex flex-col">
             <VehicleDocLink label={t('admin.docRc')} vehicleId={vehicle.id} docType="rc" uploaded={!!vehicle.rcUrl} />
             <VehicleDocLink
@@ -267,22 +388,6 @@ export default function AdminCarrierDetailPage() {
               <p>{carrier.username ?? '—'}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">{t('admin.colWhatsapp')}</p>
-              <p>{carrier.whatsappNumber ?? '—'}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">{t('admin.email')}</p>
-              <p>{carrier.email ?? '—'}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">{t('admin.colAadhaar')}</p>
-              <p>{carrier.aadhaarNumber ?? '—'}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">{t('admin.colPan')}</p>
-              <p>{carrier.panNumber ?? '—'}</p>
-            </div>
-            <div>
               <p className="text-xs text-muted-foreground">{t('admin.colOwnerOperator')}</p>
               <p>{carrier.isOwnerOperator ? t('admin.yes') : t('admin.no')}</p>
             </div>
@@ -295,6 +400,15 @@ export default function AdminCarrierDetailPage() {
               <p>{new Date(carrier.createdAt).toLocaleDateString()}</p>
             </div>
           </div>
+
+          <div className="flex flex-col border-t pt-2">
+            <ProfileFieldRow label={t('admin.colPhone')} value={carrier.phone} fieldName="phone" />
+            <ProfileFieldRow label={t('admin.colWhatsapp')} value={carrier.whatsappNumber} fieldName="whatsappNumber" />
+            <ProfileFieldRow label={t('admin.email')} value={carrier.email} fieldName="email" />
+            <ProfileFieldRow label={t('admin.colAadhaar')} value={carrier.aadhaarNumber} fieldName="aadhaarNumber" />
+            <ProfileFieldRow label={t('admin.colPan')} value={carrier.panNumber} fieldName="panNumber" />
+          </div>
+
           <div>
             <Button variant="outline" size="sm" disabled={busy === 'suspend'} onClick={toggleSuspend}>
               {carrier.isSuspended ? t('admin.unsuspend') : t('admin.suspend')}
