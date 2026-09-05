@@ -61,7 +61,9 @@ function TopupRow({
     <tr className="border-b last:border-b-0 align-top hover:bg-accent/40">
       <td className="py-3 pr-3">{request.shipper?.fullName ?? '—'}</td>
       <td className="py-3 pr-3 text-muted-foreground">{request.shipper?.phone ?? '—'}</td>
-      <td className="py-3 pr-3">{t(`admin.channel_${request.channel}`)}</td>
+      <td className="py-3 pr-3">
+        {request.method ? t(`admin.topupMethod_${request.method}`) : t(`admin.channel_${request.channel}`)}
+      </td>
       <td className="py-3 pr-3">{formatMoney(Number(request.amount))}</td>
       <td className="py-3 pr-3 text-muted-foreground">{request.utr ?? '—'}</td>
       <td className="py-3 pr-3 text-muted-foreground">{new Date(request.createdAt).toLocaleString()}</td>
@@ -117,6 +119,7 @@ export default function AdminWalletTopupsPage() {
   const [requests, setRequests] = useState<AdminWalletTopupRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
 
   const load = () => {
     if (!adminSession) return;
@@ -156,6 +159,15 @@ export default function AdminWalletTopupsPage() {
     }
   };
 
+  const query = search.trim().toLowerCase();
+  const visibleRequests = query
+    ? requests.filter((r) =>
+        [r.utr, r.shipper?.fullName, r.shipper?.phone, r.method].some((field) =>
+          field?.toLowerCase().includes(query),
+        ),
+      )
+    : requests;
+
   return (
     <div className="flex flex-col gap-4">
       <div>
@@ -163,13 +175,21 @@ export default function AdminWalletTopupsPage() {
         <p className="text-sm text-muted-foreground">{t('admin.walletTopupsSubtitle')}</p>
       </div>
 
-      <Tabs value={view} onValueChange={(v) => v && setView(v as 'queue' | 'completed' | 'all')}>
-        <TabsList>
-          <TabsTrigger value="queue">{t('admin.tabQueue')}</TabsTrigger>
-          <TabsTrigger value="completed">{t('admin.tabCompletedTopups')}</TabsTrigger>
-          <TabsTrigger value="all">{t('admin.tabAllTopups')}</TabsTrigger>
-        </TabsList>
-      </Tabs>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Tabs value={view} onValueChange={(v) => v && setView(v as 'queue' | 'completed' | 'all')}>
+          <TabsList>
+            <TabsTrigger value="queue">{t('admin.tabQueue')}</TabsTrigger>
+            <TabsTrigger value="completed">{t('admin.tabCompletedTopups')}</TabsTrigger>
+            <TabsTrigger value="all">{t('admin.tabAllTopups')}</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <Input
+          className="w-64"
+          placeholder={t('admin.searchTopupsPlaceholder')}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
       {loading && <p className="text-sm text-muted-foreground">{t('admin.loading')}</p>}
@@ -191,14 +211,14 @@ export default function AdminWalletTopupsPage() {
                 </tr>
               </thead>
               <tbody>
-                {requests.length === 0 && (
+                {visibleRequests.length === 0 && (
                   <tr>
                     <td colSpan={8} className="py-6 text-center text-muted-foreground">
                       {t('admin.noResults')}
                     </td>
                   </tr>
                 )}
-                {requests.map((request) => (
+                {visibleRequests.map((request) => (
                   <TopupRow
                     key={request.id}
                     request={request}

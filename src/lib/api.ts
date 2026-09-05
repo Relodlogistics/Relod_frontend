@@ -810,11 +810,11 @@ export const api = {
   listMyWalletTransactions: (token: string) =>
     request<WalletTransaction[]>('/wallet/mine/transactions', { token }),
 
-  createManualTopup: (token: string, amount: string, utr: string) =>
+  createManualTopup: (token: string, amount: string, topupMethod: WalletTopupMethod, utr: string) =>
     request<WalletTopupRequest>('/wallet/topups', {
       method: 'POST',
       token,
-      body: JSON.stringify({ amount, utr }),
+      body: JSON.stringify({ amount, method: topupMethod, utr }),
     }),
 
   listMyTopups: (token: string) => request<WalletTopupRequest[]>('/wallet/topups/mine', { token }),
@@ -1490,12 +1490,15 @@ export interface WalletTransaction {
 
 export type WalletTopupRequestStatus = 'pending' | 'credited' | 'rejected' | 'failed';
 
+export type WalletTopupMethod = 'upi' | 'netbanking' | 'neft' | 'rtgs' | 'imps';
+
 export interface WalletTopupRequest {
   id: string;
   shipperId: string;
   channel: 'online' | 'manual';
   amount: string;
   status: WalletTopupRequestStatus;
+  method: WalletTopupMethod | null;
   utr: string | null;
   verifiedAt: string | null;
   verifiedByAdminId: string | null;

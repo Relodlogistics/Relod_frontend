@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { api, ApiError, WalletTransaction, WalletTopupRequest } from '@/lib/api';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
+import { api, ApiError, WalletTransaction, WalletTopupRequest, WalletTopupMethod } from '@/lib/api';
 import { useSession } from '@/lib/session-context';
 import { useWalletBalance, refreshWalletBalance, balanceColorClass } from '@/lib/wallet-store';
 import { formatMoney } from '@/lib/utils';
@@ -20,6 +21,8 @@ import { formatMoney } from '@/lib/utils';
 const BANK_NAME = process.env.NEXT_PUBLIC_RELOD_BANK_ACCOUNT_NAME ?? 'Relod Logistics Pvt Ltd';
 const BANK_ACCOUNT_NUMBER = process.env.NEXT_PUBLIC_RELOD_BANK_ACCOUNT_NUMBER ?? 'XXXXXXXXXXXX';
 const BANK_IFSC = process.env.NEXT_PUBLIC_RELOD_BANK_IFSC ?? 'XXXX0XXXXXX';
+
+const TOPUP_METHODS: WalletTopupMethod[] = ['upi', 'netbanking', 'neft', 'rtgs', 'imps'];
 
 function topupStatusVariant(status: WalletTopupRequest['status']) {
   if (status === 'credited') return 'secondary' as const;
@@ -37,6 +40,7 @@ export default function WalletPage() {
   const [loading, setLoading] = useState(true);
 
   const [amount, setAmount] = useState('');
+  const [method, setMethod] = useState<WalletTopupMethod>('upi');
   const [utr, setUtr] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -70,7 +74,7 @@ export default function WalletPage() {
     setSubmitError(null);
     setSubmitted(false);
     try {
-      const request = await api.createManualTopup(session.accessToken, amount, utr);
+      const request = await api.createManualTopup(session.accessToken, amount, method, utr);
       setTopups((prev) => [request, ...prev]);
       setAmount('');
       setUtr('');
@@ -123,7 +127,7 @@ export default function WalletPage() {
           {submitError && <p className="text-sm text-destructive">{submitError}</p>}
           {submitted && <p className="text-sm text-emerald-600">{t('walletPage.requestSubmitted')}</p>}
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="topupAmount">{t('walletPage.amount')}</Label>
               <Input
@@ -132,6 +136,19 @@ export default function WalletPage() {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
               />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="topupMethod">{t('walletPage.method')}</Label>
+              <Select value={method} onValueChange={(v) => v && setMethod(v as WalletTopupMethod)}>
+                <SelectTrigger id="topupMethod">{t(`walletPage.method_${method}`)}</SelectTrigger>
+                <SelectContent>
+                  {TOPUP_METHODS.map((m) => (
+                    <SelectItem key={m} value={m}>
+                      {t(`walletPage.method_${m}`)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="topupUtr">{t('walletPage.utr')}</Label>
@@ -164,6 +181,7 @@ export default function WalletPage() {
                   <tr className="border-b text-left text-xs text-muted-foreground">
                     <th className="py-2 pr-3 font-medium">{t('walletPage.colDate')}</th>
                     <th className="py-2 pr-3 font-medium">{t('walletPage.colAmount')}</th>
+                    <th className="py-2 pr-3 font-medium">{t('walletPage.colMethod')}</th>
                     <th className="py-2 pr-3 font-medium">{t('walletPage.colUtr')}</th>
                     <th className="py-2 font-medium">{t('walletPage.colStatus')}</th>
                   </tr>
@@ -175,6 +193,9 @@ export default function WalletPage() {
                         {new Date(r.createdAt).toLocaleDateString()}
                       </td>
                       <td className="py-2.5 pr-3">{formatMoney(Number(r.amount))}</td>
+                      <td className="py-2.5 pr-3 text-muted-foreground">
+                        {r.method ? t(`walletPage.method_${r.method}`) : '—'}
+                      </td>
                       <td className="py-2.5 pr-3 text-muted-foreground">{r.utr ?? '—'}</td>
                       <td className="py-2.5">
                         <Badge variant={topupStatusVariant(r.status)}>
