@@ -24,13 +24,14 @@ import { api } from '@/lib/api';
 // ceo/cto see two extra items no one else does: managing the team, and the
 // activity log tracking everyone's actions (including their own).
 const NAV_ITEMS = [
-  { href: '/admin/accounts', labelKey: 'admin.navAccounts', icon: Users },
   { href: '/admin/oversight', labelKey: 'admin.navOversight', icon: ClipboardList },
   { href: '/admin/payments', labelKey: 'admin.navPayments', icon: Wallet },
   { href: '/admin/wallet-topups', labelKey: 'admin.navWalletTopups', icon: WalletCards },
   { href: '/admin/carrier-payouts', labelKey: 'admin.navCarrierPayouts', icon: Banknote },
   { href: '/admin/support', labelKey: 'admin.navSupport', icon: Headphones },
   { href: '/admin/change-requests', labelKey: 'admin.navChangeRequests', icon: ClipboardCheck },
+  // Rarely opened day-to-day, so it sits last among the always-visible items.
+  { href: '/admin/accounts', labelKey: 'admin.navAccounts', icon: Users },
   { href: '/admin/activity', labelKey: 'admin.navActivity', icon: History, execOnly: true },
   { href: '/admin/users', labelKey: 'admin.navAdminUsers', icon: ShieldCheck, execOnly: true },
 ];
