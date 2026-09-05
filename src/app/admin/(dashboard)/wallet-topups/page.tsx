@@ -7,9 +7,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { api, ApiError, AdminWalletTopupRequest } from '@/lib/api';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
+import { api, ApiError, AdminWalletTopupRequest, WalletTopupMethod } from '@/lib/api';
 import { useAdminSession } from '@/lib/admin-session-context';
 import { formatMoney } from '@/lib/utils';
+
+const TOPUP_METHOD_FILTERS: WalletTopupMethod[] = ['upi', 'netbanking', 'neft', 'rtgs', 'imps'];
 
 function statusVariant(status: AdminWalletTopupRequest['status']) {
   if (status === 'credited') return 'secondary' as const;
@@ -120,6 +123,7 @@ export default function AdminWalletTopupsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [methodFilter, setMethodFilter] = useState<'all' | WalletTopupMethod>('all');
 
   const load = () => {
     if (!adminSession) return;
@@ -160,13 +164,15 @@ export default function AdminWalletTopupsPage() {
   };
 
   const query = search.trim().toLowerCase();
-  const visibleRequests = query
-    ? requests.filter((r) =>
+  const visibleRequests = requests
+    .filter((r) => methodFilter === 'all' || r.method === methodFilter)
+    .filter(
+      (r) =>
+        !query ||
         [r.utr, r.shipper?.fullName, r.shipper?.phone, r.method].some((field) =>
           field?.toLowerCase().includes(query),
         ),
-      )
-    : requests;
+    );
 
   return (
     <div className="flex flex-col gap-4">
@@ -183,12 +189,30 @@ export default function AdminWalletTopupsPage() {
             <TabsTrigger value="all">{t('admin.tabAllTopups')}</TabsTrigger>
           </TabsList>
         </Tabs>
-        <Input
-          className="w-64"
-          placeholder={t('admin.searchTopupsPlaceholder')}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        <div className="flex items-center gap-2">
+          <Select
+            value={methodFilter}
+            onValueChange={(v) => v && setMethodFilter(v as 'all' | WalletTopupMethod)}
+          >
+            <SelectTrigger className="w-44">
+              {methodFilter === 'all' ? t('admin.allMethods') : t(`admin.topupMethod_${methodFilter}`)}
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('admin.allMethods')}</SelectItem>
+              {TOPUP_METHOD_FILTERS.map((m) => (
+                <SelectItem key={m} value={m}>
+                  {t(`admin.topupMethod_${m}`)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Input
+            className="w-64"
+            placeholder={t('admin.searchTopupsPlaceholder')}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
       </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
