@@ -77,6 +77,10 @@ export default function AdminShipperDetailPage() {
         <CardContent className="flex flex-col gap-3">
           <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
             <div>
+              <p className="text-xs text-muted-foreground">{t('admin.colUsername')}</p>
+              <p>{shipper.username ?? '—'}</p>
+            </div>
+            <div>
               <p className="text-xs text-muted-foreground">{t('admin.colWhatsapp')}</p>
               <p>{shipper.whatsappNumber ?? '—'}</p>
             </div>
@@ -111,6 +115,14 @@ export default function AdminShipperDetailPage() {
             <div>
               <p className="text-xs text-muted-foreground">{t('admin.colAddress')}</p>
               <p>{shipper.businessAddress ?? '—'}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">{t('admin.colShipmentVolume')}</p>
+              <p>{shipper.shipmentVolume ?? '—'}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">{t('admin.colRegisteredOn')}</p>
+              <p>{new Date(shipper.createdAt).toLocaleDateString()}</p>
             </div>
           </div>
           <div>

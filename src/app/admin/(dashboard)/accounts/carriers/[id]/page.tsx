@@ -263,6 +263,10 @@ export default function AdminCarrierDetailPage() {
         <CardContent className="flex flex-col gap-3">
           <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
             <div>
+              <p className="text-xs text-muted-foreground">{t('admin.colUsername')}</p>
+              <p>{carrier.username ?? '—'}</p>
+            </div>
+            <div>
               <p className="text-xs text-muted-foreground">{t('admin.colWhatsapp')}</p>
               <p>{carrier.whatsappNumber ?? '—'}</p>
             </div>
@@ -277,6 +281,18 @@ export default function AdminCarrierDetailPage() {
             <div>
               <p className="text-xs text-muted-foreground">{t('admin.colPan')}</p>
               <p>{carrier.panNumber ?? '—'}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">{t('admin.colOwnerOperator')}</p>
+              <p>{carrier.isOwnerOperator ? t('admin.yes') : t('admin.no')}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">{t('admin.colTruckCount')}</p>
+              <p>{carrier.truckCount ?? '—'}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">{t('admin.colRegisteredOn')}</p>
+              <p>{new Date(carrier.createdAt).toLocaleDateString()}</p>
             </div>
           </div>
           <div>

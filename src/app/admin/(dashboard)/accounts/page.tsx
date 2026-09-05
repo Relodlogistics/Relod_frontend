@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,7 @@ import { useAdminSession } from '@/lib/admin-session-context';
 
 export default function AdminAccountsPage() {
   const { t } = useTranslation();
+  const router = useRouter();
   const { adminSession } = useAdminSession();
 
   const [tab, setTab] = useState<'carriers' | 'shippers'>('carriers');
@@ -120,14 +122,23 @@ export default function AdminAccountsPage() {
                       </Badge>
                     </td>
                     <td className="py-3 text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={busyId === c.id}
-                        onClick={() => toggleCarrierSuspend(c.id, c.isSuspended)}
-                      >
-                        {c.isSuspended ? t('admin.unsuspend') : t('admin.suspend')}
-                      </Button>
+                      <div className="flex justify-end gap-1.5">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => router.push(`/admin/accounts/carriers/${c.id}`)}
+                        >
+                          {t('admin.moreDetails')}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={busyId === c.id}
+                          onClick={() => toggleCarrierSuspend(c.id, c.isSuspended)}
+                        >
+                          {c.isSuspended ? t('admin.unsuspend') : t('admin.suspend')}
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -179,14 +190,23 @@ export default function AdminAccountsPage() {
                       </Badge>
                     </td>
                     <td className="py-3 text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={busyId === s.id}
-                        onClick={() => toggleShipperSuspend(s.id, s.isSuspended)}
-                      >
-                        {s.isSuspended ? t('admin.unsuspend') : t('admin.suspend')}
-                      </Button>
+                      <div className="flex justify-end gap-1.5">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => router.push(`/admin/accounts/shippers/${s.id}`)}
+                        >
+                          {t('admin.moreDetails')}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={busyId === s.id}
+                          onClick={() => toggleShipperSuspend(s.id, s.isSuspended)}
+                        >
+                          {s.isSuspended ? t('admin.unsuspend') : t('admin.suspend')}
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}

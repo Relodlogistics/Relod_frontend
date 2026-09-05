@@ -27,7 +27,7 @@ export default function AdminLoginPage() {
     try {
       const res = await api.adminLogin({ email, password });
       setAdminSession({ accessToken: res.accessToken, admin: res.admin });
-      router.push('/admin/accounts');
+      router.push('/admin/oversight');
     } catch (e) {
       setError(e instanceof ApiError ? e.message : t('errors.generic'));
     } finally {
