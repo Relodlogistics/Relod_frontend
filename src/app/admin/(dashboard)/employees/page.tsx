@@ -36,6 +36,9 @@ function PresentEmployeesTab() {
   const [resetPassword, setResetPassword] = useState('');
   const [resetError, setResetError] = useState<string | null>(null);
 
+  const [roleFilter, setRoleFilter] = useState<AdminUser['role'] | 'all'>('all');
+  const [search, setSearch] = useState('');
+
   const load = () => {
     if (!adminSession) return;
     setLoading(true);
@@ -110,9 +113,37 @@ function PresentEmployeesTab() {
     }
   };
 
+  const filteredUsers = users.filter((u) => {
+    if (roleFilter !== 'all' && u.role !== roleFilter) return false;
+    const q = search.trim().toLowerCase();
+    if (q && !u.name.toLowerCase().includes(q) && !u.email.toLowerCase().includes(q)) return false;
+    return true;
+  });
+
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-end gap-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Select value={roleFilter} onValueChange={(v) => v && setRoleFilter(v as AdminUser['role'] | 'all')}>
+            <SelectTrigger className="h-9 w-40 text-sm">
+              {roleFilter === 'all' ? t('admin.allRoles') : t(`admin.role_${roleFilter}`)}
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('admin.allRoles')}</SelectItem>
+              {ROLES.map((r) => (
+                <SelectItem key={r} value={r}>
+                  {t(`admin.role_${r}`)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Input
+            className="h-9 w-56"
+            placeholder={t('admin.searchByNameOrEmail')}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
         <Button size="sm" onClick={() => setShowCreate((v) => !v)}>
           {showCreate ? t('admin.cancel') : t('admin.addAdmin')}
         </Button>
@@ -187,14 +218,14 @@ function PresentEmployeesTab() {
                 </tr>
               </thead>
               <tbody>
-                {users.length === 0 && (
+                {filteredUsers.length === 0 && (
                   <tr>
                     <td colSpan={6} className="py-6 text-center text-muted-foreground">
-                      {t('admin.noResults')}
+                      {users.length === 0 ? t('admin.noResults') : t('admin.noEmployeeMatches')}
                     </td>
                   </tr>
                 )}
-                {users.map((u) => {
+                {filteredUsers.map((u) => {
                   const isSelf = u.id === adminSession?.admin.id;
                   return (
                     <tr key={u.id} className="border-b last:border-b-0 hover:bg-accent/40">
@@ -252,7 +283,7 @@ function PresentEmployeesTab() {
                     </tr>
                   );
                 })}
-                {users.map((u) =>
+                {filteredUsers.map((u) =>
                   resettingId === u.id ? (
                     <tr key={`${u.id}-reset`} className="border-b bg-muted/30 last:border-b-0">
                       <td colSpan={6} className="py-3">
@@ -307,6 +338,9 @@ function ActivityTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [roleFilter, setRoleFilter] = useState<AdminUser['role'] | 'all'>('all');
+  const [personFilter, setPersonFilter] = useState<string>('all');
+
   useEffect(() => {
     if (!adminSession) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -321,8 +355,45 @@ function ActivityTab() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adminSession]);
 
+  const people = Array.from(new Set(entries.map((e) => e.adminName))).sort((a, b) => a.localeCompare(b));
+
+  const filteredEntries = entries.filter((e) => {
+    if (roleFilter !== 'all' && e.adminRole !== roleFilter) return false;
+    if (personFilter !== 'all' && e.adminName !== personFilter) return false;
+    return true;
+  });
+
   return (
     <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-2">
+        <Select value={roleFilter} onValueChange={(v) => v && setRoleFilter(v as AdminUser['role'] | 'all')}>
+          <SelectTrigger className="h-9 w-40 text-sm">
+            {roleFilter === 'all' ? t('admin.allRoles') : t(`admin.role_${roleFilter}`)}
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('admin.allRoles')}</SelectItem>
+            {ROLES.map((r) => (
+              <SelectItem key={r} value={r}>
+                {t(`admin.role_${r}`)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={personFilter} onValueChange={(v) => v && setPersonFilter(v)}>
+          <SelectTrigger className="h-9 w-44 text-sm">
+            {personFilter === 'all' ? t('admin.allEmployees') : personFilter}
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('admin.allEmployees')}</SelectItem>
+            {people.map((name) => (
+              <SelectItem key={name} value={name}>
+                {name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       {error && <p className="text-sm text-destructive">{error}</p>}
       {loading && <p className="text-sm text-muted-foreground">{t('admin.loading')}</p>}
 
@@ -332,7 +403,13 @@ function ActivityTab() {
         </Card>
       )}
 
-      {!loading && entries.length > 0 && (
+      {!loading && entries.length > 0 && filteredEntries.length === 0 && (
+        <Card>
+          <CardContent className="py-6 text-center text-muted-foreground">{t('admin.noActivityMatches')}</CardContent>
+        </Card>
+      )}
+
+      {!loading && filteredEntries.length > 0 && (
         <Card>
           <CardContent className="overflow-x-auto py-2">
             <table className="w-full text-sm">
@@ -345,7 +422,7 @@ function ActivityTab() {
                 </tr>
               </thead>
               <tbody>
-                {entries.map((entry) => (
+                {filteredEntries.map((entry) => (
                   <tr key={entry.id} className="border-b last:border-b-0 align-top hover:bg-accent/40">
                     <td className="py-3 pr-3 whitespace-nowrap">
                       <p className="font-medium">{entry.adminName}</p>
