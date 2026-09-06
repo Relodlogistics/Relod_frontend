@@ -2,7 +2,7 @@ import { AlertTriangle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { getServerLocale, createServerT } from '@/lib/server-i18n';
 
-const DRAFT_DATE = '2026-08-02';
+const DRAFT_DATE = '2026-09-06';
 
 export async function LegalContent({ docKey, sectionCount }: { docKey: 'terms' | 'privacy'; sectionCount: number }) {
   const locale = await getServerLocale();

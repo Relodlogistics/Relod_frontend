@@ -10,5 +10,5 @@ export const metadata: Metadata = {
 };
 
 export default function TermsPage() {
-  return <LegalContent docKey="terms" sectionCount={7} />;
+  return <LegalContent docKey="terms" sectionCount={26} />;
 }
