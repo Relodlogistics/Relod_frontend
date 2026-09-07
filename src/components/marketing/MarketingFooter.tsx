@@ -20,6 +20,7 @@ export function MarketingFooter() {
       links: [
         { href: '/terms', label: t('marketing.footer.terms') },
         { href: '/privacy', label: t('marketing.footer.privacy') },
+        { href: '/agreement', label: t('marketing.footer.agreement') },
       ],
     },
     {

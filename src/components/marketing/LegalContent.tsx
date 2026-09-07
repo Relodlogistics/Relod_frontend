@@ -4,7 +4,7 @@ import { getServerLocale, createServerT } from '@/lib/server-i18n';
 
 const DRAFT_DATE = '2026-09-06';
 
-export async function LegalContent({ docKey, sectionCount }: { docKey: 'terms' | 'privacy'; sectionCount: number }) {
+export async function LegalContent({ docKey, sectionCount }: { docKey: 'terms' | 'privacy' | 'agreement'; sectionCount: number }) {
   const locale = await getServerLocale();
   const t = createServerT(locale);
   const sections = Array.from({ length: sectionCount }, (_, i) => i + 1);
