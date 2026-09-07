@@ -1348,6 +1348,8 @@
     "legal": {
       "draftNotice": "This page is a working draft describing our intended policy structure. It is not yet final or legally binding, and is pending review by legal counsel before Relod's public launch.",
       "lastUpdated": "Draft last updated: {{date}}",
+      "placeholderLegend": "Text highlighted like this still needs a final value from legal counsel before this document is complete, for example:",
+      "placeholderExample": "[city to be finalised with legal counsel]",
       "terms": {
         "title": "Terms of Service",
         "metaDescription": "Relod's terms of service (draft, pending legal review).",
