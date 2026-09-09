@@ -92,6 +92,7 @@ function PostingsSearchContent() {
   const [pageSize, setPageSize] = useState(10);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deadheadUnavailable, setDeadheadUnavailable] = useState<'no_location' | null>(null);
 
   const [bookingId, setBookingId] = useState<string | null>(null);
   // Keyed by the real status the just-created booking API response returned
@@ -190,6 +191,7 @@ function PostingsSearchContent() {
       setItems(res.items);
       setTotal(res.total);
       setTabCounts((prev) => ({ ...prev, [tab]: res.total }));
+      setDeadheadUnavailable(res.deadheadUnavailable ?? null);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : t('errors.generic'));
     } finally {
@@ -552,6 +554,11 @@ function PostingsSearchContent() {
       {error && <p className="text-sm text-destructive">{error}</p>}
       {tab === 'near_you' && geoLoading && <p className="text-sm text-muted-foreground">{t('postings.geoLoading')}</p>}
       {tab === 'near_you' && geoError && <p className="text-sm text-destructive">{geoError}</p>}
+      {!isShipper && deadheadUnavailable === 'no_location' && (
+        <p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          {t('postings.noLocationBanner')}
+        </p>
+      )}
 
       {!loading && displayedItems.length === 0 && (
         <p className="text-sm text-muted-foreground">{t('postings.emptyFiltered')}</p>
@@ -589,6 +596,13 @@ function PostingsSearchContent() {
                       </Badge>
                       {posting.distanceKm != null && (
                         <Badge variant="secondary">{t('postings.distanceAway', { distance: posting.distanceKm.toFixed(1) })}</Badge>
+                      )}
+                      {posting.deadheadKm != null && (
+                        <Badge variant="outline" className="text-amber-600">
+                          {posting.deadheadIsLive
+                            ? t('postings.deadhead', { km: Math.round(posting.deadheadKm) })
+                            : t('postings.deadheadFromBase', { km: Math.round(posting.deadheadKm) })}
+                        </Badge>
                       )}
                       <button
                         aria-label={posting.savedByMe ? t('postings.saved') : t('postings.save')}
@@ -727,6 +741,20 @@ function PostingsSearchContent() {
                             <span className="max-w-[160px] truncate">{posting.optionalNote}</span>
                           </div>
                         )}
+                        {posting.tripDistanceKm != null && (
+                          <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <ArrowRight className="size-3.5 shrink-0" />
+                            {t('postings.tripDistance', { km: Math.round(posting.tripDistanceKm) })}
+                          </div>
+                        )}
+                        {posting.deadheadKm != null && (
+                          <div className="mt-1 flex items-center gap-1.5 text-xs text-amber-600">
+                            <MapPin className="size-3.5 shrink-0" />
+                            {posting.deadheadIsLive
+                              ? t('postings.deadhead', { km: Math.round(posting.deadheadKm) })
+                              : t('postings.deadheadFromBase', { km: Math.round(posting.deadheadKm) })}
+                          </div>
+                        )}
                       </td>
                       <td className="py-3 pr-3 whitespace-nowrap">
                         {posting.equipment ? (
@@ -833,6 +861,13 @@ function PostingsSearchContent() {
                     </Badge>
                     {posting.distanceKm != null && (
                       <Badge variant="secondary">{t('postings.distanceAway', { distance: posting.distanceKm.toFixed(1) })}</Badge>
+                    )}
+                    {posting.deadheadKm != null && (
+                      <Badge variant="outline" className="text-amber-600">
+                        {posting.deadheadIsLive
+                          ? t('postings.deadhead', { km: Math.round(posting.deadheadKm) })
+                          : t('postings.deadheadFromBase', { km: Math.round(posting.deadheadKm) })}
+                      </Badge>
                     )}
                     <button
                       aria-label={posting.savedByMe ? t('postings.saved') : t('postings.save')}

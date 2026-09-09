@@ -1094,6 +1094,18 @@ export interface Posting {
   createdAt: string;
   destinations: PostingDestination[];
   distanceKm?: number | null;
+  // Straight-line origin -> first destination, shown on the board so a
+  // carrier can tell how long the haul is without opening the posting.
+  tripDistanceKm?: number | null;
+  // Empty-running distance from the viewing carrier's truck (live position,
+  // or home base if no fresh ping) to this LOAD posting's origin. Only ever
+  // set when a carrier searches LOAD postings and their vehicle is known
+  // (either passed explicitly or resolved automatically for a single-truck
+  // carrier) — see PostingsService.search.
+  deadheadKm?: number | null;
+  // False means deadheadKm came from the vehicle's static home base, not a
+  // live GPS ping (GPS off / stale) — show it labeled as approximate.
+  deadheadIsLive?: boolean | null;
   bookings?: { status: Booking['status'] }[];
   postedBy?: { name: string; verified: boolean; rating: number | null; ratingCount: number } | null;
   equipment?: { truckType: string | null; capacityTons: string | null; lengthFeet: string | null } | null;
@@ -1168,6 +1180,11 @@ export interface PaginatedPostings {
   total: number;
   page: number;
   pageSize: number;
+  // Set to 'no_location' when the viewing carrier's vehicle has neither a
+  // live GPS ping nor a home base on file, so deadhead couldn't be computed
+  // for any item — the board can prompt them to set one instead of just
+  // silently showing no deadhead column.
+  deadheadUnavailable?: 'no_location' | null;
 }
 
 export interface Vehicle {
