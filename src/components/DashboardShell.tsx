@@ -27,8 +27,8 @@ import { useSession } from '@/lib/session-context';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
 import { useDisplayName } from '@/lib/use-display-name';
-import { useUnreadCount } from '@/lib/notifications-store';
 import { ChangeRequestResultPopup } from './ChangeRequestResultPopup';
+import { WalletTopupResultPopup } from './WalletTopupResultPopup';
 import { ReverificationPopup } from './ReverificationPopup';
 
 function navItemsFor(userType: 'carrier' | 'shipper') {
@@ -66,7 +66,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const { session, clearSession } = useSession();
 
   const displayName = useDisplayName();
-  const unreadCount = useUnreadCount(session?.accessToken);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   // Close the mobile drawer automatically on navigation — otherwise it'd
@@ -107,6 +106,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex flex-1 bg-background md:h-screen md:overflow-hidden">
       <ChangeRequestResultPopup />
+      <WalletTopupResultPopup />
       <ReverificationPopup />
       {/* Hamburger button — the sidebar below is a fixed-width, always-visible
           block on desktop, but becomes a slide-in drawer on mobile (see the
@@ -154,7 +154,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         <nav className="flex flex-1 flex-col gap-1">
           {navItems.map(({ href, labelKey, icon: Icon }) => {
             const active = href === activeHref;
-            const showBadge = href === '/dashboard/messages' && unreadCount > 0;
             return (
               <Link
                 key={href}
@@ -168,11 +167,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               >
                 <Icon className="size-4" />
                 <span className="flex-1">{t(labelKey)}</span>
-                {showBadge && (
-                  <span className="flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
-                    {unreadCount}
-                  </span>
-                )}
               </Link>
             );
           })}

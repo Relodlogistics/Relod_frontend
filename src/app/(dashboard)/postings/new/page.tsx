@@ -137,6 +137,12 @@ export default function NewPostingPage() {
   const toDateInputValue = (d: Date) => d.toISOString().slice(0, 10);
   const minDate = toDateInputValue(today);
   const maxDate = toDateInputValue(maxSelectableDate);
+  // Delivery can't share the pickup field's absolute cap — a pickup date
+  // chosen near that cap would otherwise leave zero valid delivery dates
+  // (min > max) for any load that takes more than a few hours to transit.
+  const deliveryMaxDate = toDateInputValue(
+    new Date(new Date(fromDate || maxDate).getTime() + 14 * 24 * 60 * 60 * 1000),
+  );
   // Every posting is created with a real price — the old fixed/open-to-offers
   // choice is gone; carriers who want a different number send it via the
   // existing negotiate/make-an-offer flow instead.
@@ -378,7 +384,7 @@ export default function NewPostingPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
                     <Label>{t('postings.deliveryDate')} *</Label>
-                    <DateField value={toDate} min={fromDate || minDate} max={maxDate} onChange={setToDate} />
+                    <DateField value={toDate} min={fromDate || minDate} max={deliveryMaxDate} onChange={setToDate} />
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <Label>{t('postings.deliveryTime')}</Label>
@@ -637,7 +643,7 @@ export default function NewPostingPage() {
             </div>
             <div className="flex flex-col gap-1.5">
               <Label>{t('postings.toDate')}</Label>
-              <DateField value={toDate} min={fromDate || minDate} max={maxDate} onChange={setToDate} />
+              <DateField value={toDate} min={fromDate || minDate} max={deliveryMaxDate} onChange={setToDate} />
             </div>
           </div>
 

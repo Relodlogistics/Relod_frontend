@@ -49,7 +49,7 @@ const STEPS = [
 export default function VehiclePage() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { state, setState } = useRegistration();
+  const { state, setState, clear } = useRegistration();
   const { session, setSession, loaded: sessionLoaded } = useSession();
 
   const [registrationNumber, setRegistrationNumber] = useState('');
@@ -86,7 +86,12 @@ export default function VehiclePage() {
   // document-upload step instead.
   useEffect(() => {
     if (!sessionLoaded) return;
-    if (session && state.pendingVehicleId) {
+    // Require the recovered session to actually belong to this registration
+    // attempt's account — otherwise a leftover session from an unrelated
+    // account (forgot to log out, or a different person registering next on
+    // the same device) matches "session is set" and hijacks that account's
+    // vehicle instead of creating this carrier's own.
+    if (session && state.pendingVehicleId && session.accountId === state.accountId) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setVehicleId(state.pendingVehicleId);
       return;
@@ -193,6 +198,7 @@ export default function VehiclePage() {
       } else {
         setVehicleId(res.vehicleId ?? null);
         setState({
+          accountId: res.id,
           pendingVehicleId: res.vehicleId ?? undefined,
           pendingVehicleIncludesDriverDocs: !isOwnerDriver,
         });
@@ -211,6 +217,7 @@ export default function VehiclePage() {
 
   const handleFinish = () => {
     setFinishing(true);
+    clear();
     router.push('/dashboard');
   };
 

@@ -450,6 +450,12 @@ function VerificationStep({
               {t('phone.verify')}
             </Button>
           </div>
+          {/* GSTIN is genuinely optional — many shippers/proprietors aren't GST
+              registered — but this checklist step otherwise blocks every
+              account without one, since allDone requires every item verified. */}
+          <Button type="button" variant="ghost" size="sm" className="self-start" onClick={onVerified} disabled={loading}>
+            {t('verify.skipGstin')}
+          </Button>
         </div>
       )}
     </div>

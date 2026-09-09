@@ -28,7 +28,7 @@ const isNative = Capacitor.isNativePlatform();
 export default function PhonePage() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { setState } = useRegistration();
+  const { setState, clear } = useRegistration();
 
   const [step, setStep] = useState<Step>('phone');
   const [phone, setPhone] = useState('');
@@ -65,6 +65,12 @@ export default function PhonePage() {
     setLoading(true);
     try {
       const res = await api.verifyOtp(fullPhone, 'signup', code);
+      // A prior registration attempt (this phone or a different one, carrier
+      // or shipper) can still be sitting in sessionStorage if it finished or
+      // was abandoned without a full page reload — clear it before starting
+      // this one so its leftover pendingVehicleId/profile/accountId can't
+      // leak into the new attempt (see registration-context.tsx).
+      clear();
       setState({ phone: fullPhone, token: res.token });
       router.push('/register/profile');
     } catch (e) {

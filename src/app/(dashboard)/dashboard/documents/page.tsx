@@ -8,10 +8,9 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { api } from '@/lib/api';
+import { api, Vehicle } from '@/lib/api';
 import { useSession } from '@/lib/session-context';
-import { DocumentUploadField } from '@/components/DocumentUploadField';
-import { VEHICLE_DOCUMENTS, DRIVER_DOCUMENTS } from '@/lib/document-types';
+import { VehicleVerificationStep } from '@/components/VehicleVerificationStep';
 
 interface VehicleStatus {
   id: string;
@@ -36,6 +35,7 @@ export default function DocumentsPage() {
   const router = useRouter();
   const { session, loaded } = useSession();
   const [vehicles, setVehicles] = useState<VehicleStatus[]>([]);
+  const [fullVehicles, setFullVehicles] = useState<Vehicle[]>([]);
   const [tier, setTier] = useState<string>('basic');
   const [expanded, setExpanded] = useState<string | null>(null);
 
@@ -51,6 +51,12 @@ export default function DocumentsPage() {
         setVehicles(res.vehicles);
         setTier(res.verificationTier);
       })
+      .catch(() => undefined);
+    // Needed so already-uploaded documents show as done instead of prompting
+    // for every field again (see VehicleVerificationStep's existingVehicle).
+    api
+      .listMyVehicles(session.accessToken)
+      .then(setFullVehicles)
       .catch(() => undefined);
   }, [session]);
 
@@ -116,17 +122,14 @@ export default function DocumentsPage() {
                     )}
                   </button>
                   {isOpen && (
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                      {[...VEHICLE_DOCUMENTS, ...DRIVER_DOCUMENTS].map((doc) => (
-                        <DocumentUploadField
-                          key={doc.docType}
-                          docType={doc.docType}
-                          labelKey={doc.labelKey}
-                          accept={doc.accept}
-                          token={session.accessToken}
-                          vehicleId={v.id}
-                        />
-                      ))}
+                    <div className="mt-4">
+                      <VehicleVerificationStep
+                        token={session.accessToken}
+                        vehicleId={v.id}
+                        includeDriverDocs
+                        existingVehicle={fullVehicles.find((fv) => fv.id === v.id) ?? null}
+                        onComplete={() => undefined}
+                      />
                     </div>
                   )}
                 </CardContent>

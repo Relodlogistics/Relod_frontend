@@ -335,9 +335,19 @@ export default function SettingsPage() {
                 )}
                 <span>{t('settingsPage.checklistPan')}</span>
               </div>
-              {verificationTier === 'basic' && (
-                <p className="text-xs text-muted-foreground">{t('settingsPage.tierHintToVerified')}</p>
-              )}
+              {verificationTier === 'basic' &&
+                (vehicles.some(
+                  (v) =>
+                    !!v.rcUrl &&
+                    !!v.insuranceUrl &&
+                    !!v.permitUrl &&
+                    !!(v.photoFrontUrl || v.photoSideUrl || v.photoRearUrl) &&
+                    !!carrierPanNumber,
+                ) ? (
+                  <p className="text-xs text-muted-foreground">{t('settingsPage.tierPendingReview')}</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">{t('settingsPage.tierHintToVerified')}</p>
+                ))}
               {verificationTier === 'verified' && (
                 <p className="text-xs text-muted-foreground">{t('settingsPage.tierHintToTrustBoosted')}</p>
               )}

@@ -102,9 +102,18 @@ export function DateField({ value, onChange, min, max, placeholder }: DateFieldP
     if (!open && triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
       const panelWidth = 288;
+      const panelHeight = 320;
       // Keep it on-screen if the field sits near the right edge.
       const left = Math.min(rect.left, window.innerWidth - panelWidth - 8);
-      setCoords({ top: rect.bottom + 4, left: Math.max(left, 8), width: rect.width });
+      // Same for the bottom edge — a field near the bottom of a long form
+      // (or a short viewport) would otherwise open the panel past the fold,
+      // where fixed positioning means no amount of page scrolling reaches
+      // it. Flip it above the trigger instead when there isn't room below.
+      const top =
+        rect.bottom + 4 + panelHeight > window.innerHeight
+          ? Math.max(rect.top - panelHeight - 4, 8)
+          : rect.bottom + 4;
+      setCoords({ top, left: Math.max(left, 8), width: rect.width });
       setViewDate(selected ?? minDate ?? new Date());
     }
     setOpen((o) => !o);

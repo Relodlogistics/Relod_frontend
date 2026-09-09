@@ -31,6 +31,7 @@ export default function ChangePhonePage() {
   const [requestId, setRequestId] = useState<string | null>(null);
   const [currentOtp, setCurrentOtp] = useState('');
   const [newOtp, setNewOtp] = useState('');
+  const [devCode, setDevCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -44,6 +45,7 @@ export default function ChangePhonePage() {
     try {
       const res = await api.requestPhoneChange(session.accessToken, newPhone, reason);
       setRequestId(res.requestId);
+      setDevCode(res.devCode ?? null);
       setStep('verifyCurrent');
     } catch (e) {
       setError(e instanceof ApiError ? e.message : t('errors.generic'));
@@ -57,7 +59,8 @@ export default function ChangePhonePage() {
     setError(null);
     setLoading(true);
     try {
-      await api.verifyPhoneChangeCurrent(session.accessToken, requestId, currentOtp);
+      const res = await api.verifyPhoneChangeCurrent(session.accessToken, requestId, currentOtp);
+      setDevCode(res.devCode ?? null);
       setStep('verifyNew');
     } catch (e) {
       setError(e instanceof ApiError ? e.message : t('errors.generic'));
@@ -105,6 +108,12 @@ export default function ChangePhonePage() {
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          {devCode && (step === 'verifyCurrent' || step === 'verifyNew') && (
+            <Alert>
+              <AlertDescription>{t('phone.devCode', { code: devCode })}</AlertDescription>
             </Alert>
           )}
 

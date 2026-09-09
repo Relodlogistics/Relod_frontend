@@ -839,6 +839,12 @@ export const api = {
 
   listMyTopups: (token: string) => request<WalletTopupRequest[]>('/wallet/topups/mine', { token }),
 
+  listUnseenResolvedWalletTopups: (token: string) =>
+    request<WalletTopupRequest[]>('/wallet/topups/unseen-resolved', { token }),
+
+  markResolvedWalletTopupsSeen: (token: string) =>
+    request<{ success: boolean }>('/wallet/topups/mark-resolved-seen', { method: 'POST', token }),
+
   createOnlineTopup: (token: string, amount: string) =>
     request<{ requestId: string; orderId: string; clientPayload: Record<string, unknown> }>(
       '/wallet/topups/online',

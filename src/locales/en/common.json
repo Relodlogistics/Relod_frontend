@@ -159,6 +159,7 @@
     "ifsc": "IFSC code",
     "gstinTitle": "GSTIN",
     "gstinDesc": "Confirm your business's GST registration.",
+    "skipGstin": "I don't have a GSTIN — skip this",
     "whatsappLanguageQuestion": "Which language should we send WhatsApp messages in?",
     "whatsappLanguageHint": "Load alerts and booking updates will be sent in this language. You can change it later from settings."
   },
@@ -435,6 +436,13 @@
     "fixThis": "Fix this",
     "later": "Later"
   },
+  "walletTopupPopup": {
+    "title": "Update on your wallet top-up",
+    "credited": "Credited",
+    "rejected": "Rejected",
+    "reason": "Reason",
+    "close": "Close"
+  },
   "driverLogin": {
     "title": "Driver login",
     "subtitle": "Enter the phone number your truck owner registered you with",
@@ -499,6 +507,7 @@
     "checklistAadhaar": "Aadhaar number on file",
     "checklistPan": "PAN number on file",
     "tierHintToVerified": "Upload your vehicle's RC, insurance, permit and a photo from the Documents page, and add your PAN, to reach Verified.",
+    "tierPendingReview": "Your documents and PAN are submitted — you'll move to Verified once our team reviews them.",
     "tierHintToTrustBoosted": "Add a walkaround video, fitness certificate and PUC from the Documents page to reach Trust Boosted.",
     "profile": "Profile",
     "language": "Language",
