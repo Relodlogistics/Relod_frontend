@@ -669,6 +669,7 @@ function PostingsSearchContent() {
                     <p className="font-normal">{t('postings.tableDestination')}</p>
                   </th>
                   <th className="py-2 pr-3 font-medium">{t('postings.tableDetails')}</th>
+                  <th className="py-2 pr-3 font-medium">{t('postings.tableDistance')}</th>
                   <th className="py-2 pr-3 font-medium">
                     <p>{t('postings.equipment')}</p>
                     <p className="font-normal">{t('postings.lengthWeight')}</p>
@@ -741,8 +742,10 @@ function PostingsSearchContent() {
                             <span className="max-w-[160px] truncate">{posting.optionalNote}</span>
                           </div>
                         )}
+                      </td>
+                      <td className="py-3 pr-3 whitespace-nowrap">
                         {posting.tripDistanceKm != null && (
-                          <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                             <ArrowRight className="size-3.5 shrink-0" />
                             {t('postings.tripDistance', { km: Math.round(posting.tripDistanceKm) })}
                           </div>
@@ -754,6 +757,9 @@ function PostingsSearchContent() {
                               ? t('postings.deadhead', { km: Math.round(posting.deadheadKm) })
                               : t('postings.deadheadFromBase', { km: Math.round(posting.deadheadKm) })}
                           </div>
+                        )}
+                        {posting.tripDistanceKm == null && posting.deadheadKm == null && (
+                          <span className="text-xs text-muted-foreground">—</span>
                         )}
                       </td>
                       <td className="py-3 pr-3 whitespace-nowrap">

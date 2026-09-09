@@ -744,6 +744,7 @@
     "emptyFiltered": "No postings match these filters.",
     "page": "Page {{page}} of {{total}}",
     "tableDetails": "Details",
+    "tableDistance": "Distance",
     "tableCompany": "Posted by",
     "tableOrigin": "Origin",
     "tableDestination": "Destination",

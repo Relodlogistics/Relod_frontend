@@ -744,6 +744,7 @@
     "emptyFiltered": "इन फ़िल्टर से कोई पोस्टिंग मेल नहीं खाती।",
     "page": "पृष्ठ {{page}} / {{total}}",
     "tableDetails": "विवरण",
+    "tableDistance": "दूरी",
     "tableCompany": "पोस्ट करने वाला",
     "tableOrigin": "मूल स्थान",
     "tableDestination": "गंतव्य",
