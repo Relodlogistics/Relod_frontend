@@ -1094,6 +1094,10 @@ export interface Posting {
   createdAt: string;
   destinations: PostingDestination[];
   distanceKm?: number | null;
+  // False means distanceKm came from a linked vehicle's home base (or the
+  // posting's own static origin) rather than a live GPS ping — see
+  // MatchingService.findNearbyPostingIds.
+  distanceIsLive?: boolean;
   // Straight-line origin -> first destination, shown on the board so a
   // carrier can tell how long the haul is without opening the posting.
   tripDistanceKm?: number | null;

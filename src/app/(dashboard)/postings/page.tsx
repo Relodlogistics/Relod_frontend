@@ -45,6 +45,13 @@ type ViewMode = 'list' | 'grid';
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50];
 
+function formatBoardDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+  });
+}
+
 function getPageNumbers(current: number, total: number): (number | 'ellipsis')[] {
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
   const pages: (number | 'ellipsis')[] = [1];
@@ -726,10 +733,9 @@ function PostingsSearchContent() {
                       <td className="py-3 pr-3 whitespace-nowrap">
                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                           <CalendarDays className="size-3.5" />
-                          {new Date(posting.availableFromDate).toLocaleDateString('en-IN', {
-                            day: '2-digit',
-                            month: 'short',
-                            year: 'numeric',
+                          {t('postings.availableRange', {
+                            from: formatBoardDate(posting.availableFromDate),
+                            to: formatBoardDate(posting.availableToDate),
                           })}
                         </div>
                         <div className="mt-1 flex items-center gap-1.5 text-xs font-medium">
@@ -744,22 +750,37 @@ function PostingsSearchContent() {
                         )}
                       </td>
                       <td className="py-3 pr-3 whitespace-nowrap">
-                        {posting.tripDistanceKm != null && (
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <ArrowRight className="size-3.5 shrink-0" />
-                            {t('postings.tripDistance', { km: Math.round(posting.tripDistanceKm) })}
-                          </div>
-                        )}
-                        {posting.deadheadKm != null && (
-                          <div className="mt-1 flex items-center gap-1.5 text-xs text-amber-600">
-                            <MapPin className="size-3.5 shrink-0" />
-                            {posting.deadheadIsLive
-                              ? t('postings.deadhead', { km: Math.round(posting.deadheadKm) })
-                              : t('postings.deadheadFromBase', { km: Math.round(posting.deadheadKm) })}
-                          </div>
-                        )}
-                        {posting.tripDistanceKm == null && posting.deadheadKm == null && (
-                          <span className="text-xs text-muted-foreground">—</span>
+                        {isShipper ? (
+                          posting.distanceKm != null ? (
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <MapPin className="size-3.5 shrink-0" />
+                              {posting.distanceIsLive
+                                ? t('postings.distanceToPickup', { km: Math.round(posting.distanceKm) })
+                                : t('postings.distanceToPickupApprox', { km: Math.round(posting.distanceKm) })}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )
+                        ) : (
+                          <>
+                            {posting.tripDistanceKm != null && (
+                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                <ArrowRight className="size-3.5 shrink-0" />
+                                {t('postings.tripDistance', { km: Math.round(posting.tripDistanceKm) })}
+                              </div>
+                            )}
+                            {posting.deadheadKm != null && (
+                              <div className="mt-1 flex items-center gap-1.5 text-xs text-amber-600">
+                                <MapPin className="size-3.5 shrink-0" />
+                                {posting.deadheadIsLive
+                                  ? t('postings.deadhead', { km: Math.round(posting.deadheadKm) })
+                                  : t('postings.deadheadFromBase', { km: Math.round(posting.deadheadKm) })}
+                              </div>
+                            )}
+                            {posting.tripDistanceKm == null && posting.deadheadKm == null && (
+                              <span className="text-xs text-muted-foreground">—</span>
+                            )}
+                          </>
                         )}
                       </td>
                       <td className="py-3 pr-3 whitespace-nowrap">
@@ -799,7 +820,13 @@ function PostingsSearchContent() {
                         ) : (
                           <p className="font-semibold text-muted-foreground">{t('postings.notSpecified')}</p>
                         )}
-                        {posting.distanceKm != null && (
+                        {/* For a shipper this is already shown in the Distance
+                            column above (as distance-to-pickup); repeating it
+                            here would be redundant. A carrier still sees it
+                            here since it's a different number from that
+                            column's trip/deadhead figures — how far this
+                            LOAD's pickup is from wherever they searched. */}
+                        {!isShipper && posting.distanceKm != null && (
                           <p className="text-xs text-muted-foreground">
                             {t('postings.distanceAway', { distance: posting.distanceKm.toFixed(1) })}
                           </p>
@@ -816,6 +843,9 @@ function PostingsSearchContent() {
                           <div className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Star className="size-3 fill-amber-400 text-amber-400" />
                             {posting.postedBy.rating?.toFixed(1)}
+                            <span>
+                              ({t('postings.reviewsCount', { count: posting.postedBy.ratingCount })})
+                            </span>
                           </div>
                         )}
                         <p className="text-xs text-muted-foreground">{t('postings.postedAgo', { time: timeAgo(posting.createdAt) })}</p>
