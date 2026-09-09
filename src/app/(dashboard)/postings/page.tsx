@@ -768,9 +768,18 @@ function PostingsSearchContent() {
                             <Truck className="size-3.5 text-muted-foreground" />
                             <div>
                               <p>{truckTypeLabel(posting.equipment.truckType)}</p>
-                              {posting.equipment.capacityTons && (
+                              {(posting.equipment.lengthFeet || posting.equipment.capacityTons) && (
                                 <p className="text-muted-foreground">
-                                  {t('postings.weightTon', { count: Number(posting.equipment.capacityTons) })}
+                                  {[
+                                    posting.equipment.lengthFeet
+                                      ? t('postings.lengthFt', { count: Number(posting.equipment.lengthFeet) })
+                                      : null,
+                                    posting.equipment.capacityTons
+                                      ? t('postings.weightTon', { count: Number(posting.equipment.capacityTons) })
+                                      : null,
+                                  ]
+                                    .filter(Boolean)
+                                    .join(' · ')}
                                 </p>
                               )}
                             </div>
