@@ -289,7 +289,6 @@
     "payments": "Payments",
     "wallet": "Wallet",
     "documents": "Documents",
-    "messages": "Messages",
     "support": "Support",
     "settings": "Settings",
     "postings": "Postings",
@@ -461,10 +460,6 @@
     "type_booking_debit": "Load booked",
     "type_booking_refund": "Refund",
     "type_admin_adjustment": "Adjustment"
-  },
-  "messagesPage": {
-    "title": "Messages",
-    "empty": "No conversations yet."
   },
   "supportPage": {
     "title": "Support",
@@ -764,9 +759,13 @@
     "minCapacity": "Min. weight (tons)",
     "preferredLength": "Preferred truck length (optional)",
     "weight": "Weight",
+    "weightUnder500kg": "Under 500 kg",
     "length": "Length",
+    "lengthFt": "{{count}} ft",
     "fullPart": "Full/Part",
     "booking": "Booking",
+    "bookingFixed": "Fixed price",
+    "bookingOpen": "Open to offers",
     "clearAll": "Clear all",
     "tabAll": "All",
     "tabBookNow": "Book Now",
@@ -807,6 +806,7 @@
     "geoLoading": "Finding your location…",
     "viewList": "List view",
     "viewGrid": "Grid view",
+    "viewMap": "Map view",
     "save": "Save",
     "saved": "Saved",
     "emptyFiltered": "No postings match these filters.",

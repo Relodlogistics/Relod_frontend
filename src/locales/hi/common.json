@@ -289,7 +289,6 @@
     "payments": "भुगतान",
     "wallet": "वॉलेट",
     "documents": "दस्तावेज़",
-    "messages": "संदेश",
     "support": "सहायता",
     "settings": "सेटिंग्स",
     "postings": "पोस्टिंग",
@@ -461,10 +460,6 @@
     "type_booking_debit": "लोड बुक किया गया",
     "type_booking_refund": "रिफंड",
     "type_admin_adjustment": "समायोजन"
-  },
-  "messagesPage": {
-    "title": "संदेश",
-    "empty": "अभी तक कोई बातचीत नहीं।"
   },
   "supportPage": {
     "title": "सहायता",
@@ -764,9 +759,13 @@
     "minCapacity": "न्यूनतम वज़न (टन)",
     "preferredLength": "पसंदीदा ट्रक लंबाई (वैकल्पिक)",
     "weight": "वज़न",
+    "weightUnder500kg": "500 किग्रा से कम",
     "length": "लंबाई",
+    "lengthFt": "{{count}} फ़ीट",
     "fullPart": "फुल/पार्ट",
     "booking": "बुकिंग",
+    "bookingFixed": "तय कीमत",
+    "bookingOpen": "प्रस्ताव खुले हैं",
     "clearAll": "सभी हटाएं",
     "tabAll": "सभी",
     "tabBookNow": "अभी बुक करें",
@@ -807,6 +806,7 @@
     "geoLoading": "आपका स्थान खोजा जा रहा है…",
     "viewList": "सूची दृश्य",
     "viewGrid": "ग्रिड दृश्य",
+    "viewMap": "मानचित्र दृश्य",
     "save": "सहेजें",
     "saved": "सहेजा गया",
     "emptyFiltered": "इन फ़िल्टर से कोई पोस्टिंग मेल नहीं खाती।",

@@ -15,7 +15,6 @@ import {
   Wallet,
   WalletCards,
   FileText,
-  MessageSquare,
   Headphones,
   Settings,
   LogOut,
@@ -53,7 +52,6 @@ function navItemsFor(userType: 'carrier' | 'shipper') {
       : []),
     { href: '/dashboard/payments', labelKey: 'nav.payments', icon: Wallet },
     { href: '/dashboard/documents', labelKey: 'nav.documents', icon: FileText },
-    { href: '/dashboard/messages', labelKey: 'nav.messages', icon: MessageSquare },
     { href: '/dashboard/support', labelKey: 'nav.support', icon: Headphones },
     { href: '/dashboard/settings', labelKey: 'nav.settings', icon: Settings },
   ];

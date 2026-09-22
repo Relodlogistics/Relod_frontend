@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -18,6 +18,7 @@ import {
   BookmarkCheck,
   List as ListIcon,
   LayoutGrid,
+  Map as MapIcon,
   ChevronLeft,
   ChevronRight,
   Search,
@@ -39,12 +40,29 @@ import { useSession } from '@/lib/session-context';
 import { boardLocation, boardLocationParts, formatMoney, timeAgo, cn } from '@/lib/utils';
 import { truckTypeLabel } from '@/lib/truck-types';
 import { TruckTypeCombobox } from '@/components/TruckTypeCombobox';
+import LoadBoardMap, { LoadBoardMapPin } from '@/components/LoadBoardMap';
 
 type TabKey = 'all' | 'book_now' | 'near_you' | 'saved';
 type SortKey = 'newest' | 'price_low' | 'price_high' | 'nearest';
-type ViewMode = 'list' | 'grid';
+type ViewMode = 'list' | 'grid' | 'map';
+// Loads without a plotted origin (rare — geocoding failure at posting time)
+// simply can't appear as a pin; everything else about them is unaffected.
+const MAP_PAGE_SIZE = 50;
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50];
+
+// Weight filter buckets — the one "under" bucket catches small loads that a
+// plain "N+" minimum would otherwise never show (e.g. a 300kg parcel load),
+// then each following option is a normal "at least N tons" minimum.
+const WEIGHT_FILTER_OPTIONS: { value: string; tons?: number }[] = [
+  { value: 'under_0.5' },
+  { value: '0.5', tons: 0.5 },
+  { value: '1', tons: 1 },
+  { value: '2.5', tons: 2.5 },
+  { value: '5', tons: 5 },
+  { value: '7.5', tons: 7.5 },
+  { value: '10', tons: 10 },
+];
 
 function formatBoardDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-IN', {
@@ -81,16 +99,26 @@ function PostingsSearchContent() {
   const [destination, setDestination] = useState(searchParams.get('destination') ?? '');
   const [loadType, setLoadType] = useState<AppliedFilters['loadType']>('any');
   const [truckType, setTruckType] = useState<'any' | string>('any');
-  const [minCapacity, setMinCapacity] = useState('');
+  // 'all', 'under_0.5' (the one "less than" bucket, for sub-500kg loads), or
+  // an "N+" minimum in tons — see WEIGHT_FILTER_OPTIONS.
+  const [weightFilter, setWeightFilter] = useState('all');
   const [appliedFilters, setAppliedFilters] = useState<AppliedFilters>(DEFAULT_FILTERS);
-  // Visual-only filter chips matching the reference design — we don't collect
-  // truck length or a separate booking-terms field, so these have a single
-  // "All" option rather than fabricating data we don't have.
-  const [lengthFilter, setLengthFilter] = useState('all');
-  const [bookingFilter, setBookingFilter] = useState('all');
+  // Minimum required truck length, same "N ft+" bucket shape as weightFilter above.
+  const [minLength, setMinLength] = useState('');
+  // "Booking" = how the price is set: a fixed number to book instantly, or
+  // open to offers/negotiation — Posting.priceType, not yet exposed as a filter.
+  const [bookingFilter, setBookingFilter] = useState<'all' | 'fixed' | 'open_to_offers'>('all');
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
 
-  const [tab, setTab] = useState<TabKey>('all');
+  // Opens on Near You by default (the common case: "what loads are close to
+  // me right now") — falls back to All automatically if location isn't
+  // available, rather than stranding the user on an error banner; they can
+  // still switch tabs manually at any point.
+  const [tab, setTab] = useState<TabKey>('near_you');
+  // True only until the page's own default Near-You attempt resolves (or the
+  // user changes tabs first) — distinguishes that silent auto-fallback from
+  // a deliberate "Near You" click, which should show the error instead.
+  const isInitialNearYou = useRef(true);
   const [sort, setSort] = useState<SortKey>('newest');
   const [view, setView] = useState<ViewMode>('list');
 
@@ -156,6 +184,13 @@ function PostingsSearchContent() {
       () => {
         setGeoError(t('postings.geoDenied'));
         setGeoLoading(false);
+        // Only auto-fall-back on the initial default landing, not if the
+        // user deliberately clicked "Near You" themselves — then they should
+        // see the error and decide (e.g. retry after allowing location).
+        if (isInitialNearYou.current) {
+          isInitialNearYou.current = false;
+          setTab('all');
+        }
       },
       { timeout: 10000 },
     );
@@ -165,6 +200,8 @@ function PostingsSearchContent() {
     if (tab === 'near_you' && !geoCoords && !geoLoading) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       requestGeolocation();
+    } else if (tab !== 'near_you') {
+      isInitialNearYou.current = false;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
@@ -176,6 +213,11 @@ function PostingsSearchContent() {
     setLoading(true);
     try {
       let res;
+      // The map plots every pin at once rather than paging through them —
+      // request a wider page instead of the list/grid page size, capped at
+      // what the search endpoint allows (100).
+      const effectivePageSize = view === 'map' ? MAP_PAGE_SIZE : pageSize;
+      const effectivePage = view === 'map' ? 1 : page;
       if (tab === 'saved') {
         res = await api.listSavedLoads(session.accessToken);
       } else if (tab === 'near_you' && geoCoords) {
@@ -183,8 +225,8 @@ function PostingsSearchContent() {
           nearLat: geoCoords.lat,
           nearLng: geoCoords.lng,
           loadType: appliedFilters.loadType === 'any' ? undefined : appliedFilters.loadType,
-          page,
-          pageSize,
+          page: effectivePage,
+          pageSize: effectivePageSize,
         });
       } else {
         res = await api.searchPostings(session.accessToken, {
@@ -192,8 +234,8 @@ function PostingsSearchContent() {
           destination: appliedFilters.destination || undefined,
           loadType: appliedFilters.loadType === 'any' ? undefined : appliedFilters.loadType,
           priceType: tab === 'book_now' ? 'fixed' : undefined,
-          page,
-          pageSize,
+          page: effectivePage,
+          pageSize: effectivePageSize,
         });
       }
       setItems(res.items);
@@ -213,7 +255,7 @@ function PostingsSearchContent() {
       fetchResults();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session, tab, page, pageSize, appliedFilters, geoCoords]);
+  }, [session, tab, page, pageSize, appliedFilters, geoCoords, view]);
 
   const handleSearch = () => {
     setPage(1);
@@ -225,8 +267,8 @@ function PostingsSearchContent() {
     setDestination('');
     setLoadType('any');
     setTruckType('any');
-    setMinCapacity('');
-    setLengthFilter('all');
+    setWeightFilter('all');
+    setMinLength('');
     setBookingFilter('all');
     setPage(1);
     setAppliedFilters(DEFAULT_FILTERS);
@@ -305,9 +347,18 @@ function PostingsSearchContent() {
     if (truckType !== 'any') {
       list = list.filter((p) => p.equipment?.truckType === truckType);
     }
-    if (minCapacity) {
-      const min = Number(minCapacity);
+    if (weightFilter === 'under_0.5') {
+      list = list.filter((p) => p.equipment?.capacityTons != null && Number(p.equipment.capacityTons) < 0.5);
+    } else if (weightFilter !== 'all') {
+      const min = Number(weightFilter);
       list = list.filter((p) => p.equipment?.capacityTons != null && Number(p.equipment.capacityTons) >= min);
+    }
+    if (minLength) {
+      const min = Number(minLength);
+      list = list.filter((p) => p.equipment?.lengthFeet != null && Number(p.equipment.lengthFeet) >= min);
+    }
+    if (bookingFilter !== 'all') {
+      list = list.filter((p) => p.priceType === bookingFilter);
     }
     const sorted = [...list];
     if (sort === 'price_low') {
@@ -318,7 +369,22 @@ function PostingsSearchContent() {
       sorted.sort((a, b) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity));
     }
     return sorted;
-  }, [items, truckType, minCapacity, sort]);
+  }, [items, truckType, weightFilter, minLength, bookingFilter, sort]);
+
+  const mapPins = useMemo<LoadBoardMapPin[]>(
+    () =>
+      displayedItems
+        .filter((p) => p.originLat != null && p.originLng != null)
+        .map((p) => ({
+          id: p.id,
+          lat: Number(p.originLat),
+          lng: Number(p.originLng),
+          originLabel: boardLocation(p.originCityLabel, p.originLabel),
+          destinationLabel: boardLocation(p.destinations[0]?.cityLabel, p.destinations[0]?.label),
+          priceAmount: p.priceAmount,
+        })),
+    [displayedItems],
+  );
 
   const toggleRowSelected = (id: string) => {
     setSelectedRows((prev) => {
@@ -432,29 +498,31 @@ function PostingsSearchContent() {
               {t('postings.moreFilters')}
             </span>
 
-            <Select value={lengthFilter} onValueChange={(v) => v && setLengthFilter(v)}>
+            <Select value={minLength || 'all'} onValueChange={(v) => v && setMinLength(v === 'all' ? '' : v)}>
               <SelectTrigger className="h-8 rounded-md px-2.5 text-xs" size="sm">
                 <span className="text-muted-foreground">{t('postings.length')}:</span>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t('postings.filterAny')}</SelectItem>
+                <SelectItem value="14">{t('postings.lengthFt', { count: 14 })}+</SelectItem>
+                <SelectItem value="20">{t('postings.lengthFt', { count: 20 })}+</SelectItem>
+                <SelectItem value="32">{t('postings.lengthFt', { count: 32 })}+</SelectItem>
               </SelectContent>
             </Select>
 
-            <Select
-              value={minCapacity || 'all'}
-              onValueChange={(v) => v && setMinCapacity(v === 'all' ? '' : v)}
-            >
+            <Select value={weightFilter} onValueChange={(v) => v && setWeightFilter(v)}>
               <SelectTrigger className="h-8 rounded-md px-2.5 text-xs" size="sm">
                 <span className="text-muted-foreground">{t('postings.weight')}:</span>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t('postings.filterAny')}</SelectItem>
-                <SelectItem value="10">{t('postings.weightTon', { count: 10 })}+</SelectItem>
-                <SelectItem value="20">{t('postings.weightTon', { count: 20 })}+</SelectItem>
-                <SelectItem value="30">{t('postings.weightTon', { count: 30 })}+</SelectItem>
+                {WEIGHT_FILTER_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.tons != null ? `${t('postings.weightTon', { count: opt.tons })}+` : t('postings.weightUnder500kg')}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
@@ -470,13 +538,18 @@ function PostingsSearchContent() {
               </SelectContent>
             </Select>
 
-            <Select value={bookingFilter} onValueChange={(v) => v && setBookingFilter(v)}>
+            <Select
+              value={bookingFilter}
+              onValueChange={(v) => v && setBookingFilter(v as typeof bookingFilter)}
+            >
               <SelectTrigger className="h-8 rounded-md px-2.5 text-xs" size="sm">
                 <span className="text-muted-foreground">{t('postings.booking')}:</span>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t('postings.filterAny')}</SelectItem>
+                <SelectItem value="fixed">{t('postings.bookingFixed')}</SelectItem>
+                <SelectItem value="open_to_offers">{t('postings.bookingOpen')}</SelectItem>
               </SelectContent>
             </Select>
 
@@ -544,13 +617,23 @@ function PostingsSearchContent() {
             <button
               aria-label={t('postings.viewGrid')}
               onClick={() => setView('grid')}
-              className={cn('flex size-8 items-center justify-center rounded-r-lg', view === 'grid' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent')}
+              className={cn('flex size-8 items-center justify-center', view === 'grid' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent')}
             >
               <LayoutGrid className="size-4" />
+            </button>
+            <button
+              aria-label={t('postings.viewMap')}
+              onClick={() => setView('map')}
+              className={cn('flex size-8 items-center justify-center rounded-r-lg', view === 'map' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent')}
+            >
+              <MapIcon className="size-4" />
             </button>
           </div>
         </div>
       </div>
+      {/* Below sm the list/grid toggle is hidden (falls back to cards), but the
+          map itself works fine at phone width too — only surfaced there if a
+          narrow-screen user still lands on view==='map' from a wider session. */}
 
       {error && <p className="text-sm text-destructive">{error}</p>}
       {tab === 'near_you' && geoLoading && <p className="text-sm text-muted-foreground">{t('postings.geoLoading')}</p>}
@@ -565,7 +648,9 @@ function PostingsSearchContent() {
         <p className="text-sm text-muted-foreground">{t('postings.emptyFiltered')}</p>
       )}
 
-      {view === 'list' ? (
+      {view === 'map' ? (
+        <LoadBoardMap pins={mapPins} center={tab === 'near_you' ? geoCoords : null} />
+      ) : view === 'list' ? (
         <>
           {/* A 7-column table can't fit a phone screen readably no matter how
               it's scrolled — below sm, show the same cards the grid view uses
@@ -955,7 +1040,7 @@ function PostingsSearchContent() {
         </div>
       )}
 
-      {tab !== 'saved' && total > 0 && (
+      {view !== 'map' && tab !== 'saved' && total > 0 && (
         <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
           <p className="text-muted-foreground">
             {t('postings.showingRange', { from: rangeFrom, to: rangeTo, total })}
