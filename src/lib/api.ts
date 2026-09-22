@@ -339,6 +339,15 @@ export const api = {
     data: { fullName?: string; email?: string; preferredLanguage?: string },
   ) => request<Carrier>(`/carriers/${id}`, { method: 'PATCH', token, body: JSON.stringify(data) }),
 
+  // Real-time verified, not admin-reviewed — the account holder's name must
+  // match the carrier's own verified identity, checked server-side.
+  setPayoutBank: (token: string, id: string, data: { accountNumber: string; ifsc: string }) =>
+    request<PayoutBank>(`/carriers/${id}/payout-bank`, {
+      method: 'POST',
+      token,
+      body: JSON.stringify(data),
+    }),
+
   updateShipperProfile: (
     token: string,
     id: string,
@@ -1569,6 +1578,17 @@ export interface Carrier {
   isSuspended: boolean;
   createdAt: string;
   updatedAt: string;
+  payoutAccountNumber: string | null;
+  payoutIfsc: string | null;
+  payoutAccountHolderName: string | null;
+  payoutBankVerifiedAt: string | null;
+}
+
+export interface PayoutBank {
+  payoutAccountNumber: string;
+  payoutIfsc: string;
+  payoutAccountHolderName: string;
+  payoutBankVerifiedAt: string;
 }
 
 export interface Shipper {
