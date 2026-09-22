@@ -591,10 +591,10 @@ function PostingsSearchContent() {
           ))}
         </div>
 
-        <div className="flex items-center gap-2 pb-2.5">
-          <Label className="text-xs text-muted-foreground">{t('postings.sortBy')}</Label>
+        <div className="flex items-center gap-2 overflow-x-auto pb-2.5">
+          <Label className="shrink-0 text-xs text-muted-foreground">{t('postings.sortBy')}</Label>
           <Select value={sort} onValueChange={(v) => v && setSort(v as SortKey)}>
-            <SelectTrigger className="w-44">
+            <SelectTrigger className="w-44 shrink-0">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -604,29 +604,31 @@ function PostingsSearchContent() {
               {tab === 'near_you' && <SelectItem value="nearest">{t('postings.sortNearest')}</SelectItem>}
             </SelectContent>
           </Select>
-          {/* Below sm, the table always falls back to the same cards regardless
-              of List vs Grid, so those two stay desktop-only — but Map is a
-              genuinely different view worth having on a phone (this is the
-              APK's own screen width), so it's never hidden. */}
-          <div className="flex rounded-lg border">
+          {/* All three always shown, on every screen width — List and Grid
+              render identically on a phone (both fall back to the same
+              single-column cards), but shown anyway so the toggle itself
+              stays a familiar, findable control; the row scrolls
+              horizontally instead of wrapping/clipping if it ever runs out
+              of width. */}
+          <div className="flex shrink-0 rounded-lg border">
             <button
               aria-label={t('postings.viewList')}
               onClick={() => setView('list')}
-              className={cn('hidden size-8 items-center justify-center rounded-l-lg sm:flex', view === 'list' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent')}
+              className={cn('flex size-8 items-center justify-center rounded-l-lg', view === 'list' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent')}
             >
               <ListIcon className="size-4" />
             </button>
             <button
               aria-label={t('postings.viewGrid')}
               onClick={() => setView('grid')}
-              className={cn('hidden size-8 items-center justify-center sm:flex', view === 'grid' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent')}
+              className={cn('flex size-8 items-center justify-center', view === 'grid' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent')}
             >
               <LayoutGrid className="size-4" />
             </button>
             <button
               aria-label={t('postings.viewMap')}
               onClick={() => setView('map')}
-              className={cn('flex size-8 items-center justify-center rounded-lg sm:rounded-l-none sm:rounded-r-lg', view === 'map' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent')}
+              className={cn('flex size-8 items-center justify-center rounded-r-lg', view === 'map' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent')}
             >
               <MapIcon className="size-4" />
             </button>
