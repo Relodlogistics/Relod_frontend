@@ -604,27 +604,29 @@ function PostingsSearchContent() {
               {tab === 'near_you' && <SelectItem value="nearest">{t('postings.sortNearest')}</SelectItem>}
             </SelectContent>
           </Select>
-          {/* Below sm the table always falls back to cards regardless of this
-              toggle, so it wouldn't do anything useful there — hide it. */}
-          <div className="hidden rounded-lg border sm:flex">
+          {/* Below sm, the table always falls back to the same cards regardless
+              of List vs Grid, so those two stay desktop-only — but Map is a
+              genuinely different view worth having on a phone (this is the
+              APK's own screen width), so it's never hidden. */}
+          <div className="flex rounded-lg border">
             <button
               aria-label={t('postings.viewList')}
               onClick={() => setView('list')}
-              className={cn('flex size-8 items-center justify-center rounded-l-lg', view === 'list' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent')}
+              className={cn('hidden size-8 items-center justify-center rounded-l-lg sm:flex', view === 'list' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent')}
             >
               <ListIcon className="size-4" />
             </button>
             <button
               aria-label={t('postings.viewGrid')}
               onClick={() => setView('grid')}
-              className={cn('flex size-8 items-center justify-center', view === 'grid' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent')}
+              className={cn('hidden size-8 items-center justify-center sm:flex', view === 'grid' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent')}
             >
               <LayoutGrid className="size-4" />
             </button>
             <button
               aria-label={t('postings.viewMap')}
               onClick={() => setView('map')}
-              className={cn('flex size-8 items-center justify-center rounded-r-lg', view === 'map' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent')}
+              className={cn('flex size-8 items-center justify-center rounded-lg sm:rounded-l-none sm:rounded-r-lg', view === 'map' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent')}
             >
               <MapIcon className="size-4" />
             </button>
