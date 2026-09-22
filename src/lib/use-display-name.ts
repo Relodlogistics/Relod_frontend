@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSession } from './session-context';
 import { api } from './api';
 
-/** Shipper's businessName (falling back to fullName) or carrier's fullName. */
+/** The account's businessName when it has one (shippers, and carriers trading as a company), else fullName. */
 export function useDisplayName(): string {
   const { session } = useSession();
   const [name, setName] = useState('');
@@ -17,7 +17,7 @@ export function useDisplayName(): string {
         : api.getShipperProfile(session.accessToken, session.accountId);
     load
       .then((profile) => {
-        setName('businessName' in profile ? profile.businessName || profile.fullName : profile.fullName);
+        setName(profile.businessName || profile.fullName);
       })
       .catch(() => undefined);
   }, [session]);

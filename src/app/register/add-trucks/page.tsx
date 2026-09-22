@@ -22,7 +22,8 @@ import { useRegistration } from '@/lib/registration-context';
 import { VehicleVerificationStep } from '@/components/VehicleVerificationStep';
 import { AuthBackground } from '@/components/auth/AuthBackground';
 import { Logo } from '@/components/Logo';
-import { TRUCK_TYPES, truckTypeLabel } from '@/lib/truck-types';
+import { OTHER_TRUCK_TYPE, TRUCK_TYPES } from '@/lib/truck-types';
+import { TruckTypeCombobox } from '@/components/TruckTypeCombobox';
 import { LENGTH_PRESETS, PresetChipField, TONNAGE_PRESETS } from '@/components/PresetChipField';
 
 const CARGO_TYPES: { value: CargoType; labelKey: string }[] = [
@@ -51,11 +52,16 @@ export default function AddTrucksPage() {
 
   const [registrationNumber, setRegistrationNumber] = useState('');
   const [truckType, setTruckType] = useState(TRUCK_TYPES[0]);
+  const [truckTypeOther, setTruckTypeOther] = useState('');
   const [capacityTons, setCapacityTons] = useState('');
   const [lengthFeet, setLengthFeet] = useState('');
   const [numberOfAxles, setNumberOfAxles] = useState('');
   const [upiId, setUpiId] = useState('');
   const [cargoTypes, setCargoTypes] = useState<CargoType[]>(['general']);
+  const [isEximCapable, setIsEximCapable] = useState(false);
+  const [trailerType, setTrailerType] = useState('container_chassis');
+  const [containerSizesSupported, setContainerSizesSupported] = useState<string[]>([]);
+  const [hasReeferPower, setHasReeferPower] = useState(false);
   const [driverName, setDriverName] = useState('');
   const [driverPhone, setDriverPhone] = useState('');
   const [driverAuthorized, setDriverAuthorized] = useState(false);
@@ -72,6 +78,13 @@ export default function AddTrucksPage() {
 
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // The RC says this plate belongs to someone else (server answers
+  // OWNER_MISMATCH): ask for that owner's phone so they can be invited, and
+  // hold the truck as pending until they join.
+  const [needsOwnerPhone, setNeedsOwnerPhone] = useState(false);
+  const [ownerPhone, setOwnerPhone] = useState('');
+  const [invitedPlate, setInvitedPlate] = useState<string | null>(null);
 
   // Set once addVehicle succeeds — holds the checklist here on an RC+documents
   // step for that truck before letting the form reset for the next one.
@@ -99,7 +112,12 @@ export default function AddTrucksPage() {
         setTotalTrucks(carrier.truckCount ?? 0);
       })
       .catch(() => setInitError(t('errors.generic')));
-    api.listMyVehicles(session.accessToken).then((vehicles) => setAddedCount(vehicles.length));
+    // Trucks still waiting for their owner don't count toward the declared total.
+    api
+      .listMyVehicles(session.accessToken)
+      .then((vehicles) =>
+        setAddedCount(vehicles.filter((v) => v.ownershipStatus === 'verified').length),
+      );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loaded, session]);
 
@@ -108,10 +126,15 @@ export default function AddTrucksPage() {
   const resetTruckForm = () => {
     setRegistrationNumber('');
     setTruckType(TRUCK_TYPES[0]);
+    setTruckTypeOther('');
     setCapacityTons('');
     setNumberOfAxles('');
     setUpiId('');
     setCargoTypes(['general']);
+    setIsEximCapable(false);
+    setTrailerType('container_chassis');
+    setContainerSizesSupported([]);
+    setHasReeferPower(false);
     setDriverName('');
     setDriverPhone('');
     setDriverAuthorized(false);
@@ -121,10 +144,18 @@ export default function AddTrucksPage() {
     setWhatsappDevCode(null);
     setWhatsappToken(null);
     setWhatsappError(null);
+    setNeedsOwnerPhone(false);
+    setOwnerPhone('');
   };
 
   const toggleCargoType = (value: CargoType) => {
     setCargoTypes((prev) =>
+      prev.includes(value) ? prev.filter((c) => c !== value) : [...prev, value],
+    );
+  };
+
+  const toggleContainerSize = (value: string) => {
+    setContainerSizesSupported((prev) =>
       prev.includes(value) ? prev.filter((c) => c !== value) : [...prev, value],
     );
   };
@@ -171,19 +202,28 @@ export default function AddTrucksPage() {
     setWhatsappError(null);
   };
 
+  const fullOwnerPhone = ownerPhone.startsWith('+') ? ownerPhone : `+91${ownerPhone}`;
+
   const handleSubmit = async () => {
     if (!session || whatsappStep !== 'verified' || !whatsappToken) return;
     setError(null);
+    setInvitedPlate(null);
     setLoading(true);
     try {
       const vehicle = await api.addVehicle(session.accessToken, {
         registrationNumber: registrationNumber.toUpperCase().replace(/[\s-]/g, ''),
         truckType,
+        truckTypeOther: truckType === OTHER_TRUCK_TYPE ? truckTypeOther.trim() : undefined,
         capacityTons,
         lengthFeet: lengthFeet || undefined,
         cargoTypes,
         numberOfAxles: numberOfAxles ? Number(numberOfAxles) : undefined,
         upiId: upiId || undefined,
+        isEximCapable,
+        trailerType: isEximCapable ? trailerType : undefined,
+        containerSizesSupported: isEximCapable ? containerSizesSupported : undefined,
+        hasReeferPower: isEximCapable ? hasReeferPower : undefined,
+        ownerPhone: needsOwnerPhone ? fullOwnerPhone : undefined,
         driverName,
         driverPhone: fullDriverWhatsapp,
         driverWhatsappVerificationToken: whatsappToken,
@@ -193,11 +233,19 @@ export default function AddTrucksPage() {
           destinationLabel: lane.destination,
         })),
       });
+      if (vehicle.ownershipStatus !== 'verified') {
+        // Listed for someone else's truck — nothing to verify here; the
+        // owner takes it from their own account once they join.
+        setInvitedPlate(vehicle.registrationNumber);
+        resetTruckForm();
+        return;
+      }
       // Hold here on an RC+documents step for this truck before letting the
       // form move on to the next one — see pendingRcVehicleId below.
       setPendingRcVehicleId(vehicle.id);
       setState({ pendingAddTruckVehicleId: vehicle.id });
     } catch (e) {
+      if (e instanceof ApiError && e.code === 'OWNER_MISMATCH') setNeedsOwnerPhone(true);
       setError(e instanceof ApiError ? e.message : t('errors.generic'));
     } finally {
       setLoading(false);
@@ -285,13 +333,15 @@ export default function AddTrucksPage() {
 
   const canSubmit =
     registrationNumber.length >= 6 &&
+    (truckType !== OTHER_TRUCK_TYPE || truckTypeOther.trim().length >= 2) &&
     !!capacityTons &&
     cargoTypes.length > 0 &&
     driverName.length >= 2 &&
     driverPhone.length >= 10 &&
     whatsappStep === 'verified' &&
     driverAuthorized &&
-    completeLanes.length > 0;
+    completeLanes.length > 0 &&
+    (!needsOwnerPhone || ownerPhone.length >= 10);
 
   return (
     <AuthBackground
@@ -313,6 +363,14 @@ export default function AddTrucksPage() {
               <Progress value={(addedCount / totalTrucks) * 100} />
             </div>
 
+            {invitedPlate && (
+              <Alert>
+                <AlertDescription>
+                  {t('addTrucks.ownerInvited', { plate: invitedPlate })}
+                </AlertDescription>
+              </Alert>
+            )}
+
             {error && (
               <Alert variant="destructive">
                 <AlertDescription>{error}</AlertDescription>
@@ -325,23 +383,36 @@ export default function AddTrucksPage() {
                 id="regNumber"
                 placeholder={t('vehicle.registrationNumberPlaceholder')}
                 value={registrationNumber}
-                onChange={(e) => setRegistrationNumber(e.target.value)}
+                onChange={(e) => {
+                  setRegistrationNumber(e.target.value);
+                  // A different plate needs its own ownership check.
+                  setNeedsOwnerPhone(false);
+                }}
               />
             </div>
+            {needsOwnerPhone && (
+              <div className="flex flex-col gap-1.5 rounded-lg border bg-muted/30 p-3">
+                <Label htmlFor="ownerPhone">{t('addTrucks.ownerPhone')}</Label>
+                <Input
+                  id="ownerPhone"
+                  type="tel"
+                  value={ownerPhone}
+                  onChange={(e) => setOwnerPhone(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">{t('addTrucks.ownerPhoneHint')}</p>
+              </div>
+            )}
             <div className="flex flex-col gap-1.5">
               <Label>{t('vehicle.truckType')}</Label>
-              <Select value={truckType} onValueChange={(v) => v && setTruckType(v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {TRUCK_TYPES.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {truckTypeLabel(type)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <TruckTypeCombobox id="truckType" value={truckType} onValueChange={setTruckType} includeOther />
+              {truckType === OTHER_TRUCK_TYPE && (
+                <Input
+                  id="truckTypeOther"
+                  placeholder={t('vehicle.truckTypeOtherPlaceholder')}
+                  value={truckTypeOther}
+                  onChange={(e) => setTruckTypeOther(e.target.value)}
+                />
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <PresetChipField
@@ -394,6 +465,66 @@ export default function AddTrucksPage() {
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="upiId">{t('vehicle.upiId')}</Label>
               <Input id="upiId" value={upiId} onChange={(e) => setUpiId(e.target.value)} />
+            </div>
+
+            <div className="flex flex-col gap-3 rounded-lg border bg-muted/30 p-3">
+              <label className="flex items-center gap-2 text-sm font-medium">
+                <input
+                  type="checkbox"
+                  checked={isEximCapable}
+                  onChange={(e) => setIsEximCapable(e.target.checked)}
+                />
+                {t('vehicle.isEximCapable')}
+              </label>
+              <p className="text-xs text-muted-foreground">{t('vehicle.isEximCapableHint')}</p>
+              {isEximCapable && (
+                <>
+                  <div className="flex flex-col gap-1.5">
+                    <Label>{t('vehicle.trailerType')}</Label>
+                    <Select value={trailerType} onValueChange={(v) => v && setTrailerType(v)}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue>
+                          {(v: string | null) =>
+                            v === 'skeletal_trailer'
+                              ? t('vehicle.trailerTypeSkeletalTrailer')
+                              : v === 'side_lifter'
+                                ? t('vehicle.trailerTypeSideLifter')
+                                : t('vehicle.trailerTypeContainerChassis')
+                          }
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="container_chassis">{t('vehicle.trailerTypeContainerChassis')}</SelectItem>
+                        <SelectItem value="skeletal_trailer">{t('vehicle.trailerTypeSkeletalTrailer')}</SelectItem>
+                        <SelectItem value="side_lifter">{t('vehicle.trailerTypeSideLifter')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <Label>{t('vehicle.containerSizesSupported')}</Label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {['20ft', '40ft', '40ft_hc'].map((size) => (
+                        <label key={size} className="flex items-center gap-2 text-sm">
+                          <input
+                            type="checkbox"
+                            checked={containerSizesSupported.includes(size)}
+                            onChange={() => toggleContainerSize(size)}
+                          />
+                          {t(`vehicle.containerSize_${size}`)}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={hasReeferPower}
+                      onChange={(e) => setHasReeferPower(e.target.checked)}
+                    />
+                    {t('vehicle.hasReeferPower')}
+                  </label>
+                </>
+              )}
             </div>
 
             <div className="flex flex-col gap-3 rounded-lg border bg-muted/30 p-3">

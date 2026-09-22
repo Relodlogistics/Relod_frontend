@@ -178,7 +178,7 @@ export default function LoginPage() {
                   passwordLoading ||
                   !username ||
                   !password ||
-                  (!isNative && !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !turnstileToken)
+                  (!isNative && process.env.NODE_ENV === 'production' && !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !turnstileToken)
                 }
               >
                 {t('login.loginButton')}
@@ -233,7 +233,7 @@ export default function LoginPage() {
                     disabled={
                       otpLoading ||
                       phone.length < 10 ||
-                      (!isNative && !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !turnstileToken)
+                      (!isNative && process.env.NODE_ENV === 'production' && !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !turnstileToken)
                     }
                   >
                     {t('phone.sendOtp')}

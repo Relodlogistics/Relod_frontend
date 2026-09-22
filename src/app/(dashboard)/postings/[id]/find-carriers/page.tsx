@@ -187,7 +187,7 @@ export default function FindCarriersPage({ params }: { params: Promise<{ id: str
                       <td className="py-3 pr-3">
                         <div className="flex items-center gap-1 font-medium">
                           {carrier.fullName}
-                          {carrier.verificationTier !== 'basic' && (
+                          {(carrier.verificationTier !== 'basic' || carrier.businessVerified) && (
                             <BadgeCheck className="size-3.5 shrink-0 text-primary" aria-label={t('postings.verified')} />
                           )}
                         </div>

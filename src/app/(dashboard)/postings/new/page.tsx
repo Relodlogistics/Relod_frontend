@@ -33,7 +33,8 @@ import {
 } from '@/components/ui/select';
 import { api, ApiError } from '@/lib/api';
 import { useSession } from '@/lib/session-context';
-import { TRUCK_TYPES, truckTypeLabel } from '@/lib/truck-types';
+import { truckTypeLabel } from '@/lib/truck-types';
+import { TruckTypeCombobox } from '@/components/TruckTypeCombobox';
 import { LENGTH_PRESETS, PresetChipField } from '@/components/PresetChipField';
 import { cn } from '@/lib/utils';
 import { PlaceAutocompleteInput, PlaceResult, cityLabel } from '@/components/PlaceAutocompleteInput';
@@ -425,19 +426,11 @@ export default function NewPostingPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
                     <Label>{t('postings.truckType')}</Label>
-                    <Select value={requiredTruckType} onValueChange={(v) => v && setRequiredTruckType(v)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="any">{t('postings.filterAny')}</SelectItem>
-                        {TRUCK_TYPES.map((tt) => (
-                          <SelectItem key={tt} value={tt}>
-                            {truckTypeLabel(tt)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <TruckTypeCombobox
+                      value={requiredTruckType}
+                      onValueChange={setRequiredTruckType}
+                      anyOption={{ value: 'any', label: t('postings.filterAny') }}
+                    />
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <Label>{t('postings.minCapacity')}</Label>

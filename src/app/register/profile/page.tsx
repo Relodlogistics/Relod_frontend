@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
   SelectContent,
@@ -23,6 +22,34 @@ import { useSession } from '@/lib/session-context';
 import { RegistrationStepper } from '@/components/RegistrationStepper';
 import { AuthBackground } from '@/components/auth/AuthBackground';
 import { Logo } from '@/components/Logo';
+
+type RoleValue = 'carrier' | 'shipper';
+
+// What a shipper's business does. Only businesses whose main work is something
+// other than transport (they hire trucks to move their goods) — transport
+// brokers and 3PLs aren't onboarded here.
+const SHIPPER_CATEGORY_OPTIONS: { value: string; labelKey: string }[] = [
+  { value: 'manufacturer', labelKey: 'profile.categoryManufacturer' },
+  { value: 'trader', labelKey: 'profile.categoryTrader' },
+  { value: 'ecommerce_seller', labelKey: 'profile.categoryEcommerce' },
+  { value: 'retailer', labelKey: 'profile.categoryRetailer' },
+  { value: 'contractor', labelKey: 'profile.categoryContractor' },
+  { value: 'agri_dealer', labelKey: 'profile.categoryAgri' },
+  { value: 'exim_business', labelKey: 'profile.categoryExim' },
+  { value: 'other', labelKey: 'profile.categoryOther' },
+];
+
+// The dispatch software for people who find loads for trucks (rather than
+// hire trucks) — Relod itself is for the hiring side.
+const TMS_URL = process.env.NEXT_PUBLIC_TMS_URL ?? 'https://syntheniumtms.com';
+
+// Same shape the server enforces: 5 letters, 4 digits, 1 letter (e.g. ABCDE1234F).
+const PAN_PATTERN = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
+
+const ROLE_OPTIONS: { value: RoleValue; labelKey: string; descKey: string }[] = [
+  { value: 'carrier', labelKey: 'profile.roleCarrier', descKey: 'profile.roleCarrierDesc' },
+  { value: 'shipper', labelKey: 'profile.roleShipper', descKey: 'profile.roleShipperDesc' },
+];
 
 export default function ProfilePage() {
   const { t, i18n } = useTranslation();
@@ -44,8 +71,36 @@ export default function ProfilePage() {
   const [whatsappLoading, setWhatsappLoading] = useState(false);
   const [aadhaarNumber, setAadhaarNumber] = useState('');
   const [panNumber, setPanNumber] = useState('');
+  // A carrier that trades as a company shows only its business name to
+  // shippers. Kept apart from the shipper's businessName/gstin below so
+  // switching roles can't leak one side's values into the other's payload.
+  const [operatesAsBusiness, setOperatesAsBusiness] = useState(false);
+  const [carrierBusinessName, setCarrierBusinessName] = useState('');
+  const [carrierGstin, setCarrierGstin] = useState('');
+  const [carrierBusinessPan, setCarrierBusinessPan] = useState('');
   const [businessName, setBusinessName] = useState('');
   const [businessType, setBusinessType] = useState('proprietorship');
+  const [shipperCategory, setShipperCategory] = useState('');
+  const [selectedRole, setSelectedRole] = useState<RoleValue | ''>('');
+
+  const [otherIntent, setOtherIntent] = useState<'find_trucks' | 'find_loads' | ''>('');
+
+  const chooseRole = (role: RoleValue) => {
+    setSelectedRole(role);
+    setUserType(role);
+    setShipperCategory('');
+    setOtherIntent('');
+  };
+
+  // The whole form (name, phone, business details…) only appears once the
+  // person has told us enough to know which form to show.
+  const isOther = shipperCategory === 'other';
+  const roleReady =
+    selectedRole === 'carrier' ||
+    (selectedRole === 'shipper' && !!shipperCategory && (!isOther || otherIntent === 'find_trucks'));
+  const [iec, setIec] = useState('');
+  const [otherRole, setOtherRole] = useState('');
+  const [otherDescription, setOtherDescription] = useState('');
   const [gstin, setGstin] = useState('');
   const [shipperPan, setShipperPan] = useState('');
   const [paymentUpiId, setPaymentUpiId] = useState('');
@@ -129,6 +184,9 @@ export default function ProfilePage() {
             truckCount: isOwnerOperator ? undefined : Number(truckCount),
             aadhaarNumber,
             panNumber: panNumber || undefined,
+            businessName: operatesAsBusiness ? carrierBusinessName.trim() : undefined,
+            gstin: operatesAsBusiness ? carrierGstin || undefined : undefined,
+            businessPan: operatesAsBusiness ? carrierBusinessPan || undefined : undefined,
             email: email || undefined,
             preferredLanguage: lang,
           },
@@ -143,6 +201,12 @@ export default function ProfilePage() {
             email: email || undefined,
             businessName: businessName || undefined,
             businessType,
+            // "Other" people who hire trucks are stored as ordinary domestic
+            // shippers, with their own words kept alongside.
+            shipperCategory: isOther ? 'domestic' : shipperCategory,
+            iec: shipperCategory === 'exim_business' ? iec || undefined : undefined,
+            otherRole: isOther ? otherRole.trim() : undefined,
+            otherDescription: isOther ? otherDescription.trim() : undefined,
             gstin: gstin || undefined,
             panNumber: shipperPan || undefined,
             paymentUpiId: paymentUpiId || undefined,
@@ -159,8 +223,10 @@ export default function ProfilePage() {
     }
   };
 
+  // Until a role is chosen only the steps common to everyone are shown; the
+  // vehicle/documents steps only apply to (and appear for) truck owners.
   const steps =
-    userType === 'carrier'
+    selectedRole === 'carrier'
       ? [
           { key: 'phone', label: t('stepper.phone') },
           { key: 'profile', label: t('stepper.profile') },
@@ -176,8 +242,15 @@ export default function ProfilePage() {
 
   const canSubmit =
     fullName.length >= 2 &&
+    roleReady &&
+    (!isOther || (otherRole.trim().length >= 2 && otherDescription.trim().length >= 2)) &&
     (userType === 'shipper' || aadhaarNumber.length === 12) &&
-    (userType === 'shipper' || panNumber.length === 10) &&
+    (userType === 'shipper' || PAN_PATTERN.test(panNumber)) &&
+    (userType === 'shipper' ||
+      !operatesAsBusiness ||
+      (carrierBusinessName.trim().length >= 2 &&
+        (carrierGstin === '' || carrierGstin.length === 15) &&
+        (carrierBusinessPan === '' || PAN_PATTERN.test(carrierBusinessPan)))) &&
     (userType === 'shipper' || isOwnerOperator
       ? whatsappStep === 'verified'
       : Number(truckCount) >= 1);
@@ -208,17 +281,145 @@ export default function ProfilePage() {
               </Alert>
             )}
 
-            <Tabs value={userType} onValueChange={(v) => setUserType(v as 'carrier' | 'shipper')}>
-              <TabsList className="w-full">
-                <TabsTrigger value="carrier" className="flex-1">
-                  {t('profile.carrier')}
-                </TabsTrigger>
-                <TabsTrigger value="shipper" className="flex-1">
-                  {t('profile.shipper')}
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
+            {selectedRole ? (
+              <div className="flex items-center justify-between rounded-lg border border-primary bg-primary/5 p-3">
+                <div className="flex flex-col">
+                  <span className="text-xs text-muted-foreground">{t('profile.roleYouAre')}</span>
+                  <span className="text-sm font-medium">
+                    {t(ROLE_OPTIONS.find((o) => o.value === selectedRole)!.labelKey)}
+                    {selectedRole === 'shipper' && shipperCategory && (
+                      <>
+                        {' · '}
+                        {t(SHIPPER_CATEGORY_OPTIONS.find((o) => o.value === shipperCategory)!.labelKey)}
+                      </>
+                    )}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="text-sm text-primary underline"
+                  onClick={() => {
+                    setSelectedRole('');
+                    setShipperCategory('');
+                    setOtherIntent('');
+                  }}
+                >
+                  {t('profile.roleChange')}
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <Label>{t('profile.roleQuestion')}</Label>
+                {ROLE_OPTIONS.map((opt) =>
+                  opt.value === 'shipper' ? (
+                    // The business-type dropdown lives right on the card so it's
+                    // visible straight away — choosing from it picks the role too.
+                    <div key={opt.value} className="flex flex-col gap-2 rounded-lg border p-3">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium">{t(opt.labelKey)}</span>
+                        <span className="text-xs text-muted-foreground">{t(opt.descKey)}</span>
+                      </div>
+                      <Select
+                        value=""
+                        onValueChange={(v) => {
+                          if (!v) return;
+                          setSelectedRole('shipper');
+                          setUserType('shipper');
+                          setShipperCategory(v);
+                          setOtherIntent('');
+                        }}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder={t('profile.categoryPlaceholder')}>
+                            {() => t('profile.categoryPlaceholder')}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {SHIPPER_CATEGORY_OPTIONS.map((c) => (
+                            <SelectItem key={c.value} value={c.value}>
+                              {t(c.labelKey)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ) : (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => chooseRole(opt.value)}
+                      className="flex flex-col items-start rounded-lg border p-3 text-left transition-colors hover:bg-muted/50"
+                    >
+                      <span className="text-sm font-medium">{t(opt.labelKey)}</span>
+                      <span className="text-xs text-muted-foreground">{t(opt.descKey)}</span>
+                    </button>
+                  ),
+                )}
+              </div>
+            )}
 
+            {selectedRole === 'shipper' && isOther && (
+              <div className="flex flex-col gap-3 rounded-lg border bg-muted/30 p-3">
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="otherRole">{t('profile.otherRoleLabel')}</Label>
+                  <Input
+                    id="otherRole"
+                    placeholder={t('profile.otherRolePlaceholder')}
+                    value={otherRole}
+                    onChange={(e) => setOtherRole(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="otherDescription">{t('profile.otherDescriptionLabel')}</Label>
+                  <textarea
+                    id="otherDescription"
+                    rows={3}
+                    className="w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                    placeholder={t('profile.otherDescriptionPlaceholder')}
+                    value={otherDescription}
+                    onChange={(e) => setOtherDescription(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <p className="text-sm font-medium">{t('profile.otherIntentQuestion')}</p>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="radio"
+                      name="otherIntent"
+                      checked={otherIntent === 'find_trucks'}
+                      onChange={() => setOtherIntent('find_trucks')}
+                    />
+                    {t('profile.otherIntentFindTrucks')}
+                  </label>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="radio"
+                      name="otherIntent"
+                      checked={otherIntent === 'find_loads'}
+                      onChange={() => setOtherIntent('find_loads')}
+                    />
+                    {t('profile.otherIntentFindLoads')}
+                  </label>
+                </div>
+                {otherIntent === 'find_loads' && (
+                  <Alert>
+                    <AlertDescription className="flex flex-col gap-2">
+                      {t('profile.otherFindLoadsNotice')}
+                      <a
+                        href={TMS_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium text-primary underline"
+                      >
+                        {t('profile.otherGoToTms')}
+                      </a>
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
+            )}
+
+            {roleReady && (
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="fullName">{t('profile.fullName')}</Label>
@@ -377,7 +578,56 @@ export default function ProfilePage() {
                         value={panNumber}
                         onChange={(e) => setPanNumber(e.target.value.toUpperCase())}
                       />
+                      {panNumber.length > 0 && !PAN_PATTERN.test(panNumber) && (
+                        <p className="text-xs text-destructive">{t('profile.panInvalid')}</p>
+                      )}
                     </div>
+                  </div>
+
+                  <div className="flex flex-col gap-3 rounded-lg border bg-muted/30 p-3">
+                    <label className="flex items-center gap-2 text-sm font-medium">
+                      <input
+                        type="checkbox"
+                        checked={operatesAsBusiness}
+                        onChange={(e) => setOperatesAsBusiness(e.target.checked)}
+                      />
+                      {t('profile.operatesAsBusiness')}
+                    </label>
+                    <p className="text-xs text-muted-foreground">{t('profile.operatesAsBusinessHint')}</p>
+                    {operatesAsBusiness && (
+                      <>
+                        <div className="flex flex-col gap-1.5">
+                          <Label htmlFor="carrierBusinessName">{t('profile.carrierBusinessName')}</Label>
+                          <Input
+                            id="carrierBusinessName"
+                            value={carrierBusinessName}
+                            onChange={(e) => setCarrierBusinessName(e.target.value)}
+                          />
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                          <Label htmlFor="carrierGstin">{t('profile.gstin')}</Label>
+                          <Input
+                            id="carrierGstin"
+                            maxLength={15}
+                            value={carrierGstin}
+                            onChange={(e) => setCarrierGstin(e.target.value.toUpperCase())}
+                          />
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                          <Label htmlFor="carrierBusinessPan">{t('profile.businessPan')}</Label>
+                          <Input
+                            id="carrierBusinessPan"
+                            maxLength={10}
+                            value={carrierBusinessPan}
+                            onChange={(e) => setCarrierBusinessPan(e.target.value.toUpperCase())}
+                          />
+                          {carrierBusinessPan.length > 0 && !PAN_PATTERN.test(carrierBusinessPan) && (
+                            <p className="text-xs text-destructive">{t('profile.panInvalid')}</p>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">{t('profile.businessProofHint')}</p>
+                      </>
+                    )}
                   </div>
                 </>
               )}
@@ -395,8 +645,16 @@ export default function ProfilePage() {
                   <div className="flex flex-col gap-1.5">
                     <Label>{t('profile.businessType')}</Label>
                     <Select value={businessType} onValueChange={(v) => v && setBusinessType(v)}>
-                      <SelectTrigger>
-                        <SelectValue />
+                      <SelectTrigger className="w-full">
+                        <SelectValue>
+                          {(v: string | null) =>
+                            v === 'partnership'
+                              ? t('profile.businessTypePartnership')
+                              : v === 'company'
+                                ? t('profile.businessTypeCompany')
+                                : t('profile.businessTypeProprietorship')
+                          }
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="proprietorship">
@@ -407,6 +665,13 @@ export default function ProfilePage() {
                       </SelectContent>
                     </Select>
                   </div>
+                  {shipperCategory === 'exim_business' && (
+                    <div className="flex flex-col gap-1.5">
+                      <Label htmlFor="iec">{t('profile.iec')}</Label>
+                      <Input id="iec" value={iec} onChange={(e) => setIec(e.target.value)} />
+                      <p className="text-xs text-muted-foreground">{t('profile.iecHint')}</p>
+                    </div>
+                  )}
                   <div className="flex flex-col gap-1.5">
                     <Label htmlFor="gstin">{t('profile.gstin')}</Label>
                     <Input id="gstin" value={gstin} onChange={(e) => setGstin(e.target.value)} />
@@ -465,6 +730,7 @@ export default function ProfilePage() {
                 </>
               )}
             </div>
+            )}
 
             <Button onClick={handleSubmit} disabled={loading || !canSubmit}>
               {t('profile.submit')}

@@ -37,7 +37,8 @@ import {
 import { api, ApiError, Posting, Booking } from '@/lib/api';
 import { useSession } from '@/lib/session-context';
 import { boardLocation, boardLocationParts, formatMoney, timeAgo, cn } from '@/lib/utils';
-import { TRUCK_TYPES, truckTypeLabel } from '@/lib/truck-types';
+import { truckTypeLabel } from '@/lib/truck-types';
+import { TruckTypeCombobox } from '@/components/TruckTypeCombobox';
 
 type TabKey = 'all' | 'book_now' | 'near_you' | 'saved';
 type SortKey = 'newest' | 'price_low' | 'price_high' | 'nearest';
@@ -413,19 +414,12 @@ function PostingsSearchContent() {
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">{t('postings.truckType')}</Label>
-              <Select value={truckType} onValueChange={(v) => v && setTruckType(v)}>
-                <SelectTrigger className="w-full sm:w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="any">{t('postings.filterAny')}</SelectItem>
-                  {TRUCK_TYPES.map((tt) => (
-                    <SelectItem key={tt} value={tt}>
-                      {truckTypeLabel(tt)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <TruckTypeCombobox
+                className="sm:w-40"
+                value={truckType}
+                onValueChange={setTruckType}
+                anyOption={{ value: 'any', label: t('postings.filterAny') }}
+              />
             </div>
             <Button onClick={handleSearch} disabled={loading} className="w-full sm:w-auto">
               {isShipper ? t('dashboard.searchCarrier') : t('dashboard.searchLoad')}

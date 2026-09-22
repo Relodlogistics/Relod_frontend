@@ -36,6 +36,9 @@ export class ApiError extends Error {
   constructor(
     message: string,
     public status: number,
+    // Machine-readable reason from the backend, when it sends one (e.g.
+    // OWNER_MISMATCH) — lets a page react to a specific failure.
+    public code?: string,
   ) {
     super(message);
   }
@@ -81,7 +84,7 @@ async function request<T>(
         window.dispatchEvent(new Event('session-invalid'));
       }
     }
-    throw new ApiError(body.message ?? 'Request failed', res.status);
+    throw new ApiError(body.message ?? 'Request failed', res.status, body.code);
   }
 
   return res.json() as Promise<T>;
@@ -212,6 +215,9 @@ export const api = {
       truckCount?: number;
       aadhaarNumber: string;
       panNumber?: string;
+      businessName?: string;
+      gstin?: string;
+      businessPan?: string;
       email?: string;
       preferredLanguage?: string;
       vehicle?: VehicleRegistrationFields;
@@ -247,6 +253,10 @@ export const api = {
       industryType?: string;
       shipmentVolume?: string;
       businessAddress?: string;
+      shipperCategory?: string;
+      iec?: string;
+      otherRole?: string;
+      otherDescription?: string;
       preferredLanguage?: string;
     },
   ) =>
@@ -262,7 +272,7 @@ export const api = {
   kycStatus: (token: string) => request<KycVerification[]>('/kyc/status', { token }),
 
   sendAadhaarOtp: (token: string, aadhaarNumber: string) =>
-    request<{ referenceId: string }>('/kyc/aadhaar/send-otp', {
+    request<{ referenceId: string; devCode?: string }>('/kyc/aadhaar/send-otp', {
       method: 'POST',
       token,
       body: JSON.stringify({ aadhaarNumber }),
@@ -342,6 +352,8 @@ export const api = {
       paymentUpiId?: string;
       industryType?: string;
       shipmentVolume?: string;
+      shipperCategory?: string;
+      iec?: string;
       preferredLanguage?: string;
     },
   ) => request<Shipper>(`/shippers/${id}`, { method: 'PATCH', token, body: JSON.stringify(data) }),
@@ -508,6 +520,14 @@ export const api = {
     request<BookingCandidateDetail>(`/postings/${postingId}/candidates/${bookingId}`, { token }),
 
   listMyVehicles: (token: string) => request<Vehicle[]>('/vehicles/mine', { token }),
+  // Trucks this carrier listed for owners who haven't joined Relod yet.
+  listAwaitingOwnerVehicles: (token: string) =>
+    request<AwaitingOwnerVehicle[]>('/vehicles/awaiting-owner', { token }),
+  // Trucks a transporter listed under this carrier's phone, waiting for them to accept.
+  listClaimableVehicles: (token: string) =>
+    request<ClaimableVehicle[]>('/vehicles/claimable', { token }),
+  claimVehicle: (token: string, vehicleId: string) =>
+    request<Vehicle>(`/vehicles/${vehicleId}/claim`, { method: 'POST', token }),
 
   // Driver-scoped — every call below takes a DriverAccessGuard token (see
   // driver-session-context), not a carrier/shipper access token. Each mirrors
@@ -1132,6 +1152,8 @@ export interface Posting {
 export interface PostingContact {
   partyType: 'shipper' | 'carrier';
   fullName: string;
+  // carrier-only: true when the shown business name was proven by a GSTIN or company PAN
+  businessVerified?: boolean;
   phone: string | null;
   email: string | null;
   // shipper-only
@@ -1149,7 +1171,10 @@ export interface PostingContact {
 
 export interface MatchingCarrier {
   carrierId: string;
+  // The business name when the carrier trades as one, otherwise the person's name.
   fullName: string;
+  // True when that business name was proven by a GSTIN or company PAN.
+  businessVerified: boolean;
   whatsappNumber: string | null;
   phone: string;
   vehicleId: string;
@@ -1191,15 +1216,37 @@ export interface PaginatedPostings {
   deadheadUnavailable?: 'no_location' | null;
 }
 
+export interface AwaitingOwnerVehicle {
+  id: string;
+  registrationNumber: string;
+  truckType: string;
+  pendingOwnerPhone: string | null;
+  createdAt: string;
+}
+
+export interface ClaimableVehicle {
+  id: string;
+  registrationNumber: string;
+  truckType: string;
+  capacityTons: string;
+  // Name of the transporter who listed the truck, if known.
+  listedBy: string | null;
+}
+
 export interface Vehicle {
   id: string;
   carrierId: string;
   registrationNumber: string;
   truckType: string;
+  // What the carrier typed when they chose the "other" truck type.
+  truckTypeOther: string | null;
   capacityTons: string;
   lengthFeet: string | null;
   numberOfAxles: number | null;
   cargoTypes: string[];
+  // 'verified' trucks can get loads; 'pending_owner' is waiting for the real
+  // owner to join, 'review' is waiting on an admin.
+  ownershipStatus: 'verified' | 'pending_owner' | 'review';
   rcVerifiedAt: string | null;
   rcUrl: string | null;
   insuranceUrl: string | null;
@@ -1214,6 +1261,10 @@ export interface Vehicle {
   walkaroundVideoUrl: string | null;
   driverPhotoUrl: string | null;
   driverLicenseUrl: string | null;
+  isEximCapable: boolean;
+  trailerType: string | null;
+  containerSizesSupported: string[];
+  hasReeferPower: boolean;
 }
 
 // Shape returned by GET /driver/me — deliberately narrower than Vehicle/
@@ -1397,11 +1448,17 @@ export type CargoType = 'general' | 'refrigerated' | 'hazardous' | 'fragile' | '
 export interface VehicleRegistrationFields {
   registrationNumber: string;
   truckType: string;
+  // Required by the server when truckType is 'other'.
+  truckTypeOther?: string;
   capacityTons: string;
   lengthFeet?: string;
   cargoTypes: CargoType[];
   numberOfAxles?: number;
   upiId?: string;
+  isEximCapable?: boolean;
+  trailerType?: string;
+  containerSizesSupported?: string[];
+  hasReeferPower?: boolean;
   isOwnerDriver?: boolean;
   driverName?: string;
   driverPhone?: string;
@@ -1421,13 +1478,22 @@ export interface VehicleRegistrationFields {
 export interface AddVehicleFields {
   registrationNumber: string;
   truckType: string;
+  // Required by the server when truckType is 'other'.
+  truckTypeOther?: string;
   capacityTons: string;
   lengthFeet?: string;
   cargoTypes: CargoType[];
   numberOfAxles?: number;
   upiId?: string;
+  isEximCapable?: boolean;
+  trailerType?: string;
+  containerSizesSupported?: string[];
+  hasReeferPower?: boolean;
   homeBaseLat?: number;
   homeBaseLng?: number;
+  // Only sent after the server answers OWNER_MISMATCH — the real owner of a
+  // truck the RC says isn't this carrier's, who gets invited to join.
+  ownerPhone?: string;
   driverName: string;
   driverPhone: string;
   driverWhatsappVerificationToken: string;
@@ -1455,6 +1521,8 @@ export type ChangeableFieldName =
   | 'panNumber'
   | 'gstin'
   | 'whatsappNumber'
+  | 'businessName'
+  | 'businessPan'
   | 'registrationNumber'
   | 'truckType'
   | 'capacityTons';
@@ -1491,6 +1559,11 @@ export interface Carrier {
   truckCount: number | null;
   aadhaarNumber: string | null;
   panNumber: string | null;
+  gstin: string | null;
+  businessName: string | null;
+  businessPan: string | null;
+  // True once the business name was matched against a GSTIN or company PAN.
+  businessVerifiedAt: string | null;
   verificationTier: 'basic' | 'verified' | 'trust_boosted';
   preferredLanguage: string;
   isSuspended: boolean;
@@ -1513,6 +1586,10 @@ export interface Shipper {
   industryType: string | null;
   shipmentVolume: string | null;
   businessAddress: string | null;
+  shipperCategory: string;
+  iec: string | null;
+  otherRole: string | null;
+  otherDescription: string | null;
   isVerified: boolean;
   preferredLanguage: string;
   isSuspended: boolean;

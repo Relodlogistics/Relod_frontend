@@ -135,7 +135,7 @@ export default function DriverLoginPage() {
                   disabled={
                     loading ||
                     phone.length < 10 ||
-                    (!isNative && !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !turnstileToken)
+                    (!isNative && process.env.NODE_ENV === 'production' && !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !turnstileToken)
                   }
                 >
                   {t('phone.sendOtp')}

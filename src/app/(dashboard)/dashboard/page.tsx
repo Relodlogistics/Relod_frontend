@@ -25,6 +25,7 @@ import { useDisplayName } from '@/lib/use-display-name';
 import { boardLocation, cn, formatMoney, googleMapsDirectionsUrl, haversineKm, timeAgo } from '@/lib/utils';
 import { statusBadge } from '@/lib/status-badge';
 import LiveTrackingMap from '@/components/LiveTrackingMap';
+import { OwnershipCards } from '@/components/OwnershipCards';
 
 const TRACKING_POLL_INTERVAL_MS = 20000;
 const DELIVERY_RADIUS_KM = 5;
@@ -304,6 +305,8 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       )}
+
+      <OwnershipCards />
 
       <div className="flex flex-wrap gap-3">
         <Link href="/postings/new">

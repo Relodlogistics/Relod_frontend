@@ -24,7 +24,8 @@ import { VehicleVerificationStep } from '@/components/VehicleVerificationStep';
 import { RegistrationStepper } from '@/components/RegistrationStepper';
 import { AuthBackground } from '@/components/auth/AuthBackground';
 import { Logo } from '@/components/Logo';
-import { TRUCK_TYPES, truckTypeLabel } from '@/lib/truck-types';
+import { OTHER_TRUCK_TYPE, TRUCK_TYPES } from '@/lib/truck-types';
+import { TruckTypeCombobox } from '@/components/TruckTypeCombobox';
 import { LENGTH_PRESETS, PresetChipField, TONNAGE_PRESETS } from '@/components/PresetChipField';
 
 const CARGO_TYPES: { value: CargoType; labelKey: string }[] = [
@@ -54,6 +55,7 @@ export default function VehiclePage() {
 
   const [registrationNumber, setRegistrationNumber] = useState('');
   const [truckType, setTruckType] = useState(TRUCK_TYPES[0]);
+  const [truckTypeOther, setTruckTypeOther] = useState('');
   const [capacityTons, setCapacityTons] = useState('');
   const [lengthFeet, setLengthFeet] = useState('');
   const [numberOfAxles, setNumberOfAxles] = useState('');
@@ -63,6 +65,10 @@ export default function VehiclePage() {
   const [driverPhone, setDriverPhone] = useState('');
   const [driverAuthorized, setDriverAuthorized] = useState(false);
   const [cargoTypes, setCargoTypes] = useState<CargoType[]>(['general']);
+  const [isEximCapable, setIsEximCapable] = useState(false);
+  const [trailerType, setTrailerType] = useState('container_chassis');
+  const [containerSizesSupported, setContainerSizesSupported] = useState<string[]>([]);
+  const [hasReeferPower, setHasReeferPower] = useState(false);
   const [lanes, setLanes] = useState<{ origin: string; destination: string }[]>([
     { origin: '', destination: '' },
   ]);
@@ -104,6 +110,12 @@ export default function VehiclePage() {
 
   const toggleCargoType = (value: CargoType) => {
     setCargoTypes((prev) =>
+      prev.includes(value) ? prev.filter((c) => c !== value) : [...prev, value],
+    );
+  };
+
+  const toggleContainerSize = (value: string) => {
+    setContainerSizesSupported((prev) =>
       prev.includes(value) ? prev.filter((c) => c !== value) : [...prev, value],
     );
   };
@@ -176,11 +188,16 @@ export default function VehiclePage() {
         vehicle: {
           registrationNumber: registrationNumber.toUpperCase().replace(/[\s-]/g, ''),
           truckType,
+          truckTypeOther: truckType === OTHER_TRUCK_TYPE ? truckTypeOther.trim() : undefined,
           capacityTons,
           lengthFeet: lengthFeet || undefined,
           cargoTypes,
           numberOfAxles: numberOfAxles ? Number(numberOfAxles) : undefined,
           upiId: upiId || undefined,
+          isEximCapable,
+          trailerType: isEximCapable ? trailerType : undefined,
+          containerSizesSupported: isEximCapable ? containerSizesSupported : undefined,
+          hasReeferPower: isEximCapable ? hasReeferPower : undefined,
           isOwnerDriver,
           driverName: !isOwnerDriver ? driverName : undefined,
           driverPhone: !isOwnerDriver ? fullDriverWhatsapp : undefined,
@@ -304,18 +321,15 @@ export default function VehiclePage() {
             </div>
             <div className="flex flex-col gap-1.5">
               <Label>{t('vehicle.truckType')}</Label>
-              <Select value={truckType} onValueChange={(v) => v && setTruckType(v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {TRUCK_TYPES.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {truckTypeLabel(type)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <TruckTypeCombobox id="truckType" value={truckType} onValueChange={setTruckType} includeOther />
+              {truckType === OTHER_TRUCK_TYPE && (
+                <Input
+                  id="truckTypeOther"
+                  placeholder={t('vehicle.truckTypeOtherPlaceholder')}
+                  value={truckTypeOther}
+                  onChange={(e) => setTruckTypeOther(e.target.value)}
+                />
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <PresetChipField
@@ -363,6 +377,66 @@ export default function VehiclePage() {
                   </label>
                 ))}
               </div>
+            </div>
+
+            <div className="flex flex-col gap-3 rounded-lg border bg-muted/30 p-3">
+              <label className="flex items-center gap-2 text-sm font-medium">
+                <input
+                  type="checkbox"
+                  checked={isEximCapable}
+                  onChange={(e) => setIsEximCapable(e.target.checked)}
+                />
+                {t('vehicle.isEximCapable')}
+              </label>
+              <p className="text-xs text-muted-foreground">{t('vehicle.isEximCapableHint')}</p>
+              {isEximCapable && (
+                <>
+                  <div className="flex flex-col gap-1.5">
+                    <Label>{t('vehicle.trailerType')}</Label>
+                    <Select value={trailerType} onValueChange={(v) => v && setTrailerType(v)}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue>
+                          {(v: string | null) =>
+                            v === 'skeletal_trailer'
+                              ? t('vehicle.trailerTypeSkeletalTrailer')
+                              : v === 'side_lifter'
+                                ? t('vehicle.trailerTypeSideLifter')
+                                : t('vehicle.trailerTypeContainerChassis')
+                          }
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="container_chassis">{t('vehicle.trailerTypeContainerChassis')}</SelectItem>
+                        <SelectItem value="skeletal_trailer">{t('vehicle.trailerTypeSkeletalTrailer')}</SelectItem>
+                        <SelectItem value="side_lifter">{t('vehicle.trailerTypeSideLifter')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <Label>{t('vehicle.containerSizesSupported')}</Label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {['20ft', '40ft', '40ft_hc'].map((size) => (
+                        <label key={size} className="flex items-center gap-2 text-sm">
+                          <input
+                            type="checkbox"
+                            checked={containerSizesSupported.includes(size)}
+                            onChange={() => toggleContainerSize(size)}
+                          />
+                          {t(`vehicle.containerSize_${size}`)}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={hasReeferPower}
+                      onChange={(e) => setHasReeferPower(e.target.checked)}
+                    />
+                    {t('vehicle.hasReeferPower')}
+                  </label>
+                </>
+              )}
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -528,6 +602,7 @@ export default function VehiclePage() {
               disabled={
                 loading ||
                 registrationNumber.length < 6 ||
+                (truckType === OTHER_TRUCK_TYPE && truckTypeOther.trim().length < 2) ||
                 !capacityTons ||
                 cargoTypes.length === 0 ||
                 completeLanes.length === 0 ||

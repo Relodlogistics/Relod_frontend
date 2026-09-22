@@ -22,7 +22,7 @@ import {
 import { api, ApiError, ChangeRequest, Vehicle } from '@/lib/api';
 import { useSession } from '@/lib/session-context';
 import { SUPPORTED_LANGUAGES } from '@/lib/i18n';
-import { truckTypeLabel } from '@/lib/truck-types';
+import { vehicleTypeLabel } from '@/lib/truck-types';
 
 type ChangeableFieldName = ChangeRequest['fieldName'];
 
@@ -154,6 +154,10 @@ export default function SettingsPage() {
   const [shipperPanNumber, setShipperPanNumber] = useState<string | null>(null);
   const [carrierPanNumber, setCarrierPanNumber] = useState<string | null>(null);
   const [carrierAadhaarNumber, setCarrierAadhaarNumber] = useState<string | null>(null);
+  const [carrierBusinessName, setCarrierBusinessName] = useState<string | null>(null);
+  const [carrierGstin, setCarrierGstin] = useState<string | null>(null);
+  const [carrierBusinessPan, setCarrierBusinessPan] = useState<string | null>(null);
+  const [carrierBusinessVerified, setCarrierBusinessVerified] = useState(false);
 
   // Read-only registration-time details — shown so a user can see everything
   // that was collected at signup, not editable here (isOwnerOperator/
@@ -181,7 +185,9 @@ export default function SettingsPage() {
       setPreferredLanguage(profile.preferredLanguage);
       setCreatedAt(profile.createdAt);
       setWhatsappNumber(profile.whatsappNumber);
-      if ('businessName' in profile) {
+      // businessType only exists on a shipper — a carrier can carry a
+      // businessName too now, so that key no longer tells the two apart.
+      if ('businessType' in profile) {
         setBusinessName(profile.businessName ?? '');
         setBusinessType(profile.businessType ?? 'proprietorship');
         setGstin(profile.gstin ?? '');
@@ -195,6 +201,10 @@ export default function SettingsPage() {
         setVerificationTier(profile.verificationTier);
         setCarrierPanNumber(profile.panNumber);
         setCarrierAadhaarNumber(profile.aadhaarNumber);
+        setCarrierBusinessName(profile.businessName);
+        setCarrierGstin(profile.gstin);
+        setCarrierBusinessPan(profile.businessPan);
+        setCarrierBusinessVerified(!!profile.businessVerifiedAt);
         setIsOwnerOperator(profile.isOwnerOperator);
         setTruckCount(profile.truckCount);
       }
@@ -446,6 +456,70 @@ export default function SettingsPage() {
                 submitting={requestSubmitting}
                 error={openRequestField === 'panNumber' ? requestError : null}
               />
+              <RequestableField
+                t={t}
+                label={t('profile.carrierBusinessName')}
+                currentValue={carrierBusinessName}
+                pendingRequest={pendingRequestFor('businessName')}
+                lastReviewed={lastReviewedRequestFor('businessName')}
+                isOpen={openRequestField === 'businessName'}
+                onOpen={() => handleOpenRequest('businessName')}
+                onCancel={handleCancelRequest}
+                value={requestValue}
+                onValueChange={setRequestValue}
+                reason={requestReason}
+                onReasonChange={setRequestReason}
+                onSubmit={handleSubmitRequest}
+                submitting={requestSubmitting}
+                error={openRequestField === 'businessName' ? requestError : null}
+              />
+              {carrierBusinessName && (
+                <p
+                  className={
+                    carrierBusinessVerified
+                      ? 'text-xs font-medium text-emerald-600'
+                      : 'text-xs text-muted-foreground'
+                  }
+                >
+                  {carrierBusinessVerified
+                    ? `✓ ${t('settingsPage.businessVerified')}`
+                    : t('settingsPage.businessUnverified')}
+                </p>
+              )}
+              <RequestableField
+                t={t}
+                label={t('profile.gstin')}
+                currentValue={carrierGstin}
+                pendingRequest={pendingRequestFor('gstin')}
+                lastReviewed={lastReviewedRequestFor('gstin')}
+                isOpen={openRequestField === 'gstin'}
+                onOpen={() => handleOpenRequest('gstin')}
+                onCancel={handleCancelRequest}
+                value={requestValue}
+                onValueChange={setRequestValue}
+                reason={requestReason}
+                onReasonChange={setRequestReason}
+                onSubmit={handleSubmitRequest}
+                submitting={requestSubmitting}
+                error={openRequestField === 'gstin' ? requestError : null}
+              />
+              <RequestableField
+                t={t}
+                label={t('profile.businessPan')}
+                currentValue={carrierBusinessPan}
+                pendingRequest={pendingRequestFor('businessPan')}
+                lastReviewed={lastReviewedRequestFor('businessPan')}
+                isOpen={openRequestField === 'businessPan'}
+                onOpen={() => handleOpenRequest('businessPan')}
+                onCancel={handleCancelRequest}
+                value={requestValue}
+                onValueChange={setRequestValue}
+                reason={requestReason}
+                onReasonChange={setRequestReason}
+                onSubmit={handleSubmitRequest}
+                submitting={requestSubmitting}
+                error={openRequestField === 'businessPan' ? requestError : null}
+              />
             </>
           ) : (
             <>
@@ -635,7 +709,7 @@ export default function SettingsPage() {
                 <RequestableField
                   t={t}
                   label={t('settingsPage.vehicleTruckType')}
-                  currentValue={truckTypeLabel(v.truckType)}
+                  currentValue={vehicleTypeLabel(v)}
                   pendingRequest={pendingRequestFor('truckType', v.id)}
                   lastReviewed={lastReviewedRequestFor('truckType', v.id)}
                   isOpen={openRequestField === 'truckType' && openRequestVehicleId === v.id}

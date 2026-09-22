@@ -511,6 +511,9 @@ export default function PostingDetailPage({ params }: { params: Promise<{ id: st
                       <span className="font-medium">
                         {posting.contact.businessName || posting.contact.fullName}
                       </span>
+                      {posting.contact.partyType === 'carrier' && posting.contact.businessVerified && (
+                        <BadgeCheck className="size-3.5 shrink-0 text-primary" aria-label={t('postings.verified')} />
+                      )}
                     </div>
 
                     {posting.contact.partyType === 'shipper' ? (

@@ -14,6 +14,11 @@ interface PendingCarrierProfile {
   truckCount?: number;
   aadhaarNumber: string;
   panNumber?: string;
+  // Only for carriers that trade as a company — shown to shippers in place
+  // of the person's name. GSTIN or company PAN earns the Verified mark.
+  businessName?: string;
+  gstin?: string;
+  businessPan?: string;
   email?: string;
   preferredLanguage?: string;
 }
@@ -31,6 +36,10 @@ interface PendingShipperProfile {
   industryType?: string;
   shipmentVolume?: string;
   businessAddress?: string;
+  shipperCategory?: string;
+  iec?: string;
+  otherRole?: string;
+  otherDescription?: string;
   preferredLanguage?: string;
 }
 

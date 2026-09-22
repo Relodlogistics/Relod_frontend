@@ -20,7 +20,7 @@ export default function LanesPage() {
   const [lanes, setLanes] = useState<LanePreference[]>([]);
   const [originLabel, setOriginLabel] = useState('');
   const [destinationLabel, setDestinationLabel] = useState('');
-  const [radiusKm, setRadiusKm] = useState('50');
+  const [radiusKm, setRadiusKm] = useState('75');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 

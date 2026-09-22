@@ -12,6 +12,7 @@ const FIELD_LABEL_KEYS: Record<string, string> = {
   fullName: 'profile.fullName',
   gstin: 'admin.colGstin',
   businessName: 'admin.colBusiness',
+  businessPan: 'profile.businessPan',
   businessAddress: 'admin.colAddress',
   businessType: 'admin.colBusinessType',
   paymentUpiId: 'admin.colUpi',

@@ -132,7 +132,7 @@ export default function PhonePage() {
                 </div>
                 <Button
                   onClick={handleSendOtp}
-                  disabled={loading || phone.length < 10 || (!isNative && !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !turnstileToken)}
+                  disabled={loading || phone.length < 10 || (!isNative && process.env.NODE_ENV === 'production' && !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !turnstileToken)}
                 >
                   {t('phone.sendOtp')}
                 </Button>

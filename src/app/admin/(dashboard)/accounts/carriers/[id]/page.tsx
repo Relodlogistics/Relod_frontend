@@ -17,7 +17,7 @@ import {
   vehicleDocumentUrl,
 } from '@/lib/api';
 import { useAdminSession } from '@/lib/admin-session-context';
-import { truckTypeLabel } from '@/lib/truck-types';
+import { vehicleTypeLabel } from '@/lib/truck-types';
 import { ReverifyButton } from '@/components/admin/ReverifyButton';
 
 export default function AdminCarrierDetailPage() {
@@ -230,7 +230,7 @@ export default function AdminCarrierDetailPage() {
           <div>
             <CardTitle className="text-base">{vehicle.registrationNumber}</CardTitle>
             <p className="text-xs text-muted-foreground">
-              {truckTypeLabel(vehicle.truckType)} · {vehicle.capacityTons} {t('admin.tons')}
+              {vehicleTypeLabel(vehicle)} · {vehicle.capacityTons} {t('admin.tons')}
               {vehicle.numberOfAxles ? ` · ${vehicle.numberOfAxles} ${t('admin.axles')}` : ''}
             </p>
           </div>
@@ -252,7 +252,7 @@ export default function AdminCarrierDetailPage() {
             />
             <VehicleFieldRow
               label={t('settingsPage.vehicleTruckType')}
-              value={truckTypeLabel(vehicle.truckType)}
+              value={vehicleTypeLabel(vehicle)}
               vehicleId={vehicle.id}
               fieldName="truckType"
             />

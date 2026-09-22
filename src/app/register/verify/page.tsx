@@ -271,6 +271,9 @@ function VerificationStep({
   const [aadhaarNumber, setAadhaarNumber] = useState('');
   const [aadhaarOtp, setAadhaarOtp] = useState('');
   const [aadhaarReferenceId, setAadhaarReferenceId] = useState<string | null>(null);
+  // Set only by the dev KYC stub — a real vendor sends the code to the
+  // person's Aadhaar-linked phone instead. Remove with the stub.
+  const [aadhaarDevCode, setAadhaarDevCode] = useState<string | null>(null);
 
   // PAN
   const [panNumber, setPanNumber] = useState('');
@@ -308,6 +311,7 @@ function VerificationStep({
     try {
       const res = await api.sendAadhaarOtp(token, aadhaarNumber);
       setAadhaarReferenceId(res.referenceId);
+      setAadhaarDevCode(res.devCode ?? null);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : t('errors.generic'));
     } finally {
@@ -346,6 +350,9 @@ function VerificationStep({
               </Button>
             )}
           </div>
+          {aadhaarReferenceId && aadhaarDevCode && (
+            <p className="text-xs text-muted-foreground">{t('phone.devCode', { code: aadhaarDevCode })}</p>
+          )}
           {aadhaarReferenceId && (
             <div className="flex gap-2">
               <Input

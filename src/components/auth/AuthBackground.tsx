@@ -23,7 +23,10 @@ export function AuthBackground({ children, imageSrc, imageAlt }: AuthBackgroundP
           aria-hidden="true"
         />
       </div>
-      <div className="absolute inset-0 flex items-center justify-center overflow-y-auto p-6">{children}</div>
+      <div className="absolute inset-0 flex overflow-y-auto p-6">
+        {/* m-auto (not items-center) centers short content but never clips the top of tall content */}
+        <div className="m-auto flex w-full justify-center">{children}</div>
+      </div>
     </main>
   );
 }
