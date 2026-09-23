@@ -221,7 +221,7 @@
     "driverWhatsapp": "Driver's WhatsApp number",
     "driverWhatsappHint": "We'll verify this number with an OTP — booking and load alerts for this truck go here.",
     "submit": "Save truck & continue",
-    "skipForNow": "Do this later from the dashboard",
+    "skipForNow": "Cancel",
     "rcTitle": "Verify vehicle RC",
     "rcSubtitle": "Confirm this truck's registration certificate against VAHAN.",
     "rcVerified": "Vehicle RC verified",
