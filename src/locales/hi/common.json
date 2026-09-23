@@ -594,6 +594,7 @@
     "requestPending": "बदलाव समीक्षा में है",
     "requestRejected": "आपका पिछला अनुरोध अस्वीकार कर दिया गया था।",
     "viewActivity": "गतिविधि देखें",
+    "viewAllActivity": "सभी गतिविधि देखें",
     "navActivity": "गतिविधि",
     "navActivityHint": "आपके बदलाव अनुरोधों का इतिहास",
     "activityTitle": "बदलाव अनुरोध इतिहास",

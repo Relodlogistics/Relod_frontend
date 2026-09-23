@@ -10,6 +10,7 @@ import { api, Carrier, Shipper } from '@/lib/api';
 import { useSession } from '@/lib/session-context';
 import { useChangeRequests } from '@/lib/use-change-requests';
 import { RequestableField } from '@/components/RequestableField';
+import { RecentActivityCard } from '@/components/RecentActivityCard';
 
 // Everything that feeds verification tier / matching trust and so goes
 // through admin review to change — phone (its own dedicated flow), WhatsApp,
@@ -58,86 +59,89 @@ export default function IdentitySettingsPage() {
         <h1 className="font-heading text-xl font-semibold">{t('settingsPage.navIdentity')}</h1>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('settingsPage.identityDetails')}</CardTitle>
-        </CardHeader>
-        <CardContent className="flex max-w-md flex-col gap-3">
-          <div className="flex items-center justify-between border-t pt-3 first:border-t-0 first:pt-0">
-            <div>
-              <p className="text-sm font-medium">{t('changePhone.currentPhone')}</p>
-              <p className="text-sm text-muted-foreground">{session.phone}</p>
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,28rem)_1fr]">
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('settingsPage.identityDetails')}</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            <div className="flex items-center justify-between border-t pt-3 first:border-t-0 first:pt-0">
+              <div>
+                <p className="text-sm font-medium">{t('changePhone.currentPhone')}</p>
+                <p className="text-sm text-muted-foreground">{session.phone}</p>
+              </div>
+              <Link href="/dashboard/settings/change-phone">
+                <Button variant="outline" size="sm">
+                  {t('changePhone.changeButton')}
+                </Button>
+              </Link>
             </div>
-            <Link href="/dashboard/settings/change-phone">
-              <Button variant="outline" size="sm">
-                {t('changePhone.changeButton')}
-              </Button>
-            </Link>
-          </div>
-          <RequestableField
-            label={t('profile.whatsappNumber')}
-            currentValue={profile?.whatsappNumber ?? null}
-            {...fieldProps('whatsappNumber')}
-          />
-          {carrier ? (
-            <>
-              <RequestableField
-                label={t('settingsPage.checklistAadhaar')}
-                currentValue={carrier.aadhaarNumber}
-                {...fieldProps('aadhaarNumber')}
-              />
-              <RequestableField
-                label={t('profile.panNumber')}
-                currentValue={carrier.panNumber}
-                {...fieldProps('panNumber')}
-              />
-              <RequestableField
-                label={t('profile.carrierBusinessName')}
-                currentValue={carrier.businessName}
-                {...fieldProps('businessName')}
-              />
-              {carrier.businessName && (
-                <p
-                  className={
-                    carrier.businessVerifiedAt
-                      ? 'text-xs font-medium text-emerald-600'
-                      : 'text-xs text-muted-foreground'
-                  }
-                >
-                  {carrier.businessVerifiedAt
-                    ? `✓ ${t('settingsPage.businessVerified')}`
-                    : t('settingsPage.businessUnverified')}
-                </p>
-              )}
-              <RequestableField
-                label={t('profile.gstin')}
-                currentValue={carrier.gstin}
-                {...fieldProps('gstin')}
-              />
-              <RequestableField
-                label={t('profile.businessPan')}
-                currentValue={carrier.businessPan}
-                {...fieldProps('businessPan')}
-              />
-            </>
-          ) : (
-            shipper && (
+            <RequestableField
+              label={t('profile.whatsappNumber')}
+              currentValue={profile?.whatsappNumber ?? null}
+              {...fieldProps('whatsappNumber')}
+            />
+            {carrier ? (
               <>
                 <RequestableField
-                  label={t('profile.gstin')}
-                  currentValue={shipper.gstin}
-                  {...fieldProps('gstin')}
+                  label={t('settingsPage.checklistAadhaar')}
+                  currentValue={carrier.aadhaarNumber}
+                  {...fieldProps('aadhaarNumber')}
                 />
                 <RequestableField
                   label={t('profile.panNumber')}
-                  currentValue={shipper.panNumber}
+                  currentValue={carrier.panNumber}
                   {...fieldProps('panNumber')}
                 />
+                <RequestableField
+                  label={t('profile.carrierBusinessName')}
+                  currentValue={carrier.businessName}
+                  {...fieldProps('businessName')}
+                />
+                {carrier.businessName && (
+                  <p
+                    className={
+                      carrier.businessVerifiedAt
+                        ? 'text-xs font-medium text-emerald-600'
+                        : 'text-xs text-muted-foreground'
+                    }
+                  >
+                    {carrier.businessVerifiedAt
+                      ? `✓ ${t('settingsPage.businessVerified')}`
+                      : t('settingsPage.businessUnverified')}
+                  </p>
+                )}
+                <RequestableField
+                  label={t('profile.gstin')}
+                  currentValue={carrier.gstin}
+                  {...fieldProps('gstin')}
+                />
+                <RequestableField
+                  label={t('profile.businessPan')}
+                  currentValue={carrier.businessPan}
+                  {...fieldProps('businessPan')}
+                />
               </>
-            )
-          )}
-        </CardContent>
-      </Card>
+            ) : (
+              shipper && (
+                <>
+                  <RequestableField
+                    label={t('profile.gstin')}
+                    currentValue={shipper.gstin}
+                    {...fieldProps('gstin')}
+                  />
+                  <RequestableField
+                    label={t('profile.panNumber')}
+                    currentValue={shipper.panNumber}
+                    {...fieldProps('panNumber')}
+                  />
+                </>
+              )
+            )}
+          </CardContent>
+        </Card>
+        <RecentActivityCard changeRequests={cr.changeRequests} />
+      </div>
     </div>
   );
 }

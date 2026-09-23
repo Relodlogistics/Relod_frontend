@@ -10,6 +10,7 @@ import { api, Vehicle } from '@/lib/api';
 import { useSession } from '@/lib/session-context';
 import { useChangeRequests } from '@/lib/use-change-requests';
 import { RequestableField } from '@/components/RequestableField';
+import { RecentActivityCard } from '@/components/RecentActivityCard';
 import { vehicleTypeLabel } from '@/lib/truck-types';
 
 // Per-truck registration number / truck type / capacity — each also goes
@@ -56,76 +57,84 @@ export default function VehiclesSettingsPage() {
         <h1 className="font-heading text-xl font-semibold">{t('settingsPage.navVehicles')}</h1>
       </div>
 
-      <Card>
-        <CardHeader className="flex-row items-center justify-between space-y-0">
-          <CardTitle>{t('settingsPage.myTrucks')}</CardTitle>
-          <Link href="/register/add-trucks">
-            <Button size="sm" className="gap-1.5">
-              <PlusCircle className="size-4" />
-              {t('settingsPage.addTruck')}
-            </Button>
-          </Link>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          {vehicles.length === 0 && (
-            <p className="text-sm text-muted-foreground">{t('settingsPage.noTrucks')}</p>
-          )}
-          {vehicles.map((v, index) => {
-            const isOpen = expanded === v.id;
-            return (
-              <div key={v.id} className="rounded-lg border p-3">
-                <button
-                  type="button"
-                  className="flex w-full items-center justify-between text-left"
-                  onClick={() => setExpanded(isOpen ? null : v.id)}
-                >
-                  <div>
-                    <p className="text-sm font-medium">
-                      {t('settingsPage.truckLabel', { number: index + 1 })}
-                    </p>
-                    <p className="text-sm text-muted-foreground">{v.registrationNumber}</p>
-                  </div>
-                  {isOpen ? (
-                    <ChevronUp className="size-4 shrink-0 text-muted-foreground" />
-                  ) : (
-                    <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,28rem)_1fr]">
+        <Card>
+          <CardHeader className="flex-row items-center justify-between space-y-0">
+            <CardTitle>{t('settingsPage.myTrucks')}</CardTitle>
+            <Link href="/register/add-trucks">
+              <Button size="sm" className="gap-1.5">
+                <PlusCircle className="size-4" />
+                {t('settingsPage.addTruck')}
+              </Button>
+            </Link>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            {vehicles.length === 0 && (
+              <p className="text-sm text-muted-foreground">{t('settingsPage.noTrucks')}</p>
+            )}
+            {vehicles.map((v, index) => {
+              const isOpen = expanded === v.id;
+              return (
+                <div key={v.id} className="rounded-lg border p-3">
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between text-left"
+                    onClick={() => setExpanded(isOpen ? null : v.id)}
+                  >
+                    <div>
+                      <p className="text-sm font-medium">
+                        {t('settingsPage.truckLabel', { number: index + 1 })}
+                      </p>
+                      <p className="text-sm text-muted-foreground">{v.registrationNumber}</p>
+                    </div>
+                    {isOpen ? (
+                      <ChevronUp className="size-4 shrink-0 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
+                    )}
+                  </button>
+                  {isOpen && (
+                    <div className="mt-3 flex flex-col gap-3 border-t pt-3">
+                      <p className="text-sm text-muted-foreground">
+                        {v.cargoTypes
+                          .map((c) => t(`vehicle.cargoType${c.charAt(0).toUpperCase()}${c.slice(1)}`))
+                          .join(', ')}
+                        {v.numberOfAxles ? ` · ${t('settingsPage.axles', { count: v.numberOfAxles })}` : ''}
+                      </p>
+                      <RequestableField
+                        label={t('settingsPage.vehicleRegNumber')}
+                        currentValue={v.registrationNumber}
+                        {...fieldProps('registrationNumber', v.id)}
+                      />
+                      <RequestableField
+                        label={t('settingsPage.vehicleTruckType')}
+                        currentValue={vehicleTypeLabel(v)}
+                        {...fieldProps('truckType', v.id)}
+                      />
+                      <RequestableField
+                        label={t('settingsPage.vehicleCapacity')}
+                        currentValue={t('settingsPage.capacityTons', { tons: v.capacityTons })}
+                        {...fieldProps('capacityTons', v.id)}
+                      />
+                    </div>
                   )}
-                </button>
-                {isOpen && (
-                  <div className="mt-3 flex flex-col gap-3 border-t pt-3">
-                    <p className="text-sm text-muted-foreground">
-                      {v.cargoTypes
-                        .map((c) => t(`vehicle.cargoType${c.charAt(0).toUpperCase()}${c.slice(1)}`))
-                        .join(', ')}
-                      {v.numberOfAxles ? ` · ${t('settingsPage.axles', { count: v.numberOfAxles })}` : ''}
-                    </p>
-                    <RequestableField
-                      label={t('settingsPage.vehicleRegNumber')}
-                      currentValue={v.registrationNumber}
-                      {...fieldProps('registrationNumber', v.id)}
-                    />
-                    <RequestableField
-                      label={t('settingsPage.vehicleTruckType')}
-                      currentValue={vehicleTypeLabel(v)}
-                      {...fieldProps('truckType', v.id)}
-                    />
-                    <RequestableField
-                      label={t('settingsPage.vehicleCapacity')}
-                      currentValue={t('settingsPage.capacityTons', { tons: v.capacityTons })}
-                      {...fieldProps('capacityTons', v.id)}
-                    />
-                  </div>
-                )}
-              </div>
-            );
-          })}
-          <Link href="/dashboard/documents" className="w-fit">
-            <Button variant="outline" size="sm">
-              {t('settingsPage.manageDocuments')}
-            </Button>
-          </Link>
-        </CardContent>
-      </Card>
+                </div>
+              );
+            })}
+            <Link href="/dashboard/documents" className="w-fit">
+              <Button variant="outline" size="sm">
+                {t('settingsPage.manageDocuments')}
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+        <RecentActivityCard
+          changeRequests={cr.changeRequests}
+          registrationNumberFor={(vehicleId) =>
+            vehicleId ? vehicles.find((v) => v.id === vehicleId)?.registrationNumber : undefined
+          }
+        />
+      </div>
     </div>
   );
 }

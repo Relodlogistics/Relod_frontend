@@ -6,21 +6,10 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { api, ChangeableFieldName, Vehicle } from '@/lib/api';
+import { api, Vehicle } from '@/lib/api';
 import { useSession } from '@/lib/session-context';
 import { useChangeRequests } from '@/lib/use-change-requests';
-
-const FIELD_LABEL_KEY: Record<ChangeableFieldName, string> = {
-  aadhaarNumber: 'settingsPage.checklistAadhaar',
-  panNumber: 'profile.panNumber',
-  gstin: 'profile.gstin',
-  whatsappNumber: 'profile.whatsappNumber',
-  businessName: 'profile.carrierBusinessName',
-  businessPan: 'profile.businessPan',
-  registrationNumber: 'settingsPage.vehicleRegNumber',
-  truckType: 'settingsPage.vehicleTruckType',
-  capacityTons: 'settingsPage.vehicleCapacity',
-};
+import { FIELD_LABEL_KEY } from '@/lib/change-request-labels';
 
 const STATUS_BADGE_VARIANT = {
   pending: 'outline',
