@@ -604,6 +604,7 @@
     "ownerOperator": "Owner-operator (drives own truck)",
     "fleetOwner": "Fleet owner ({{count}} truck(s))",
     "myTrucks": "My truck(s)",
+    "truckLabel": "Truck {{number}}",
     "capacityTons": "{{tons}} tons capacity",
     "axles": "{{count}} axles",
     "manageDocuments": "Manage documents",

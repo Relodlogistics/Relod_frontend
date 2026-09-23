@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
-import { ArrowLeft, PlusCircle } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronUp, PlusCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { api, Vehicle } from '@/lib/api';
@@ -21,6 +21,7 @@ export default function VehiclesSettingsPage() {
   const cr = useChangeRequests(session, t);
 
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   useEffect(() => {
     if (!session || session.userType !== 'carrier') return;
@@ -69,29 +70,55 @@ export default function VehiclesSettingsPage() {
           {vehicles.length === 0 && (
             <p className="text-sm text-muted-foreground">{t('settingsPage.noTrucks')}</p>
           )}
-          {vehicles.map((v) => (
-            <div key={v.id} className="flex flex-col gap-3 rounded-lg border p-3">
-              <p className="text-sm text-muted-foreground">
-                {v.cargoTypes.map((c) => t(`vehicle.cargoType${c.charAt(0).toUpperCase()}${c.slice(1)}`)).join(', ')}
-                {v.numberOfAxles ? ` · ${t('settingsPage.axles', { count: v.numberOfAxles })}` : ''}
-              </p>
-              <RequestableField
-                label={t('settingsPage.vehicleRegNumber')}
-                currentValue={v.registrationNumber}
-                {...fieldProps('registrationNumber', v.id)}
-              />
-              <RequestableField
-                label={t('settingsPage.vehicleTruckType')}
-                currentValue={vehicleTypeLabel(v)}
-                {...fieldProps('truckType', v.id)}
-              />
-              <RequestableField
-                label={t('settingsPage.vehicleCapacity')}
-                currentValue={t('settingsPage.capacityTons', { tons: v.capacityTons })}
-                {...fieldProps('capacityTons', v.id)}
-              />
-            </div>
-          ))}
+          {vehicles.map((v, index) => {
+            const isOpen = expanded === v.id;
+            return (
+              <div key={v.id} className="rounded-lg border p-3">
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between text-left"
+                  onClick={() => setExpanded(isOpen ? null : v.id)}
+                >
+                  <div>
+                    <p className="text-sm font-medium">
+                      {t('settingsPage.truckLabel', { number: index + 1 })}
+                    </p>
+                    <p className="text-sm text-muted-foreground">{v.registrationNumber}</p>
+                  </div>
+                  {isOpen ? (
+                    <ChevronUp className="size-4 shrink-0 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
+                  )}
+                </button>
+                {isOpen && (
+                  <div className="mt-3 flex flex-col gap-3 border-t pt-3">
+                    <p className="text-sm text-muted-foreground">
+                      {v.cargoTypes
+                        .map((c) => t(`vehicle.cargoType${c.charAt(0).toUpperCase()}${c.slice(1)}`))
+                        .join(', ')}
+                      {v.numberOfAxles ? ` · ${t('settingsPage.axles', { count: v.numberOfAxles })}` : ''}
+                    </p>
+                    <RequestableField
+                      label={t('settingsPage.vehicleRegNumber')}
+                      currentValue={v.registrationNumber}
+                      {...fieldProps('registrationNumber', v.id)}
+                    />
+                    <RequestableField
+                      label={t('settingsPage.vehicleTruckType')}
+                      currentValue={vehicleTypeLabel(v)}
+                      {...fieldProps('truckType', v.id)}
+                    />
+                    <RequestableField
+                      label={t('settingsPage.vehicleCapacity')}
+                      currentValue={t('settingsPage.capacityTons', { tons: v.capacityTons })}
+                      {...fieldProps('capacityTons', v.id)}
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
           <Link href="/dashboard/documents" className="w-fit">
             <Button variant="outline" size="sm">
               {t('settingsPage.manageDocuments')}

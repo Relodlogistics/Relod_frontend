@@ -604,6 +604,7 @@
     "ownerOperator": "मालिक-चालक (खुद ट्रक चलाते हैं)",
     "fleetOwner": "फ्लीट मालिक ({{count}} ट्रक)",
     "myTrucks": "मेरे ट्रक",
+    "truckLabel": "ट्रक {{number}}",
     "capacityTons": "{{tons}} टन क्षमता",
     "axles": "{{count}} एक्सल",
     "manageDocuments": "दस्तावेज़ प्रबंधित करें",

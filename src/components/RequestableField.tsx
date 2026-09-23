@@ -48,7 +48,7 @@ export function RequestableField({
 }) {
   return (
     <div className="flex flex-col gap-1.5 border-t pt-3 first:border-t-0 first:pt-0">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="text-sm font-medium">{label}</p>
           <p className="text-sm text-muted-foreground">{currentValue || t('settingsPage.notSet')}</p>
