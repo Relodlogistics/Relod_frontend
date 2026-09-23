@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Select,
@@ -35,18 +34,19 @@ const CARGO_TYPES: { value: CargoType; labelKey: string }[] = [
   { value: 'oversized', labelKey: 'vehicle.cargoTypeOversized' },
 ];
 
-// Each truck this carrier declared at signup (Carrier.truckCount) needs its
-// own registration, driver, and a WhatsApp-verified driver number — this
-// page loops that one truck at a time. Reached right after a non-owner-operator
-// carrier account is created (see register/profile), or later from the
-// dashboard if they stopped partway through.
+// Adds trucks to a carrier's fleet one at a time — each needs its own
+// registration, driver, and a WhatsApp-verified driver number. Reached right
+// after a non-owner-operator carrier account is created (see register/profile)
+// to cover the fleet size they declared at signup, and any time after that
+// from Settings > My Vehicles to add more (owner-operators included, once
+// they're adding a truck beyond the one they drive themselves).
 export default function AddTrucksPage() {
   const { t } = useTranslation();
   const router = useRouter();
   const { session, loaded } = useSession();
   const { state, setState } = useRegistration();
 
-  const [totalTrucks, setTotalTrucks] = useState<number | null>(null);
+  const [profileLoaded, setProfileLoaded] = useState(false);
   const [addedCount, setAddedCount] = useState(0);
   const [initError, setInitError] = useState<string | null>(null);
 
@@ -104,13 +104,7 @@ export default function AddTrucksPage() {
     }
     api
       .getCarrierProfile(session.accessToken, session.accountId)
-      .then((carrier) => {
-        if (carrier.isOwnerOperator) {
-          router.replace('/dashboard');
-          return;
-        }
-        setTotalTrucks(carrier.truckCount ?? 0);
-      })
+      .then(() => setProfileLoaded(true))
       .catch(() => setInitError(t('errors.generic')));
     // Trucks still waiting for their owner don't count toward the declared total.
     api
@@ -273,30 +267,7 @@ export default function AddTrucksPage() {
     );
   }
 
-  if (totalTrucks === null) return null;
-
-  if (addedCount >= totalTrucks) {
-    return (
-      <AuthBackground
-        imageSrc="/auth/register-bg.png"
-        imageAlt="A truck following a winding road toward Mumbai"
-      >
-        <div className="w-full max-w-md">
-          <Logo variant="auth" className="mb-6 justify-center" />
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('addTrucks.allDone')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Button className="w-full" onClick={() => router.push('/dashboard')}>
-                {t('addTrucks.goToDashboard')}
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </AuthBackground>
-    );
-  }
+  if (!profileLoaded) return null;
 
   if (pendingRcVehicleId && session) {
     return (
@@ -356,13 +327,6 @@ export default function AddTrucksPage() {
             <CardDescription>{t('addTrucks.subtitle')}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <p className="text-sm font-medium">
-                {t('addTrucks.progress', { current: addedCount + 1, total: totalTrucks })}
-              </p>
-              <Progress value={(addedCount / totalTrucks) * 100} />
-            </div>
-
             {invitedPlate && (
               <Alert>
                 <AlertDescription>

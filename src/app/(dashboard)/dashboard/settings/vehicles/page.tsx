@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, PlusCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { api, Vehicle } from '@/lib/api';
@@ -56,8 +56,14 @@ export default function VehiclesSettingsPage() {
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex-row items-center justify-between space-y-0">
           <CardTitle>{t('settingsPage.myTrucks')}</CardTitle>
+          <Link href="/register/add-trucks">
+            <Button size="sm" className="gap-1.5">
+              <PlusCircle className="size-4" />
+              {t('settingsPage.addTruck')}
+            </Button>
+          </Link>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           {vehicles.length === 0 && (
