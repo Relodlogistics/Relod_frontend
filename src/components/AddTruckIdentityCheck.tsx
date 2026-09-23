@@ -93,7 +93,7 @@ export function AddTruckIdentityCheck({
   };
 
   return (
-    <div className="w-full max-w-md">
+    <>
       <Card>
         <CardHeader>
           <CardTitle>{t('addTruckIdentityCheck.title')}</CardTitle>
@@ -137,6 +137,6 @@ export function AddTruckIdentityCheck({
           </button>
         </CardContent>
       </Card>
-    </div>
+    </>
   );
 }

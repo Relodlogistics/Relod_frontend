@@ -283,11 +283,13 @@ export default function AddTrucksPage() {
         imageSrc="/auth/register-bg.png"
         imageAlt="A truck following a winding road toward Mumbai"
       >
-        <Logo variant="auth" className="mb-6 justify-center" />
-        <AddTruckIdentityCheck
-          token={session.accessToken}
-          onVerified={() => setIdentityChecked(true)}
-        />
+        <div className="w-full max-w-md">
+          <Logo variant="auth" className="mb-6 justify-center" />
+          <AddTruckIdentityCheck
+            token={session.accessToken}
+            onVerified={() => setIdentityChecked(true)}
+          />
+        </div>
       </AuthBackground>
     );
   }
