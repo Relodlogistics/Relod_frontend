@@ -69,6 +69,7 @@ export function useChangeRequests(session: Session | null, t: (key: string) => s
   };
 
   return {
+    changeRequests,
     pendingRequestFor,
     lastReviewedRequestFor,
     openRequestField,

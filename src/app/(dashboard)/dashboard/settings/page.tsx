@@ -13,6 +13,7 @@ import {
   Landmark,
   Truck,
   Phone,
+  History,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -182,6 +183,12 @@ export default function SettingsPage() {
             icon={Phone}
             label={t('changePhone.changeButton')}
             hint={session.phone}
+          />
+          <SettingsLink
+            href="/dashboard/settings/activity"
+            icon={History}
+            label={t('settingsPage.navActivity')}
+            hint={t('settingsPage.navActivityHint')}
           />
         </CardContent>
       </Card>

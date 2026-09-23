@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -66,8 +67,10 @@ export function RequestableField({
 
       {!pendingRequest && lastReviewed?.status === 'rejected' && (
         <p className="text-xs text-destructive">
-          {t('settingsPage.requestRejected')}
-          {lastReviewed.adminNote ? `: ${lastReviewed.adminNote}` : ''}
+          {t('settingsPage.requestRejected')}{' '}
+          <Link href="/dashboard/settings/activity" className="underline">
+            {t('settingsPage.viewActivity')}
+          </Link>
         </p>
       )}
 
