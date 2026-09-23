@@ -285,6 +285,34 @@ export const api = {
       body: JSON.stringify({ referenceId, otp }),
     }),
 
+  // Add-truck identity check — a logged-in carrier re-proving phone +
+  // Aadhaar ownership before adding a truck outside the continuous
+  // post-signup flow. Aadhaar half only sends an OTP to the number already
+  // on file, no re-entry. See register/add-trucks for when this gate shows.
+  sendAddTruckIdentityCheckOtp: (token: string) =>
+    request<{ message: string; expiresInSeconds: number; devCode?: string }>(
+      '/auth/add-truck-identity-check/send-otp',
+      { method: 'POST', token },
+    ),
+
+  verifyAddTruckIdentityCheckOtp: (token: string, code: string) =>
+    request<{ verified: boolean; token: string }>(
+      '/auth/add-truck-identity-check/verify-otp',
+      { method: 'POST', token, body: JSON.stringify({ code }) },
+    ),
+
+  sendAddTruckAadhaarCheckOtp: (token: string) =>
+    request<{ referenceId: string; devCode?: string }>(
+      '/kyc/add-truck-identity-check/aadhaar/send-otp',
+      { method: 'POST', token },
+    ),
+
+  verifyAddTruckAadhaarCheckOtp: (token: string, referenceId: string, otp: string) =>
+    request<{ verified: boolean; token: string }>(
+      '/kyc/add-truck-identity-check/aadhaar/verify-otp',
+      { method: 'POST', token, body: JSON.stringify({ referenceId, otp }) },
+    ),
+
   verifyPan: (token: string, panNumber: string, fullName: string) =>
     request<{ verified: boolean; nameOnPan: string }>('/kyc/pan/verify', {
       method: 'POST',

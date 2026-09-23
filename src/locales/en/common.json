@@ -210,6 +210,11 @@
     "whatsappLanguageQuestion": "Which language should we send WhatsApp messages in?",
     "whatsappLanguageHint": "Load alerts and booking updates will be sent in this language. You can change it later from settings."
   },
+  "addTruckIdentityCheck": {
+    "title": "Confirm it's you",
+    "phoneSubtitle": "We've sent an OTP to your registered phone number. Enter it to continue.",
+    "aadhaarSubtitle": "Now confirm the OTP sent to your Aadhaar-linked mobile number."
+  },
   "addTrucks": {
     "title": "Add your trucks",
     "subtitle": "Add each truck's details and its driver's WhatsApp-verified number. You can also do this later from your dashboard.",

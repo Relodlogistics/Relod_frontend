@@ -19,6 +19,7 @@ import { api, ApiError, CargoType } from '@/lib/api';
 import { useSession } from '@/lib/session-context';
 import { useRegistration } from '@/lib/registration-context';
 import { VehicleVerificationStep } from '@/components/VehicleVerificationStep';
+import { AddTruckIdentityCheck } from '@/components/AddTruckIdentityCheck';
 import { AuthBackground } from '@/components/auth/AuthBackground';
 import { Logo } from '@/components/Logo';
 import { OTHER_TRUCK_TYPE, TRUCK_TYPES } from '@/lib/truck-types';
@@ -44,11 +45,16 @@ export default function AddTrucksPage() {
   const { t } = useTranslation();
   const router = useRouter();
   const { session, loaded } = useSession();
-  const { state, setState } = useRegistration();
+  const { state, setState, clear } = useRegistration();
 
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [addedCount, setAddedCount] = useState(0);
   const [initError, setInitError] = useState<string | null>(null);
+  // null = not yet known, false = must pass the phone+Aadhaar re-check
+  // before reaching the form, true = already cleared (or this is the
+  // continuous flow right after signup, which skips the gate — see the
+  // effect below).
+  const [identityChecked, setIdentityChecked] = useState<boolean | null>(null);
 
   const [registrationNumber, setRegistrationNumber] = useState('');
   const [truckType, setTruckType] = useState(TRUCK_TYPES[0]);
@@ -102,6 +108,8 @@ export default function AddTrucksPage() {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setPendingRcVehicleId(state.pendingAddTruckVehicleId);
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIdentityChecked(state.accountId === session.accountId);
     api
       .getCarrierProfile(session.accessToken, session.accountId)
       .then(() => setProfileLoaded(true))
@@ -267,7 +275,22 @@ export default function AddTrucksPage() {
     );
   }
 
-  if (!profileLoaded) return null;
+  if (!profileLoaded || identityChecked === null) return null;
+
+  if (!identityChecked && session) {
+    return (
+      <AuthBackground
+        imageSrc="/auth/register-bg.png"
+        imageAlt="A truck following a winding road toward Mumbai"
+      >
+        <Logo variant="auth" className="mb-6 justify-center" />
+        <AddTruckIdentityCheck
+          token={session.accessToken}
+          onVerified={() => setIdentityChecked(true)}
+        />
+      </AuthBackground>
+    );
+  }
 
   if (pendingRcVehicleId && session) {
     return (
@@ -609,7 +632,15 @@ export default function AddTrucksPage() {
               {t('addTrucks.submit')}
             </Button>
             {addedCount > 0 && (
-              <Button variant="ghost" onClick={() => router.push('/dashboard')}>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  // Leaving the continuous flow — a later "Add truck" visit
+                  // from Settings should go through the identity check again.
+                  clear();
+                  router.push('/dashboard');
+                }}
+              >
                 {t('addTrucks.skipForNow')}
               </Button>
             )}
