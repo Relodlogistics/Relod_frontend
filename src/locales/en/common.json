@@ -592,8 +592,6 @@
     "notSet": "Not set",
     "requestChange": "Request change",
     "requestPending": "Change pending review",
-    "requestRejected": "Your last request was rejected.",
-    "viewActivity": "View activity",
     "viewAllActivity": "View all activity",
     "navActivity": "Activity",
     "navActivityHint": "Your change request history",

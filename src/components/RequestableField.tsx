@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,7 +18,6 @@ export function RequestableField({
   label,
   currentValue,
   pendingRequest,
-  lastReviewed,
   isOpen,
   onOpen,
   onCancel,
@@ -35,7 +33,6 @@ export function RequestableField({
   label: string;
   currentValue: string | null;
   pendingRequest: ChangeRequest | undefined;
-  lastReviewed: ChangeRequest | undefined;
   isOpen: boolean;
   onOpen: () => void;
   onCancel: () => void;
@@ -64,15 +61,6 @@ export function RequestableField({
           )
         )}
       </div>
-
-      {!pendingRequest && lastReviewed?.status === 'rejected' && (
-        <p className="text-xs text-destructive">
-          {t('settingsPage.requestRejected')}{' '}
-          <Link href="/dashboard/settings/activity" className="underline">
-            {t('settingsPage.viewActivity')}
-          </Link>
-        </p>
-      )}
 
       {isOpen && (
         <div className="flex flex-col gap-2 rounded-lg border bg-muted/30 p-3">

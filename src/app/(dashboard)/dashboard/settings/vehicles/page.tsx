@@ -34,7 +34,6 @@ export default function VehiclesSettingsPage() {
   const fieldProps = (field: Parameters<typeof cr.pendingRequestFor>[0], vehicleId: string) => ({
     t,
     pendingRequest: cr.pendingRequestFor(field, vehicleId),
-    lastReviewed: cr.lastReviewedRequestFor(field, vehicleId),
     isOpen: cr.openRequestField === field && cr.openRequestVehicleId === vehicleId,
     onOpen: () => cr.handleOpenRequest(field, vehicleId),
     onCancel: cr.handleCancelRequest,

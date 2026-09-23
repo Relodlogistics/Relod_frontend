@@ -37,7 +37,6 @@ export default function IdentitySettingsPage() {
   const fieldProps = (field: Parameters<typeof cr.pendingRequestFor>[0]) => ({
     t,
     pendingRequest: cr.pendingRequestFor(field),
-    lastReviewed: cr.lastReviewedRequestFor(field),
     isOpen: cr.openRequestField === field,
     onOpen: () => cr.handleOpenRequest(field),
     onCancel: cr.handleCancelRequest,
