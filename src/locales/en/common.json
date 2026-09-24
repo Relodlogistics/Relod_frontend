@@ -1187,11 +1187,12 @@
     "colPayoutAccount": "Payout account",
     "noPayoutDetails": "Not on file",
     "confirmMarkPaid": "Confirm the RTGS/NEFT transfer was made and record this UTR?",
-    "supportSubtitle": "Support tickets raised by carriers and shippers",
+    "supportSubtitle": "Support tickets raised by carriers, shippers, and website visitors",
     "colRaisedBy": "Raised by",
     "colIssue": "Issue",
     "role_carrier": "Carrier",
     "role_shipper": "Shipper",
+    "role_guest": "Website visitor",
     "ticketStatus_open": "Open",
     "ticketStatus_in_progress": "In progress",
     "ticketStatus_resolved": "Resolved",
@@ -1482,7 +1483,18 @@
         "payments": "Payments",
         "tracking": "Live tracking",
         "mobileApp": "Mobile app"
-      }
+      },
+      "askTeam": "Ask our team",
+      "askTeamHint": "Leave your details and we'll get back to you directly.",
+      "yourName": "Your name",
+      "yourPhone": "Your phone number",
+      "yourEmailOptional": "Email (optional)",
+      "submitQuestion": "Send to our team",
+      "ticketTitle": "Your question",
+      "ticketGreeting": "Here's your conversation with the Relod team. You can add more details below, or check back here for our reply.",
+      "myQuestion": "You have a question with our team",
+      "backToChat": "Back to chat",
+      "loading": "Loading..."
     },
     "legal": {
       "draftNotice": "This page is a working draft describing our intended policy structure. It is not yet final or legally binding, and is pending review by legal counsel before Relod's public launch.",

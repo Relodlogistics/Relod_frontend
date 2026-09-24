@@ -797,6 +797,33 @@ export const api = {
   listSupportTicketMessages: (token: string, ticketId: string) =>
     request<SupportTicketMessage[]>(`/support-tickets/${ticketId}/messages`, { token }),
 
+  // No token — raised by an anonymous marketing-site visitor via the "Ask
+  // Relod" chat widget's fallback form. guestPhone doubles as the ownership
+  // check for the read/reply calls below (see SupportTicket.guestPhone).
+  createGuestSupportTicket: (data: {
+    name: string;
+    phone: string;
+    email?: string;
+    question: string;
+    turnstileToken?: string;
+  }) =>
+    request<{ ticketId: string }>('/support-tickets/guest', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  listGuestSupportTicketMessages: (ticketId: string, phone: string) =>
+    request<SupportTicketMessage[]>(
+      `/support-tickets/guest/${ticketId}/messages?phone=${encodeURIComponent(phone)}`,
+      {},
+    ),
+
+  sendGuestSupportTicketMessage: (ticketId: string, phone: string, body: string) =>
+    request<SupportTicketMessage>(`/support-tickets/guest/${ticketId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ phone, body }),
+    }),
+
   // Admin — separate token type (AdminAccessGuard), never interchangeable
   // with a carrier/shipper accessToken.
   adminLogin: (data: { email: string; password: string }) =>
@@ -1830,6 +1857,9 @@ export interface SupportTicket {
   relatedShipperId: string | null;
   raisedBy: string;
   issueSummary: string;
+  guestName: string | null;
+  guestPhone: string | null;
+  guestEmail: string | null;
   status: 'open' | 'in_progress' | 'resolved';
   handledByAdminId: string | null;
   notes: string | null;
@@ -1839,12 +1869,12 @@ export interface SupportTicket {
 }
 
 export interface AdminSupportTicket extends SupportTicket {
-  raiser: { id: string; fullName: string; phone: string } | null;
-  raiserType: 'carrier' | 'shipper';
+  raiser: { id?: string; fullName: string; phone: string } | null;
+  raiserType: 'carrier' | 'shipper' | 'guest';
   lastMessageAt: string | null;
   lastMessageBody: string | null;
   lastMessageAttachmentName: string | null;
-  lastMessageSenderType: 'admin' | 'carrier' | 'shipper' | null;
+  lastMessageSenderType: 'admin' | 'carrier' | 'shipper' | 'guest' | null;
   needsReply: boolean;
 }
 
@@ -1878,7 +1908,7 @@ export interface UserReverificationRequest extends ReverificationRequest {
 export interface SupportTicketMessage {
   id: string;
   ticketId: string;
-  senderType: 'admin' | 'carrier' | 'shipper';
+  senderType: 'admin' | 'carrier' | 'shipper' | 'guest';
   senderAdminId: string | null;
   body: string | null;
   attachmentUrl: string | null;

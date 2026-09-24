@@ -183,7 +183,8 @@ export default function AdminSupportTicketDetailPage() {
           <div>
             <CardTitle className="text-base">{ticket.raiser?.fullName ?? '—'}</CardTitle>
             <p className="text-xs text-muted-foreground">
-              {t(`admin.role_${ticket.raiserType}`)} · {ticket.raiser?.phone ?? '—'} · {timeAgo(ticket.createdAt)}
+              {t(`admin.role_${ticket.raiserType}`)} · {ticket.raiser?.phone ?? '—'}
+              {ticket.guestEmail ? ` · ${ticket.guestEmail}` : ''} · {timeAgo(ticket.createdAt)}
             </p>
           </div>
           <Badge variant={statusVariant(ticket.status)}>{t(`admin.ticketStatus_${ticket.status}`)}</Badge>
