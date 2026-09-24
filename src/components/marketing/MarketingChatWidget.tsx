@@ -340,6 +340,22 @@ export function MarketingChatWidget() {
                   </div>
                 ))}
 
+                {messages.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMessages([]);
+                      setCategory(null);
+                      setLastUnansweredQuestion('');
+                      setTicketFormOpen(false);
+                    }}
+                    className="flex w-fit items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+                  >
+                    <ArrowLeft className="size-3.5" />
+                    {t('marketing.chatWidget.askAnother')}
+                  </button>
+                )}
+
                 {messages.some((m) => m.from === 'bot' && m.text === t('marketing.chatWidget.fallback')) && (
                   <div className="flex flex-col gap-3 rounded-lg border bg-background p-3">
                     {!ticketFormOpen ? (
