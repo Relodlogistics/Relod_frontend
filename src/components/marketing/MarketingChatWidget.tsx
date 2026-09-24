@@ -29,6 +29,33 @@ function loadStoredTicket(): { id: string; phone: string } | null {
   }
 }
 
+// Keeps the visible FAQ Q&A (not the ticket thread, which is already
+// persisted server-side and just resumed via GUEST_TICKET_STORAGE_KEY) so
+// reopening the widget after a reload doesn't dump the visitor back at the
+// category picker having lost what they already asked.
+const CHAT_HISTORY_STORAGE_KEY = 'relod_chat_history';
+
+function loadStoredHistory(): ChatMessage[] {
+  try {
+    const raw = localStorage.getItem(CHAT_HISTORY_STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as ChatMessage[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function storeHistory(messages: ChatMessage[]) {
+  try {
+    if (messages.length === 0) {
+      localStorage.removeItem(CHAT_HISTORY_STORAGE_KEY);
+    } else {
+      localStorage.setItem(CHAT_HISTORY_STORAGE_KEY, JSON.stringify(messages));
+    }
+  } catch {
+    // Private window / blocked storage — conversation just won't survive a reload.
+  }
+}
+
 function storeTicket(ticket: { id: string; phone: string }) {
   try {
     localStorage.setItem(GUEST_TICKET_STORAGE_KEY, JSON.stringify(ticket));
@@ -142,6 +169,14 @@ export function MarketingChatWidget() {
 
   useEffect(() => {
     setSavedTicket(loadStoredTicket());
+    setMessages(loadStoredHistory());
+    // Persistence is written explicitly at the two spots messages actually
+    // change (ask() and the "ask another question" reset) rather than via a
+    // generic useEffect keyed on `messages` — that shape raced with this
+    // same load effect under React Strict Mode's double-invoke: the "store"
+    // effect's first pass would see the pre-load empty array and immediately
+    // delete what this effect had just loaded, before the re-render with the
+    // real data ever landed.
   }, []);
 
   useEffect(() => {
@@ -190,7 +225,9 @@ export function MarketingChatWidget() {
   function ask(text: string) {
     if (!text.trim()) return;
     const answer = answerFor(text);
-    setMessages((prev) => [...prev, { from: 'user', text }, { from: 'bot', text: answer }]);
+    const next: ChatMessage[] = [...messages, { from: 'user', text }, { from: 'bot', text: answer }];
+    setMessages(next);
+    storeHistory(next);
     if (answer === t('marketing.chatWidget.fallback')) {
       setLastUnansweredQuestion(text);
     }
@@ -206,7 +243,11 @@ export function MarketingChatWidget() {
         name: ticketName.trim(),
         phone: ticketPhone.trim(),
         email: ticketEmail.trim() || undefined,
-        question: lastUnansweredQuestion || input.trim(),
+        question:
+          lastUnansweredQuestion ||
+          input.trim() ||
+          [...messages].reverse().find((m) => m.from === 'user')?.text ||
+          '',
         turnstileToken: turnstileToken || undefined,
       });
       const ticket = { id: ticketId, phone: ticketPhone.trim() };
@@ -345,6 +386,7 @@ export function MarketingChatWidget() {
                     type="button"
                     onClick={() => {
                       setMessages([]);
+                      storeHistory([]);
                       setCategory(null);
                       setLastUnansweredQuestion('');
                       setTicketFormOpen(false);
