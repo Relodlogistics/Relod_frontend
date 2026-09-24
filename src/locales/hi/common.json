@@ -1475,6 +1475,8 @@
       "backToCategories": "श्रेणियों पर वापस जाएं",
       "askAnother": "एक और सवाल पूछें",
       "previousConversation": "पिछली बातचीत",
+      "viewPreviousConversation": "आपकी एक पिछली बातचीत है",
+      "previousConversationHint": "आपने पहले यह पूछा था। नई बातचीत शुरू करने के लिए नीचे \"एक और सवाल पूछें\" इस्तेमाल करें।",
       "inputPlaceholder": "अपना सवाल लिखें...",
       "send": "भेजें",
       "close": "चैट बंद करें",

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import {
   MessageCircle, X, Send, Mail, ArrowLeft,
-  UserPlus, Search, CreditCard, MapPin, Smartphone, LifeBuoy,
+  UserPlus, Search, CreditCard, MapPin, Smartphone, LifeBuoy, History,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,18 +29,29 @@ function loadStoredTicket(): { id: string; phone: string } | null {
   }
 }
 
-// Keeps the visible FAQ Q&A (not the ticket thread, which is already
-// persisted server-side and just resumed via GUEST_TICKET_STORAGE_KEY) so
-// reopening the widget after a reload doesn't dump the visitor back at the
-// category picker having lost what they already asked.
+function storeTicket(ticket: { id: string; phone: string }) {
+  try {
+    localStorage.setItem(GUEST_TICKET_STORAGE_KEY, JSON.stringify(ticket));
+  } catch {
+    // Private window / blocked storage — the ticket still exists server-side,
+    // it just won't be resumable from this tab. Not worth surfacing an error.
+  }
+}
+
+// The *previous visit's* FAQ Q&A, kept entirely separate from the live
+// `messages` state: "Ask Relod" always starts fresh at the category picker,
+// and a past conversation is only ever reached through its own explicit
+// "Previous conversation" entry point (banner + header icon) — never
+// silently merged into the current one, so there's no ambiguity about
+// which messages belong to which visit.
 const CHAT_HISTORY_STORAGE_KEY = 'relod_chat_history';
 const CHAT_HISTORY_MAX_AGE_MS = 3 * 24 * 60 * 60 * 1000;
 
 // Wrapped with a timestamp (rather than storing the bare array) so a stale
 // conversation can expire — a visitor who asked something three days ago
-// and forgot about it shouldn't be dropped back into it as if no time had
-// passed; past that window it's cleared and they start at the category
-// picker like a first-time visitor.
+// and forgot about it shouldn't see it resurface as if no time had passed;
+// past that window it's cleared and "Previous conversation" simply doesn't
+// appear, same as a first-time visitor.
 function loadStoredHistory(): ChatMessage[] {
   try {
     const raw = localStorage.getItem(CHAT_HISTORY_STORAGE_KEY);
@@ -68,15 +79,6 @@ function storeHistory(messages: ChatMessage[]) {
     }
   } catch {
     // Private window / blocked storage — conversation just won't survive a reload.
-  }
-}
-
-function storeTicket(ticket: { id: string; phone: string }) {
-  try {
-    localStorage.setItem(GUEST_TICKET_STORAGE_KEY, JSON.stringify(ticket));
-  } catch {
-    // Private window / blocked storage — the ticket still exists server-side,
-    // it just won't be resumable from this tab. Not worth surfacing an error.
   }
 }
 
@@ -161,15 +163,11 @@ export function MarketingChatWidget() {
   // once a conversation starts, the normal message list takes over.
   const [category, setCategory] = useState<string | null>(null);
   const [lastUnansweredQuestion, setLastUnansweredQuestion] = useState('');
-  // True once, the moment a non-empty history is loaded from storage —
-  // marks the resumed block with a visible "Previous conversation" divider
-  // so it reads as continuing an earlier visit, not as this session having
-  // started with a wall of messages already in it.
-  const [hasPriorConversation, setHasPriorConversation] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Whether the panel shows the FAQ flow or the human-support ticket thread.
-  const [screen, setScreen] = useState<'faq' | 'ticket'>('faq');
+  // Which screen the panel shows: the live FAQ flow, the human-support
+  // ticket thread, or a read-only look back at the previous visit's FAQ Q&A.
+  const [screen, setScreen] = useState<'faq' | 'ticket' | 'history'>('faq');
 
   // The "ask our team" form shown under a fallback answer.
   const [ticketFormOpen, setTicketFormOpen] = useState(false);
@@ -187,18 +185,14 @@ export function MarketingChatWidget() {
   const [ticketReply, setTicketReply] = useState('');
   const [ticketReplySending, setTicketReplySending] = useState(false);
 
+  // The previous visit's FAQ conversation — read-only, shown only via its
+  // own "Previous conversation" entry point. Empty means none exists (or it
+  // expired), in which case that entry point simply doesn't render.
+  const [priorConversation, setPriorConversation] = useState<ChatMessage[]>([]);
+
   useEffect(() => {
     setSavedTicket(loadStoredTicket());
-    const history = loadStoredHistory();
-    setMessages(history);
-    if (history.length > 0) setHasPriorConversation(true);
-    // Persistence is written explicitly at the two spots messages actually
-    // change (ask() and the "ask another question" reset) rather than via a
-    // generic useEffect keyed on `messages` — that shape raced with this
-    // same load effect under React Strict Mode's double-invoke: the "store"
-    // effect's first pass would see the pre-load empty array and immediately
-    // delete what this effect had just loaded, before the re-render with the
-    // real data ever landed.
+    setPriorConversation(loadStoredHistory());
   }, []);
 
   useEffect(() => {
@@ -249,11 +243,22 @@ export function MarketingChatWidget() {
     const answer = answerFor(text);
     const next: ChatMessage[] = [...messages, { from: 'user', text }, { from: 'bot', text: answer }];
     setMessages(next);
+    // Becomes the *next* visit's "Previous conversation" — this visit's own
+    // priorConversation (if any) stays exactly as loaded, untouched, until
+    // this tab reloads and picks up whatever got saved here as new.
     storeHistory(next);
     if (answer === t('marketing.chatWidget.fallback')) {
       setLastUnansweredQuestion(text);
     }
     setInput('');
+  }
+
+  function resetToFreshChat() {
+    setMessages([]);
+    storeHistory([]);
+    setCategory(null);
+    setLastUnansweredQuestion('');
+    setTicketFormOpen(false);
   }
 
   async function submitTicketForm(e: React.FormEvent) {
@@ -288,13 +293,20 @@ export function MarketingChatWidget() {
     }
   }
 
+  const screenTitle =
+    screen === 'ticket'
+      ? t('marketing.chatWidget.ticketTitle')
+      : screen === 'history'
+        ? t('marketing.chatWidget.previousConversation')
+        : t('marketing.chatWidget.title');
+
   return (
     <div className="fixed right-4 bottom-4 z-50 flex flex-col items-end gap-3 sm:right-6 sm:bottom-6">
       {open && (
         <div className="flex h-[28rem] w-[calc(100vw-2rem)] max-w-sm flex-col overflow-hidden rounded-xl border bg-card shadow-xl">
           <div className="flex items-center justify-between border-b bg-primary px-4 py-3 text-primary-foreground">
             <div className="flex items-center gap-2">
-              {screen === 'ticket' && (
+              {screen !== 'faq' && (
                 <button
                   type="button"
                   onClick={() => setScreen('faq')}
@@ -304,11 +316,20 @@ export function MarketingChatWidget() {
                   <ArrowLeft className="size-4" />
                 </button>
               )}
-              <p className="font-heading text-sm font-semibold">
-                {screen === 'ticket' ? t('marketing.chatWidget.ticketTitle') : t('marketing.chatWidget.title')}
-              </p>
+              <p className="font-heading text-sm font-semibold">{screenTitle}</p>
             </div>
             <div className="flex items-center gap-1">
+              {screen === 'faq' && priorConversation.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setScreen('history')}
+                  aria-label={t('marketing.chatWidget.previousConversation')}
+                  className="rounded-md p-1 hover:bg-primary-foreground/10"
+                  title={t('marketing.chatWidget.previousConversation')}
+                >
+                  <History className="size-4" />
+                </button>
+              )}
               {screen === 'faq' && savedTicket && (
                 <button
                   type="button"
@@ -331,7 +352,7 @@ export function MarketingChatWidget() {
             </div>
           </div>
 
-          {screen === 'faq' ? (
+          {screen === 'faq' && (
             <>
               <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-3">
                 <div className="max-w-[85%] rounded-lg bg-secondary px-3 py-2 text-sm text-secondary-foreground">
@@ -339,6 +360,17 @@ export function MarketingChatWidget() {
                     ? t('marketing.chatWidget.greeting')
                     : t('marketing.chatWidget.greetingAfterCategory')}
                 </div>
+
+                {messages.length === 0 && priorConversation.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setScreen('history')}
+                    className="flex w-full items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-left text-sm text-foreground hover:bg-primary/10"
+                  >
+                    <History className="size-4 shrink-0 text-primary" />
+                    {t('marketing.chatWidget.viewPreviousConversation')}
+                  </button>
+                )}
 
                 {savedTicket && messages.length === 0 && (
                   <button
@@ -390,14 +422,6 @@ export function MarketingChatWidget() {
                   </div>
                 )}
 
-                {hasPriorConversation && messages.length > 0 && (
-                  <div className="flex items-center gap-2 py-1 text-[0.7rem] font-medium tracking-wide text-muted-foreground uppercase">
-                    <span className="h-px flex-1 bg-border" />
-                    {t('marketing.chatWidget.previousConversation')}
-                    <span className="h-px flex-1 bg-border" />
-                  </div>
-                )}
-
                 {messages.map((m, i) => (
                   <div
                     key={i}
@@ -414,14 +438,7 @@ export function MarketingChatWidget() {
                 {messages.length > 0 && (
                   <button
                     type="button"
-                    onClick={() => {
-                      setMessages([]);
-                      storeHistory([]);
-                      setCategory(null);
-                      setLastUnansweredQuestion('');
-                      setTicketFormOpen(false);
-                      setHasPriorConversation(false);
-                    }}
+                    onClick={resetToFreshChat}
                     className="flex w-fit items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
                   >
                     <ArrowLeft className="size-3.5" />
@@ -509,7 +526,40 @@ export function MarketingChatWidget() {
                 </Button>
               </form>
             </>
-          ) : (
+          )}
+
+          {screen === 'history' && (
+            <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-3">
+              <div className="max-w-[85%] rounded-lg bg-secondary px-3 py-2 text-sm text-secondary-foreground">
+                {t('marketing.chatWidget.previousConversationHint')}
+              </div>
+              {priorConversation.map((m, i) => (
+                <div
+                  key={i}
+                  className={
+                    m.from === 'user'
+                      ? 'ml-auto max-w-[85%] rounded-lg bg-primary px-3 py-2 text-sm text-primary-foreground'
+                      : 'max-w-[85%] rounded-lg bg-secondary px-3 py-2 text-sm text-secondary-foreground'
+                  }
+                >
+                  {m.text}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => {
+                  resetToFreshChat();
+                  setScreen('faq');
+                }}
+                className="flex w-fit items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+              >
+                <ArrowLeft className="size-3.5" />
+                {t('marketing.chatWidget.askAnother')}
+              </button>
+            </div>
+          )}
+
+          {screen === 'ticket' && (
             <>
               <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-3">
                 <div className="max-w-[85%] rounded-lg bg-secondary px-3 py-2 text-sm text-secondary-foreground">

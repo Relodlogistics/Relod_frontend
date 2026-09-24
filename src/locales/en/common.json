@@ -1475,6 +1475,8 @@
       "backToCategories": "Back to categories",
       "askAnother": "Ask another question",
       "previousConversation": "Previous conversation",
+      "viewPreviousConversation": "You have a previous conversation",
+      "previousConversationHint": "Here's what you asked before. Use \"Ask another question\" below to start a new one.",
       "inputPlaceholder": "Type your question...",
       "send": "Send",
       "close": "Close chat",
