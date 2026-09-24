@@ -261,6 +261,23 @@ export function MarketingChatWidget() {
     setTicketFormOpen(false);
   }
 
+  // Closing the panel ends this "visit" the same way a page reload would —
+  // otherwise the component never unmounts on a same-tab close/reopen (no
+  // navigation happens), so `messages` just sat there unchanged and the
+  // visitor never saw their answered question filed under "Previous
+  // conversation" until they happened to hit an actual browser refresh.
+  function closeWidget() {
+    if (messages.length > 0) {
+      setPriorConversation(messages);
+      setMessages([]);
+      setCategory(null);
+      setLastUnansweredQuestion('');
+      setTicketFormOpen(false);
+    }
+    setScreen('faq');
+    setOpen(false);
+  }
+
   async function submitTicketForm(e: React.FormEvent) {
     e.preventDefault();
     setTicketFormError(null);
@@ -343,7 +360,7 @@ export function MarketingChatWidget() {
               )}
               <button
                 type="button"
-                onClick={() => setOpen(false)}
+                onClick={closeWidget}
                 aria-label={t('marketing.chatWidget.close')}
                 className="rounded-md p-1 hover:bg-primary-foreground/10"
               >
@@ -607,7 +624,7 @@ export function MarketingChatWidget() {
         type="button"
         size="icon-lg"
         className="rounded-full shadow-lg"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => (open ? closeWidget() : setOpen(true))}
         aria-label={t('marketing.chatWidget.title')}
       >
         {open ? <X className="size-5" /> : <MessageCircle className="size-5" />}
