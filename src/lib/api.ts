@@ -376,6 +376,15 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
+  // Same real-time verification as setPayoutBank, for a carrier who'd
+  // rather be paid by UPI than bank transfer.
+  setPayoutUpi: (token: string, id: string, data: { upiId: string }) =>
+    request<PayoutUpi>(`/carriers/${id}/payout-upi`, {
+      method: 'POST',
+      token,
+      body: JSON.stringify(data),
+    }),
+
   updateShipperProfile: (
     token: string,
     id: string,
@@ -1610,6 +1619,9 @@ export interface Carrier {
   payoutIfsc: string | null;
   payoutAccountHolderName: string | null;
   payoutBankVerifiedAt: string | null;
+  payoutUpiId: string | null;
+  payoutUpiHolderName: string | null;
+  payoutUpiVerifiedAt: string | null;
 }
 
 export interface PayoutBank {
@@ -1617,6 +1629,12 @@ export interface PayoutBank {
   payoutIfsc: string;
   payoutAccountHolderName: string;
   payoutBankVerifiedAt: string;
+}
+
+export interface PayoutUpi {
+  payoutUpiId: string;
+  payoutUpiHolderName: string;
+  payoutUpiVerifiedAt: string;
 }
 
 export interface Shipper {
@@ -1747,14 +1765,27 @@ export interface CarrierPayout {
 }
 
 export interface AdminCarrierPayout extends CarrierPayout {
-  carrier: {
-    id: string;
-    fullName: string;
-    phone: string;
-    payoutAccountNumber: string | null;
-    payoutIfsc: string | null;
-    payoutAccountHolderName: string | null;
-  } | null;
+  carrier:
+    | ({
+        id: string;
+        fullName: string;
+        phone: string;
+        payoutAccountNumber: string | null;
+        payoutIfsc: string | null;
+        payoutAccountHolderName: string | null;
+        payoutBankVerifiedAt: string | null;
+        payoutUpiId: string | null;
+        payoutUpiHolderName: string | null;
+        payoutUpiVerifiedAt: string | null;
+      } & {
+        // Whichever route (bank/UPI) was verified most recently — see
+        // CarriersService.currentPayoutMethod on the backend.
+        payoutMethod:
+          | { type: 'bank'; accountNumber: string; ifsc: string; holderName: string }
+          | { type: 'upi'; upiId: string; holderName: string }
+          | null;
+      })
+    | null;
 }
 
 export type AdminRole = 'support' | 'ops' | 'super_admin' | 'ceo' | 'cto' | 'cmo' | 'coo' | 'cfo';

@@ -70,7 +70,7 @@ export function MarketingHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-card/80 backdrop-blur-sm">
+    <header className="sticky top-0 z-40 border-b bg-card">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         <Logo />
 

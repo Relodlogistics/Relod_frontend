@@ -33,7 +33,7 @@ export function RecentActivityCard({
     .slice(0, limit);
 
   return (
-    <Card className="h-fit">
+    <Card>
       <CardHeader>
         <CardTitle>{t('settingsPage.navActivity')}</CardTitle>
       </CardHeader>

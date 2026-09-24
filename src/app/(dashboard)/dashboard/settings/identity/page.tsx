@@ -58,7 +58,7 @@ export default function IdentitySettingsPage() {
         <h1 className="font-heading text-xl font-semibold">{t('settingsPage.navIdentity')}</h1>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,28rem)_1fr]">
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,22.5rem)]">
         <Card>
           <CardHeader>
             <CardTitle>{t('settingsPage.identityDetails')}</CardTitle>

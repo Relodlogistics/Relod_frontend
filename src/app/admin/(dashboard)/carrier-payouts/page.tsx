@@ -47,9 +47,16 @@ function PayoutRow({
       <td className="py-3 pr-3">{payout.carrier?.fullName ?? '—'}</td>
       <td className="py-3 pr-3 text-muted-foreground">{payout.carrier?.phone ?? '—'}</td>
       <td className="py-3 pr-3 text-muted-foreground">
-        {payout.carrier?.payoutAccountNumber ? (
+        {payout.carrier?.payoutMethod?.type === 'bank' ? (
           <>
-            {payout.carrier.payoutAccountNumber} · {payout.carrier.payoutIfsc}
+            {payout.carrier.payoutMethod.accountNumber} · {payout.carrier.payoutMethod.ifsc}
+          </>
+        ) : payout.carrier?.payoutMethod?.type === 'upi' ? (
+          <>
+            {payout.carrier.payoutMethod.upiId}{' '}
+            <Badge variant="outline" className="ml-1 text-[10px]">
+              UPI
+            </Badge>
           </>
         ) : (
           t('admin.noPayoutDetails')

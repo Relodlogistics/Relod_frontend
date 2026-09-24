@@ -625,18 +625,23 @@
   },
   "bankPage": {
     "currentAccount": "Current payout account",
+    "currentUpi": "Current payout UPI ID",
     "accountEnding": "Account ending {{last4}}",
     "holderName": "Held by {{name}}",
     "addTitle": "Add your payout account",
     "updateTitle": "Update your payout account",
     "hint": "This is the account we pay you into after a delivery is completed.",
+    "methodBank": "Bank transfer",
+    "methodUpi": "UPI",
     "accountNumber": "Account number",
     "confirmAccountNumber": "Confirm account number",
     "accountMismatch": "Account numbers don't match.",
     "ifsc": "IFSC code",
+    "upiId": "UPI ID",
     "nameMatchHint": "The account must be in your own verified name (or your verified business name). We check this with your bank before saving it.",
     "save": "Verify & save",
-    "saved": "Payout account verified and saved."
+    "saved": "Payout account verified and saved.",
+    "savedUpi": "UPI ID verified and saved."
   },
   "postings": {
     "title": "Nearby postings",
