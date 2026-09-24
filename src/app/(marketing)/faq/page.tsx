@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   },
 };
 
-const questionKeys = ['q1', 'q2', 'q3', 'q4', 'q5', 'q6'] as const;
+const questionKeys = ['q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7'] as const;
 
 export default async function FaqPage() {
   // Matches whatever locale FaqContent itself renders (via the same

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Search, MessageCircle, MapPin, UserPlus, ShieldCheck, Smartphone, ChevronDown, HelpCircle } from 'lucide-react';
+import { Search, MessageCircle, MapPin, UserPlus, ShieldCheck, Smartphone, CreditCard, ChevronDown, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getServerLocale, createServerT } from '@/lib/server-i18n';
 
@@ -10,6 +10,7 @@ const QUESTIONS = [
   { key: 'q4', icon: UserPlus },
   { key: 'q5', icon: ShieldCheck },
   { key: 'q6', icon: Smartphone },
+  { key: 'q7', icon: CreditCard },
 ];
 
 export async function FaqContent() {

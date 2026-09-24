@@ -3,16 +3,19 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
-import { MessageCircle, X, Send, Mail } from 'lucide-react';
+import {
+  MessageCircle, X, Send, Mail, ArrowLeft,
+  UserPlus, Search, CreditCard, MapPin, Smartphone,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const CONTACT_EMAIL = 'team@relod.in';
 
-// Scripted FAQ bot — no LLM, no backend call. Reuses the same six Q&As
-// shown on /faq (marketing.faq.q1..q6) so the answers stay in one place.
-// Each entry's keywords are matched (substring, case-insensitive) against
-// whatever the visitor types; first match wins. No match falls back to a
-// "reach out to the team" message instead of guessing.
+// Scripted FAQ bot — no LLM, no backend call. Reuses the same Q&As shown on
+// /faq (marketing.faq.q1..q7) so the answers stay in one place. Each entry's
+// keywords are matched (substring, case-insensitive) against whatever the
+// visitor types; first match wins. No match falls back to a "reach out to
+// the team" message instead of guessing.
 const FAQ_ITEMS: { key: string; keywords: string[] }[] = [
   {
     key: 'q1',
@@ -56,6 +59,25 @@ const FAQ_ITEMS: { key: string; keywords: string[] }[] = [
       'ऐप', 'डाउनलोड', 'इंस्टॉल',
     ],
   },
+  {
+    key: 'q7',
+    keywords: [
+      'payment', 'pay', 'wallet', 'advance', 'balance', 'settlement',
+      'invoice', 'upi', 'bank transfer', 'payout',
+      'भुगतान', 'वॉलेट', 'एडवांस', 'बैलेंस',
+    ],
+  },
+];
+
+// The first thing a visitor sees is a category picker rather than all seven
+// questions at once — easier to scan, and mirrors how the /faq page itself
+// groups the same content by topic.
+const CATEGORIES: { key: string; icon: typeof Search; items: string[] }[] = [
+  { key: 'registration', icon: UserPlus, items: ['q4', 'q5'] },
+  { key: 'loadboard', icon: Search, items: ['q1', 'q2'] },
+  { key: 'payments', icon: CreditCard, items: ['q7'] },
+  { key: 'tracking', icon: MapPin, items: ['q3'] },
+  { key: 'mobileApp', icon: Smartphone, items: ['q6'] },
 ];
 
 type ChatMessage = { from: 'bot' | 'user'; text: string };
@@ -65,6 +87,10 @@ export function MarketingChatWidget() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  // null = showing the category picker; a category key = showing that
+  // category's questions. Only relevant before the first message is sent —
+  // once a conversation starts, the normal message list takes over.
+  const [category, setCategory] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -107,12 +133,38 @@ export function MarketingChatWidget() {
 
           <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-3">
             <div className="max-w-[85%] rounded-lg bg-secondary px-3 py-2 text-sm text-secondary-foreground">
-              {t('marketing.chatWidget.greeting')}
+              {category === null
+                ? t('marketing.chatWidget.greeting')
+                : t('marketing.chatWidget.greetingAfterCategory')}
             </div>
 
-            {messages.length === 0 && (
+            {messages.length === 0 && category === null && (
               <div className="flex flex-col gap-2 pt-1">
-                {FAQ_ITEMS.map(({ key }) => (
+                {CATEGORIES.map(({ key, icon: Icon }) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setCategory(key)}
+                    className="flex items-center gap-2.5 rounded-lg border bg-background px-3 py-2 text-left text-sm text-foreground hover:bg-muted"
+                  >
+                    <Icon className="size-4 shrink-0 text-muted-foreground" />
+                    {t(`marketing.chatWidget.categories.${key}`)}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {messages.length === 0 && category !== null && (
+              <div className="flex flex-col gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setCategory(null)}
+                  className="flex w-fit items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+                >
+                  <ArrowLeft className="size-3.5" />
+                  {t('marketing.chatWidget.backToCategories')}
+                </button>
+                {CATEGORIES.find((c) => c.key === category)?.items.map((key) => (
                   <button
                     key={key}
                     type="button"

@@ -1460,6 +1460,8 @@
       "q5Body": "Today these are self-declared during registration. We're working on connecting them to real verification — this page will be updated once that's live.",
       "q6Title": "Is there a mobile app?",
       "q6Body": "Relod currently runs in your phone's browser — no separate app install needed. Tracking and messaging both work from there.",
+      "q7Title": "How do payments work?",
+      "q7Body": "Payments between shippers and carriers are routed through Relod's wallet and payout system rather than settled directly between the two — advances and balances are tracked per booking, so both sides always know what's paid and what's pending.",
       "stillTitle": "Still have questions?",
       "stillBody": "We're here to help. Reach out to our team anytime.",
       "stillCta": "Contact support",
@@ -1467,11 +1469,20 @@
     },
     "chatWidget": {
       "title": "Ask Relod",
-      "greeting": "Hi! Pick a question below, or type your own.",
+      "greeting": "Hi! What would you like to know about?",
+      "greetingAfterCategory": "Pick a question below, or type your own.",
+      "backToCategories": "Back to categories",
       "inputPlaceholder": "Type your question...",
       "send": "Send",
       "close": "Close chat",
-      "fallback": "I don't have an answer for that yet — please reach out to our team directly and we'll help."
+      "fallback": "I don't have an answer for that yet — please reach out to our team directly and we'll help.",
+      "categories": {
+        "registration": "Registration",
+        "loadboard": "Load board & matching",
+        "payments": "Payments",
+        "tracking": "Live tracking",
+        "mobileApp": "Mobile app"
+      }
     },
     "legal": {
       "draftNotice": "This page is a working draft describing our intended policy structure. It is not yet final or legally binding, and is pending review by legal counsel before Relod's public launch.",
