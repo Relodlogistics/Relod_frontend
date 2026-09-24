@@ -1474,6 +1474,7 @@
       "greetingAfterCategory": "Pick a question below, or type your own.",
       "backToCategories": "Back to categories",
       "askAnother": "Ask another question",
+      "previousConversation": "Previous conversation",
       "inputPlaceholder": "Type your question...",
       "send": "Send",
       "close": "Close chat",

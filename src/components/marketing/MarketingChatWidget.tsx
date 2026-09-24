@@ -34,11 +34,23 @@ function loadStoredTicket(): { id: string; phone: string } | null {
 // reopening the widget after a reload doesn't dump the visitor back at the
 // category picker having lost what they already asked.
 const CHAT_HISTORY_STORAGE_KEY = 'relod_chat_history';
+const CHAT_HISTORY_MAX_AGE_MS = 3 * 24 * 60 * 60 * 1000;
 
+// Wrapped with a timestamp (rather than storing the bare array) so a stale
+// conversation can expire — a visitor who asked something three days ago
+// and forgot about it shouldn't be dropped back into it as if no time had
+// passed; past that window it's cleared and they start at the category
+// picker like a first-time visitor.
 function loadStoredHistory(): ChatMessage[] {
   try {
     const raw = localStorage.getItem(CHAT_HISTORY_STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as ChatMessage[]) : [];
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as { messages: ChatMessage[]; savedAt: number };
+    if (Date.now() - parsed.savedAt > CHAT_HISTORY_MAX_AGE_MS) {
+      localStorage.removeItem(CHAT_HISTORY_STORAGE_KEY);
+      return [];
+    }
+    return parsed.messages;
   } catch {
     return [];
   }
@@ -49,7 +61,10 @@ function storeHistory(messages: ChatMessage[]) {
     if (messages.length === 0) {
       localStorage.removeItem(CHAT_HISTORY_STORAGE_KEY);
     } else {
-      localStorage.setItem(CHAT_HISTORY_STORAGE_KEY, JSON.stringify(messages));
+      localStorage.setItem(
+        CHAT_HISTORY_STORAGE_KEY,
+        JSON.stringify({ messages, savedAt: Date.now() }),
+      );
     }
   } catch {
     // Private window / blocked storage — conversation just won't survive a reload.
@@ -146,6 +161,11 @@ export function MarketingChatWidget() {
   // once a conversation starts, the normal message list takes over.
   const [category, setCategory] = useState<string | null>(null);
   const [lastUnansweredQuestion, setLastUnansweredQuestion] = useState('');
+  // True once, the moment a non-empty history is loaded from storage —
+  // marks the resumed block with a visible "Previous conversation" divider
+  // so it reads as continuing an earlier visit, not as this session having
+  // started with a wall of messages already in it.
+  const [hasPriorConversation, setHasPriorConversation] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Whether the panel shows the FAQ flow or the human-support ticket thread.
@@ -169,7 +189,9 @@ export function MarketingChatWidget() {
 
   useEffect(() => {
     setSavedTicket(loadStoredTicket());
-    setMessages(loadStoredHistory());
+    const history = loadStoredHistory();
+    setMessages(history);
+    if (history.length > 0) setHasPriorConversation(true);
     // Persistence is written explicitly at the two spots messages actually
     // change (ask() and the "ask another question" reset) rather than via a
     // generic useEffect keyed on `messages` — that shape raced with this
@@ -368,6 +390,14 @@ export function MarketingChatWidget() {
                   </div>
                 )}
 
+                {hasPriorConversation && messages.length > 0 && (
+                  <div className="flex items-center gap-2 py-1 text-[0.7rem] font-medium tracking-wide text-muted-foreground uppercase">
+                    <span className="h-px flex-1 bg-border" />
+                    {t('marketing.chatWidget.previousConversation')}
+                    <span className="h-px flex-1 bg-border" />
+                  </div>
+                )}
+
                 {messages.map((m, i) => (
                   <div
                     key={i}
@@ -390,6 +420,7 @@ export function MarketingChatWidget() {
                       setCategory(null);
                       setLastUnansweredQuestion('');
                       setTicketFormOpen(false);
+                      setHasPriorConversation(false);
                     }}
                     className="flex w-fit items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
                   >
