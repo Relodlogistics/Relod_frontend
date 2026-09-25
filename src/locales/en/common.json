@@ -686,6 +686,7 @@
     "selectFromDropdown": "Pick a suggestion from the dropdown for {{field}} — typing a name isn't enough on its own.",
     "addressNotResolved": "Couldn't find that {{field}} — try adding more detail (street, landmark, area).",
     "noPlaceMatches": "No matches — you can keep what you typed, or check the spelling.",
+    "placeSearchUnavailable": "Place search is unavailable right now — you can still type your city and continue.",
     "missingRequiredFields": "Please fill in: {{fields}}",
     "budgetBelowMinimum": "Actual budget must be at least the minimum budget.",
     "fromDate": "Available from",

@@ -56,6 +56,9 @@ export function PlaceAutocompleteInput({
   const [suggestions, setSuggestions] = useState<{ placeId: string; label: string }[]>([]);
   const [open, setOpen] = useState(false);
   const [searched, setSearched] = useState(false);
+  // The lookup itself errored (as opposed to returning zero matches) — say so
+  // instead of claiming "no matches" for a place that may well exist.
+  const [failed, setFailed] = useState(false);
   const [coords, setCoords] = useState<{ top: number; left: number; width: number } | null>(null);
   const sessionTokenRef = useRef(crypto.randomUUID());
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -116,6 +119,7 @@ export function PlaceAutocompleteInput({
       try {
         const results = await api.geocodeAutocomplete(session.accessToken, text, sessionTokenRef.current);
         setSuggestions(results);
+        setFailed(false);
         // Opens even on zero results — an empty search that just silently
         // stays closed is indistinguishable from the feature being broken.
         // "No matches" tells the user it's a spelling/coverage issue, not a bug.
@@ -125,6 +129,8 @@ export function PlaceAutocompleteInput({
         // api.ts) that clears the stale session and sends the user back to
         // login — nothing further to do in this one field.
         setSuggestions([]);
+        setFailed(true);
+        setOpen(true);
       } finally {
         setSearched(true);
       }
@@ -167,7 +173,9 @@ export function PlaceAutocompleteInput({
             style={{ top: coords.top, left: coords.left, width: coords.width }}
           >
             {suggestions.length === 0 && searched && (
-              <li className="px-3 py-2 text-sm text-muted-foreground">{t('postings.noPlaceMatches')}</li>
+              <li className="px-3 py-2 text-sm text-muted-foreground">
+                {failed ? t('postings.placeSearchUnavailable') : t('postings.noPlaceMatches')}
+              </li>
             )}
             {suggestions.map((s) => (
               <li key={s.placeId}>
