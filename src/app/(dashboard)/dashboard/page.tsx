@@ -229,6 +229,15 @@ export default function DashboardPage() {
     })
     .slice(0, 4);
 
+  // Counts shown as small badges on the tabs, so what's inside is visible
+  // before clicking. They match what each tab lists (the lists above are
+  // already capped), and a tab with nothing in it shows no badge.
+  const tabCounts: Record<DashboardTab, number> = {
+    current: currentLoad ? 1 : 0,
+    upcoming: upcomingLoads.length,
+    recent: recentPostings.length,
+  };
+
   const handleDismissNotification = async () => {
     if (!latestNotification) return;
     await api.markNotificationRead(session.accessToken, latestNotification.id);
@@ -461,6 +470,11 @@ export default function DashboardPage() {
                     )}
                   >
                     {t(`dashboard.tab${tab.charAt(0).toUpperCase()}${tab.slice(1)}`)}
+                    {tabCounts[tab] > 0 && (
+                      <span className="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 align-middle text-xs font-semibold text-primary-foreground">
+                        {tabCounts[tab] > 9 ? '9+' : tabCounts[tab]}
+                      </span>
+                    )}
                     {dashboardTab === tab && (
                       <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-primary" />
                     )}
