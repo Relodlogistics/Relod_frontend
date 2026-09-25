@@ -179,6 +179,7 @@ export default function NewPostingPage() {
   const [preview, setPreview] = useState<PreviewData | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [draftNotice, setDraftNotice] = useState<'restored' | 'saved' | null>(null);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
 
   const resetForm = () => {
     setOriginCity('');
@@ -228,6 +229,7 @@ export default function NewPostingPage() {
     }
     resetForm();
     setDraftNotice(null);
+    setConfirmDiscard(false);
   };
 
   useEffect(() => {
@@ -531,12 +533,33 @@ export default function NewPostingPage() {
     </Modal>
   );
 
+  const discardDialog = (
+    <Modal
+      open={confirmDiscard}
+      onClose={() => setConfirmDiscard(false)}
+      title={t('postings.discardDraftTitle')}
+      closeLabel={t('postings.previewClose')}
+      footer={
+        <>
+          <Button type="button" variant="outline" onClick={() => setConfirmDiscard(false)}>
+            {t('postings.keepDraft')}
+          </Button>
+          <Button type="button" variant="destructive" onClick={discardDraft}>
+            {t('postings.discardDraftConfirm')}
+          </Button>
+        </>
+      }
+    >
+      <p className="text-sm text-muted-foreground">{t('postings.discardDraftBody')}</p>
+    </Modal>
+  );
+
   const draftAlert = draftNotice && (
     <Alert>
       <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
         <span>{draftNotice === 'restored' ? t('postings.draftRestored') : t('postings.draftSaved')}</span>
         {draftNotice === 'restored' && (
-          <Button type="button" variant="outline" size="sm" onClick={discardDraft}>
+          <Button type="button" variant="destructive" size="sm" onClick={() => setConfirmDiscard(true)}>
             {t('postings.discardDraft')}
           </Button>
         )}
@@ -759,7 +782,7 @@ export default function NewPostingPage() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:self-start lg:overflow-y-auto">
             <Card>
               <CardContent className="flex flex-col gap-4 pt-6">
                 <p className="text-sm font-semibold">{t('postings.summaryTitle')}</p>
@@ -853,6 +876,7 @@ export default function NewPostingPage() {
           </div>
         </div>
         {previewDialog}
+        {discardDialog}
       </main>
     );
   }
@@ -957,6 +981,7 @@ export default function NewPostingPage() {
         </CardContent>
       </Card>
       {previewDialog}
+        {discardDialog}
     </main>
   );
 }
