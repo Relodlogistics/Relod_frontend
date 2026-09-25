@@ -180,17 +180,19 @@ export function MarketingChatWidget() {
     return match ? t(`marketing.faq.${match.key}Body`) : t('marketing.chatWidget.fallback');
   }
 
-  function ask(text: string) {
+  // Keyword matching only ever runs against the category buttons' own exact
+  // FAQ titles (ask(..., { tryMatch: true })) — those are guaranteed correct
+  // by construction. A visitor's own free-typed text skips matching
+  // entirely and goes straight to the "ask our team" fallback: substring
+  // keyword matching on arbitrary phrasing kept landing on technically-
+  // keyword-matching-but-contextually-wrong answers (e.g. "how do I contact
+  // [support]" matching the FAQ about contacting matched carriers), which
+  // reads as the bot being broken rather than just limited.
+  function ask(text: string, { tryMatch = false }: { tryMatch?: boolean } = {}) {
     if (!text.trim()) return;
-    let answer = answerFor(text);
-    // A scripted keyword match has no idea whether it actually helped — if
-    // the visitor's next question (worded differently) lands on the exact
-    // same answer we just gave, repeating it verbatim reads as the bot being
-    // stuck rather than as a real response. Treat that as "this bot can't
-    // help further" and fall through to the human-team path instead.
-    const lastBotAnswer = [...messages].reverse().find((m) => m.from === 'bot')?.text;
-    if (answer === lastBotAnswer && answer !== t('marketing.chatWidget.fallback')) {
-      answer = t('marketing.chatWidget.fallback');
+    const answer = tryMatch ? answerFor(text) : t('marketing.chatWidget.fallback');
+    if (answer === t('marketing.chatWidget.fallback')) {
+      setLastUnansweredQuestion(text);
     }
     const next: ChatMessage[] = [...messages, { from: 'user', text }, { from: 'bot', text: answer }];
     setMessages(next);
@@ -198,9 +200,6 @@ export function MarketingChatWidget() {
     // priorConversation (if any) stays exactly as loaded, untouched, until
     // this tab reloads and picks up whatever got saved here as new.
     storeHistory(next);
-    if (answer === t('marketing.chatWidget.fallback')) {
-      setLastUnansweredQuestion(text);
-    }
     setInput('');
   }
 
@@ -353,7 +352,7 @@ export function MarketingChatWidget() {
                       <button
                         key={key}
                         type="button"
-                        onClick={() => ask(t(`marketing.faq.${key}Title`))}
+                        onClick={() => ask(t(`marketing.faq.${key}Title`), { tryMatch: true })}
                         className="rounded-lg border bg-background px-3 py-2 text-left text-sm text-foreground hover:bg-muted"
                       >
                         {t(`marketing.faq.${key}Title`)}
