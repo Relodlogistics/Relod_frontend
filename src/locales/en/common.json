@@ -1480,7 +1480,7 @@
       "inputPlaceholder": "Type your question...",
       "send": "Send",
       "close": "Close chat",
-      "fallback": "We've received your message! Our team will reach out to you shortly. You can also contact us directly at team@relod.in.",
+      "fallback": "Let's connect you with our team — tap \"Ask our team\" below and leave your number, and we'll get back to you shortly. You can also contact us directly at team@relod.in.",
       "categories": {
         "registration": "Registration",
         "loadboard": "Load board & matching",
