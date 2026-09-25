@@ -430,7 +430,12 @@ export default function NewPostingPage() {
       setPreviewError(null);
       setPreview({ payload, rows, route });
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : t('errors.generic'));
+      // Unexpected (non-API) failures keep the friendly message but append
+      // the underlying reason, so a report of "something went wrong" says
+      // what actually broke (network drop, blocked request, bad response).
+      setError(
+        e instanceof ApiError ? e.message : `${t('errors.generic')}${e instanceof Error ? ` (${e.message})` : ''}`,
+      );
     } finally {
       setLoading(false);
     }
@@ -453,7 +458,9 @@ export default function NewPostingPage() {
         session.userType === 'shipper' ? `/postings/${posting.id}/find-carriers` : `/postings/${posting.id}`,
       );
     } catch (e) {
-      setPreviewError(e instanceof ApiError ? e.message : t('errors.generic'));
+      setPreviewError(
+        e instanceof ApiError ? e.message : `${t('errors.generic')}${e instanceof Error ? ` (${e.message})` : ''}`,
+      );
       setLoading(false);
     }
   };
