@@ -182,7 +182,16 @@ export function MarketingChatWidget() {
 
   function ask(text: string) {
     if (!text.trim()) return;
-    const answer = answerFor(text);
+    let answer = answerFor(text);
+    // A scripted keyword match has no idea whether it actually helped — if
+    // the visitor's next question (worded differently) lands on the exact
+    // same answer we just gave, repeating it verbatim reads as the bot being
+    // stuck rather than as a real response. Treat that as "this bot can't
+    // help further" and fall through to the human-team path instead.
+    const lastBotAnswer = [...messages].reverse().find((m) => m.from === 'bot')?.text;
+    if (answer === lastBotAnswer && answer !== t('marketing.chatWidget.fallback')) {
+      answer = t('marketing.chatWidget.fallback');
+    }
     const next: ChatMessage[] = [...messages, { from: 'user', text }, { from: 'bot', text: answer }];
     setMessages(next);
     // Becomes the *next* visit's "Previous conversation" — this visit's own
