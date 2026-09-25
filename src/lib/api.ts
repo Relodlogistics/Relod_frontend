@@ -1514,7 +1514,7 @@ export interface AppNotification {
   userId: string;
   userType: 'carrier' | 'shipper';
   type: 'lane_match' | 'broadcast' | 'booking_update' | 'driver_action';
-  payload: { postingId?: string; bookingId?: string; event?: 'accepted' | 'not_selected' | 'new_candidate' | 'completed' };
+  payload: { postingId?: string; bookingId?: string; event?: 'accepted' | 'not_selected' | 'new_candidate' | 'truck_requested' | 'request_accepted' | 'request_declined' | 'completed' };
   readAt: string | null;
   createdAt: string;
 }

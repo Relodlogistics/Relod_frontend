@@ -22,6 +22,9 @@ const BOOKING_EVENT_LABEL_KEY: Record<string, string> = {
   accepted: 'notifications.bookingAccepted',
   not_selected: 'notifications.bookingNotSelected',
   new_candidate: 'notifications.bookingNewCandidate',
+  truck_requested: 'notifications.bookingTruckRequested',
+  request_accepted: 'notifications.bookingRequestAccepted',
+  request_declined: 'notifications.bookingRequestDeclined',
   completed: 'notifications.bookingCompleted',
 };
 

@@ -15,10 +15,12 @@ const POLL_INTERVAL_MS = 30000;
 // worth interrupting the user with a full popup for that one. These two are
 // the ones worth surfacing immediately: your truck got picked, or someone
 // accepted your load and needs a decision.
-const POPUP_EVENTS = new Set(['accepted', 'new_candidate', 'completed']);
+const POPUP_EVENTS = new Set(['accepted', 'new_candidate', 'truck_requested', 'request_accepted', 'completed']);
 const LABEL_KEY: Record<string, string> = {
   accepted: 'notifications.bookingAccepted',
   new_candidate: 'notifications.bookingNewCandidate',
+  truck_requested: 'notifications.bookingTruckRequested',
+  request_accepted: 'notifications.bookingRequestAccepted',
   completed: 'notifications.bookingCompleted',
 };
 
