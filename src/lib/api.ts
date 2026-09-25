@@ -1384,12 +1384,24 @@ export interface Booking {
   status: 'pending' | 'accepted' | 'in_transit' | 'completed' | 'cancelled';
   bookingType: 'instant_book' | 'negotiated';
   agreedPrice: string | null;
+  /** Relod fee charged on top to the shipper; null for the carrier. */
+  platformFee?: number | null;
   // Only ever present in the shipper's own view of their own booking — see
   // BookingsService.getOne/listMine. Never sent to the carrier side.
   pickupOtp?: string | null;
   createdAt: string;
   updatedAt: string;
   posting?: Posting;
+  // Shipper's view only: the booked truck's registration and the driver's /
+  // owner's numbers with the last four digits masked.
+  truckDetails?: {
+    registrationNumber: string;
+    truckType: string;
+    capacityTons: string;
+    driverName: string | null;
+    driverPhone: string | null;
+    ownerPhone: string | null;
+  } | null;
   counterpartyContact?: { name: string; phone: string; whatsappNumber?: string | null } | null;
   reviews?: Review[];
 }

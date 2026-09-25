@@ -322,7 +322,55 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
             </div>
 
             {booking?.agreedPrice && (
-              <p className="text-2xl font-semibold">{formatMoney(Number(booking.agreedPrice))}</p>
+              <div>
+                <p className="text-2xl font-semibold">
+                  {formatMoney(
+                    Number(booking.agreedPrice) + (session.userType === 'shipper' ? Number(booking.platformFee ?? 0) : 0),
+                  )}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {session.userType === 'shipper'
+                    ? t('bookingDetail.youPayBreakdown', {
+                        price: formatMoney(Number(booking.agreedPrice)),
+                        fee: formatMoney(Number(booking.platformFee ?? 0)),
+                      })
+                    : t('bookingDetail.youReceive')}
+                </p>
+              </div>
+            )}
+
+            {booking?.truckDetails && (
+              <div className="space-y-1.5 rounded-md border p-3 text-sm">
+                <p className="font-medium">{t('bookingDetail.truckDetails')}</p>
+                <p className="flex justify-between gap-3">
+                  <span className="text-muted-foreground">{t('bookingDetail.truckRc')}</span>
+                  <span className="font-medium">{booking.truckDetails.registrationNumber}</span>
+                </p>
+                {booking.truckDetails.driverPhone ? (
+                  <>
+                    <p className="flex justify-between gap-3">
+                      <span className="text-muted-foreground">
+                        {t('bookingDetail.truckDriver')}
+                        {booking.truckDetails.driverName ? ` (${booking.truckDetails.driverName})` : ''}
+                      </span>
+                      <span className="font-medium">{booking.truckDetails.driverPhone}</span>
+                    </p>
+                    {booking.truckDetails.ownerPhone && (
+                      <p className="flex justify-between gap-3">
+                        <span className="text-muted-foreground">{t('bookingDetail.truckOwner')}</span>
+                        <span className="font-medium">{booking.truckDetails.ownerPhone}</span>
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  booking.truckDetails.ownerPhone && (
+                    <p className="flex justify-between gap-3">
+                      <span className="text-muted-foreground">{t('bookingDetail.truckOwnerDriver')}</span>
+                      <span className="font-medium">{booking.truckDetails.ownerPhone}</span>
+                    </p>
+                  )
+                )}
+              </div>
             )}
 
             {paymentBadge && (
