@@ -4,39 +4,16 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import {
-  MessageCircle, X, Send, Mail, ArrowLeft,
-  UserPlus, Search, CreditCard, MapPin, Smartphone, LifeBuoy, History,
+  MessageCircle, X, Send, Mail, ArrowLeft, CheckCircle2,
+  UserPlus, Search, CreditCard, MapPin, Smartphone, History,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { TurnstileWidget } from '@/components/TurnstileWidget';
-import { api, ApiError, SupportTicketMessage } from '@/lib/api';
+import { api, ApiError } from '@/lib/api';
 
 const CONTACT_EMAIL = 'team@relod.in';
-// Same browser only (no login involved) — good enough for a scripted-FAQ
-// fallback ticket, not meant to survive a device switch. See
-// SupportTicket.guestPhone's doc comment on the backend for the matching
-// "phone doubles as ownership check" tradeoff.
-const GUEST_TICKET_STORAGE_KEY = 'relod_guest_ticket';
-
-function loadStoredTicket(): { id: string; phone: string } | null {
-  try {
-    const raw = localStorage.getItem(GUEST_TICKET_STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as { id: string; phone: string }) : null;
-  } catch {
-    return null;
-  }
-}
-
-function storeTicket(ticket: { id: string; phone: string }) {
-  try {
-    localStorage.setItem(GUEST_TICKET_STORAGE_KEY, JSON.stringify(ticket));
-  } catch {
-    // Private window / blocked storage — the ticket still exists server-side,
-    // it just won't be resumable from this tab. Not worth surfacing an error.
-  }
-}
 
 // The *previous visit's* FAQ Q&A, kept entirely separate from the live
 // `messages` state: "Ask Relod" always starts fresh at the category picker,
@@ -165,12 +142,16 @@ export function MarketingChatWidget() {
   const [lastUnansweredQuestion, setLastUnansweredQuestion] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Which screen the panel shows: the live FAQ flow, the human-support
-  // ticket thread, or a read-only look back at the previous visit's FAQ Q&A.
-  const [screen, setScreen] = useState<'faq' | 'ticket' | 'history'>('faq');
+  // Which screen the panel shows: the live FAQ flow, or a read-only look
+  // back at the previous visit's FAQ Q&A.
+  const [screen, setScreen] = useState<'faq' | 'history'>('faq');
 
-  // The "ask our team" form shown under a fallback answer.
+  // The "ask our team" form shown under a fallback answer, and its outcome —
+  // a one-time confirmation, not an ongoing thread (the team follows up
+  // directly using the phone/email left here; there's nothing further to
+  // show in-widget, so there's no reply-checking screen to build or explain).
   const [ticketFormOpen, setTicketFormOpen] = useState(false);
+  const [ticketSubmitted, setTicketSubmitted] = useState(false);
   const [ticketName, setTicketName] = useState('');
   const [ticketPhone, setTicketPhone] = useState('');
   const [ticketEmail, setTicketEmail] = useState('');
@@ -178,57 +159,18 @@ export function MarketingChatWidget() {
   const [ticketSubmitting, setTicketSubmitting] = useState(false);
   const [ticketFormError, setTicketFormError] = useState<string | null>(null);
 
-  // The resumable ticket thread — loaded from localStorage, one per browser.
-  const [savedTicket, setSavedTicket] = useState<{ id: string; phone: string } | null>(null);
-  const [ticketMessages, setTicketMessages] = useState<SupportTicketMessage[]>([]);
-  const [ticketLoading, setTicketLoading] = useState(false);
-  const [ticketReply, setTicketReply] = useState('');
-  const [ticketReplySending, setTicketReplySending] = useState(false);
-
   // The previous visit's FAQ conversation — read-only, shown only via its
   // own "Previous conversation" entry point. Empty means none exists (or it
   // expired), in which case that entry point simply doesn't render.
   const [priorConversation, setPriorConversation] = useState<ChatMessage[]>([]);
 
   useEffect(() => {
-    setSavedTicket(loadStoredTicket());
     setPriorConversation(loadStoredHistory());
   }, []);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
-  }, [messages, screen, ticketMessages]);
-
-  const loadTicketMessages = async (ticket: { id: string; phone: string }) => {
-    setTicketLoading(true);
-    try {
-      setTicketMessages(await api.listGuestSupportTicketMessages(ticket.id, ticket.phone));
-    } catch {
-      // Ticket may have been deleted or the stored phone stopped matching —
-      // treat it as gone rather than showing a dead-end error.
-    } finally {
-      setTicketLoading(false);
-    }
-  };
-
-  function openTicketScreen() {
-    setScreen('ticket');
-    if (savedTicket) void loadTicketMessages(savedTicket);
-  }
-
-  async function sendTicketReply() {
-    if (!savedTicket || !ticketReply.trim()) return;
-    setTicketReplySending(true);
-    try {
-      await api.sendGuestSupportTicketMessage(savedTicket.id, savedTicket.phone, ticketReply.trim());
-      setTicketReply('');
-      await loadTicketMessages(savedTicket);
-    } catch {
-      // Best-effort — the reply box just keeps the typed text so they can retry.
-    } finally {
-      setTicketReplySending(false);
-    }
-  }
+  }, [messages, screen]);
 
   function answerFor(text: string): string {
     const lower = text.toLowerCase();
@@ -259,6 +201,7 @@ export function MarketingChatWidget() {
     setCategory(null);
     setLastUnansweredQuestion('');
     setTicketFormOpen(false);
+    setTicketSubmitted(false);
   }
 
   // Closing the panel ends this "visit" the same way a page reload would —
@@ -273,6 +216,7 @@ export function MarketingChatWidget() {
       setCategory(null);
       setLastUnansweredQuestion('');
       setTicketFormOpen(false);
+      setTicketSubmitted(false);
     }
     setScreen('faq');
     setOpen(false);
@@ -283,7 +227,7 @@ export function MarketingChatWidget() {
     setTicketFormError(null);
     setTicketSubmitting(true);
     try {
-      const { ticketId } = await api.createGuestSupportTicket({
+      await api.createGuestSupportTicket({
         name: ticketName.trim(),
         phone: ticketPhone.trim(),
         email: ticketEmail.trim() || undefined,
@@ -294,15 +238,11 @@ export function MarketingChatWidget() {
           '',
         turnstileToken: turnstileToken || undefined,
       });
-      const ticket = { id: ticketId, phone: ticketPhone.trim() };
-      storeTicket(ticket);
-      setSavedTicket(ticket);
       setTicketFormOpen(false);
+      setTicketSubmitted(true);
       setTicketName('');
       setTicketPhone('');
       setTicketEmail('');
-      setScreen('ticket');
-      await loadTicketMessages(ticket);
     } catch (e) {
       setTicketFormError(e instanceof ApiError ? e.message : t('errors.generic'));
     } finally {
@@ -311,11 +251,7 @@ export function MarketingChatWidget() {
   }
 
   const screenTitle =
-    screen === 'ticket'
-      ? t('marketing.chatWidget.ticketTitle')
-      : screen === 'history'
-        ? t('marketing.chatWidget.previousConversation')
-        : t('marketing.chatWidget.title');
+    screen === 'history' ? t('marketing.chatWidget.previousConversation') : t('marketing.chatWidget.title');
 
   return (
     <div className="fixed right-4 bottom-4 z-50 flex flex-col items-end gap-3 sm:right-6 sm:bottom-6">
@@ -347,17 +283,6 @@ export function MarketingChatWidget() {
                   <History className="size-4" />
                 </button>
               )}
-              {screen === 'faq' && savedTicket && (
-                <button
-                  type="button"
-                  onClick={openTicketScreen}
-                  aria-label={t('marketing.chatWidget.ticketTitle')}
-                  className="rounded-md p-1 hover:bg-primary-foreground/10"
-                  title={t('marketing.chatWidget.myQuestion')}
-                >
-                  <LifeBuoy className="size-4" />
-                </button>
-              )}
               <button
                 type="button"
                 onClick={closeWidget}
@@ -386,17 +311,6 @@ export function MarketingChatWidget() {
                   >
                     <History className="size-4 shrink-0 text-primary" />
                     {t('marketing.chatWidget.viewPreviousConversation')}
-                  </button>
-                )}
-
-                {savedTicket && messages.length === 0 && (
-                  <button
-                    type="button"
-                    onClick={openTicketScreen}
-                    className="flex w-full items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-left text-sm text-foreground hover:bg-primary/10"
-                  >
-                    <LifeBuoy className="size-4 shrink-0 text-primary" />
-                    {t('marketing.chatWidget.myQuestion')}
                   </button>
                 )}
 
@@ -452,7 +366,7 @@ export function MarketingChatWidget() {
                   </div>
                 ))}
 
-                {messages.length > 0 && (
+                {messages.length > 0 && !ticketSubmitted && (
                   <button
                     type="button"
                     onClick={resetToFreshChat}
@@ -463,7 +377,28 @@ export function MarketingChatWidget() {
                   </button>
                 )}
 
-                {messages.some((m) => m.from === 'bot' && m.text === t('marketing.chatWidget.fallback')) && (
+                {ticketSubmitted && (
+                  <div className="flex flex-col gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-900 dark:bg-emerald-950">
+                    <p className="flex items-start gap-2 text-sm font-medium text-emerald-900 dark:text-emerald-100">
+                      <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-600" />
+                      {t('marketing.chatWidget.ticketSubmittedTitle')}
+                    </p>
+                    <p className="text-xs text-emerald-800 dark:text-emerald-200">
+                      {t('marketing.chatWidget.ticketSubmittedBody', { email: CONTACT_EMAIL })}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={resetToFreshChat}
+                      className="flex w-fit items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+                    >
+                      <ArrowLeft className="size-3.5" />
+                      {t('marketing.chatWidget.askAnother')}
+                    </button>
+                  </div>
+                )}
+
+                {!ticketSubmitted &&
+                  messages.some((m) => m.from === 'bot' && m.text === t('marketing.chatWidget.fallback')) && (
                   <div className="flex flex-col gap-3 rounded-lg border bg-background p-3">
                     {!ticketFormOpen ? (
                       <>
@@ -574,48 +509,6 @@ export function MarketingChatWidget() {
                 {t('marketing.chatWidget.askAnother')}
               </button>
             </div>
-          )}
-
-          {screen === 'ticket' && (
-            <>
-              <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-3">
-                <div className="max-w-[85%] rounded-lg bg-secondary px-3 py-2 text-sm text-secondary-foreground">
-                  {t('marketing.chatWidget.ticketGreeting')}
-                </div>
-                {ticketLoading && (
-                  <p className="text-xs text-muted-foreground">{t('marketing.chatWidget.loading')}</p>
-                )}
-                {ticketMessages.map((m) => (
-                  <div
-                    key={m.id}
-                    className={
-                      m.senderType === 'admin'
-                        ? 'max-w-[85%] rounded-lg bg-secondary px-3 py-2 text-sm text-secondary-foreground'
-                        : 'ml-auto max-w-[85%] rounded-lg bg-primary px-3 py-2 text-sm text-primary-foreground'
-                    }
-                  >
-                    {m.body}
-                  </div>
-                ))}
-              </div>
-              <form
-                className="flex items-center gap-2 border-t p-2"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  void sendTicketReply();
-                }}
-              >
-                <input
-                  value={ticketReply}
-                  onChange={(e) => setTicketReply(e.target.value)}
-                  placeholder={t('marketing.chatWidget.inputPlaceholder')}
-                  className="h-9 flex-1 rounded-md border bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-                />
-                <Button type="submit" size="icon" disabled={ticketReplySending} aria-label={t('marketing.chatWidget.send')}>
-                  <Send className="size-4" />
-                </Button>
-              </form>
-            </>
           )}
         </div>
       )}

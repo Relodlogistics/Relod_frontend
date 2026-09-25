@@ -1494,11 +1494,9 @@
       "yourPhone": "Your phone number",
       "yourEmailOptional": "Email (optional)",
       "submitQuestion": "Send to our team",
-      "ticketTitle": "Your question",
-      "ticketGreeting": "Here's your conversation with the Relod team. You can add more details below, or check back here for our reply.",
-      "myQuestion": "You have a question with our team",
-      "backToChat": "Back to chat",
-      "loading": "Loading..."
+      "ticketSubmittedTitle": "Message received!",
+      "ticketSubmittedBody": "Our team will reach out to you shortly. You can also reach us anytime at {{email}}.",
+      "backToChat": "Back to chat"
     },
     "legal": {
       "draftNotice": "This page is a working draft describing our intended policy structure. It is not yet final or legally binding, and is pending review by legal counsel before Relod's public launch.",
