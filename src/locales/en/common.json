@@ -230,6 +230,11 @@
     "ownerInvited": "{{plate}} is registered to another owner. We've invited them — the truck will move to their account once they join."
   },
   "errors": {
+    "network": "We couldn't reach the server. Please check your internet connection and try again.",
+    "serverTrouble": "We're having trouble on our side. Please try again in a moment.",
+    "tooManyRequests": "Too many attempts. Please wait a minute and try again.",
+    "noPermission": "You don't have permission to do this.",
+    "checkDetails": "Some of the details look incorrect. Please review the form and try again.",
     "duplicatePhone": "This phone number is already registered as a different account type.",
     "otpLockout": "Too many failed attempts. Please request a new code.",
     "generic": "Something went wrong. Please try again.",
@@ -644,6 +649,18 @@
     "savedUpi": "UPI ID verified and saved."
   },
   "postings": {
+    "errDeliveryBeforePickup": "The delivery can't be earlier than the pickup. Please choose a delivery date and time after the pickup.",
+    "errPickupInPast": "The pickup time has already passed. Please choose a later time.",
+    "errActualBudgetRequired": "Please enter your actual budget.",
+    "errTruckNotYours": "That truck isn't on your account. Please choose one of your own trucks.",
+    "errPlaceNotFound": "We couldn't find \"{{place}}\" on the map. Try adding the area or a landmark.",
+    "errLocationUnreadable": "We couldn't read one of the locations. Please type or pick it again.",
+    "errNoDestination": "Please add at least one delivery destination.",
+    "errInvalidDates": "Please choose a valid pickup and delivery date.",
+    "errBudgetNumber": "Please enter the budget as a number, for example 25000.",
+    "errWeightNumber": "Please enter the weight as a number, for example 7.",
+    "errLengthNumber": "Please enter the truck length as a number, for example 20.",
+    "errLoadType": "Please choose the load type.",
     "title": "Nearby postings",
     "searchRadius": "Search radius (km)",
     "search": "Search",

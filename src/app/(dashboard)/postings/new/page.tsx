@@ -39,6 +39,7 @@ import { LENGTH_PRESETS, PresetChipField } from '@/components/PresetChipField';
 import { cn } from '@/lib/utils';
 import { PlaceAutocompleteInput, PlaceResult, cityLabel } from '@/components/PlaceAutocompleteInput';
 import { Modal } from '@/components/Modal';
+import { friendlyError } from '@/lib/friendly-errors';
 
 type PostingPayload = Parameters<typeof api.createPosting>[1];
 type PreviewData = {
@@ -265,6 +266,16 @@ export default function NewPostingPage() {
     }
   }, [draftKey]);
 
+  // Friendly wording for anything an API call throws; a truly unexpected
+  // (non-API, non-network) failure keeps its reason in brackets so a report
+  // of "something went wrong" says what actually broke.
+  const describeError = (e: unknown) => {
+    const message = friendlyError(e, t);
+    return e instanceof Error && !(e instanceof ApiError) && !(e instanceof TypeError)
+      ? `${message} (${e.message})`
+      : message;
+  };
+
   // Validates and resolves everything, then shows the preview — nothing is
   // posted until the visitor confirms there. Typed-but-never-selected
   // origin/destination text is accepted (a typo the dropdown can't suggest
@@ -299,6 +310,21 @@ export default function NewPostingPage() {
     }
     if (isShipper && Number(actualBudget) < Number(priceAmount)) {
       setError(t('postings.budgetBelowMinimum'));
+      return;
+    }
+    // Checked here, before any network call, so the mistake is explained in
+    // plain words instead of coming back as a server validation message. A
+    // date without a time means "any time that day": start of day for
+    // pickup, end of day for delivery (otherwise a same-day delivery with no
+    // time would read as midnight, i.e. before the pickup).
+    const pickupAt = new Date(`${fromDate}T${pickupTime || '00:00'}:00`);
+    const deliveryAt = new Date(`${toDate}T${deliveryTime || '23:59'}:00`);
+    if (deliveryAt < pickupAt) {
+      setError(t('postings.errDeliveryBeforePickup'));
+      return;
+    }
+    if (pickupTime && pickupAt.getTime() < Date.now() - 60_000) {
+      setError(t('postings.errPickupInPast'));
       return;
     }
 
@@ -382,8 +408,8 @@ export default function NewPostingPage() {
         originLabel: originResolved!.label,
         originCityLabel: originCityText,
         destinations,
-        availableFromDate: new Date(pickupTime ? `${fromDate}T${pickupTime}:00` : fromDate).toISOString(),
-        availableToDate: new Date(deliveryTime ? `${toDate}T${deliveryTime}:00` : toDate).toISOString(),
+        availableFromDate: pickupAt.toISOString(),
+        availableToDate: deliveryAt.toISOString(),
         priceType,
         priceAmount,
         priceMax: isShipper ? actualBudget : undefined,
@@ -435,9 +461,7 @@ export default function NewPostingPage() {
       // Unexpected (non-API) failures keep the friendly message but append
       // the underlying reason, so a report of "something went wrong" says
       // what actually broke (network drop, blocked request, bad response).
-      setError(
-        e instanceof ApiError ? e.message : `${t('errors.generic')}${e instanceof Error ? ` (${e.message})` : ''}`,
-      );
+      setError(describeError(e));
     } finally {
       setLoading(false);
     }
@@ -460,9 +484,7 @@ export default function NewPostingPage() {
         session.userType === 'shipper' ? `/postings/${posting.id}/find-carriers` : `/postings/${posting.id}`,
       );
     } catch (e) {
-      setPreviewError(
-        e instanceof ApiError ? e.message : `${t('errors.generic')}${e instanceof Error ? ` (${e.message})` : ''}`,
-      );
+      setPreviewError(describeError(e));
       setLoading(false);
     }
   };

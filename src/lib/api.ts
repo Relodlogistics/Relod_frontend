@@ -84,7 +84,8 @@ async function request<T>(
         window.dispatchEvent(new Event('session-invalid'));
       }
     }
-    throw new ApiError(body.message ?? 'Request failed', res.status, body.code);
+    const message = Array.isArray(body.message) ? body.message.join('; ') : body.message;
+    throw new ApiError(message ?? 'Request failed', res.status, body.code);
   }
 
   // A handler that returns null (e.g. an address lookup with no match) sends
