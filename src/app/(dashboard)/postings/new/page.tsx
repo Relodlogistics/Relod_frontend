@@ -38,6 +38,14 @@ import { TruckTypeCombobox } from '@/components/TruckTypeCombobox';
 import { LENGTH_PRESETS, PresetChipField } from '@/components/PresetChipField';
 import { cn } from '@/lib/utils';
 import { PlaceAutocompleteInput, PlaceResult, cityLabel } from '@/components/PlaceAutocompleteInput';
+import { Modal } from '@/components/Modal';
+
+type PostingPayload = Parameters<typeof api.createPosting>[1];
+type PreviewData = {
+  payload: PostingPayload;
+  rows: { label: string; value: string }[];
+  route: { kind: 'origin' | 'destination'; title: string; detail: string }[];
+};
 
 function SectionHeading({ step, title }: { step: number; title: string }) {
   return (
@@ -163,30 +171,120 @@ export default function NewPostingPage() {
     if (loaded && !session) router.replace('/login');
   }, [loaded, session, router]);
 
-  const handleSubmit = async () => {
+  // Drafts live in this browser only (localStorage, per account) — the
+  // backend has no draft status, and a half-filled load shouldn't be
+  // visible to carriers or run through matching. Same tradeoff as the
+  // chat widget's saved conversation.
+  const draftKey = session ? `relod_posting_draft:${session.accountId}` : null;
+  const [preview, setPreview] = useState<PreviewData | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [draftNotice, setDraftNotice] = useState<'restored' | 'saved' | null>(null);
+
+  const resetForm = () => {
+    setOriginCity('');
+    setOriginPlace(null);
+    setDestCity('');
+    setDestPlace(null);
+    setStops([{ city: '', address: '', place: null }]);
+    setFromDate('');
+    setToDate('');
+    setPickupTime('');
+    setDeliveryTime('');
+    setPickupAddress('');
+    setPriceAmount('');
+    setActualBudget('');
+    setLoadType('full');
+    setRequiredTruckType('any');
+    setRequiredCapacityTons('');
+    setRequiredLengthFeet('');
+    setOptionalNote('');
+    setSelfDeclared(false);
+  };
+
+  const saveDraft = () => {
+    if (!draftKey) return;
+    const draft = {
+      originCity, originPlace, destCity, destPlace, stops, fromDate, toDate, pickupTime, deliveryTime,
+      pickupAddress, priceAmount, actualBudget, loadType, requiredTruckType, requiredCapacityTons,
+      requiredLengthFeet, optionalNote, selfDeclared,
+    };
+    try {
+      localStorage.setItem(draftKey, JSON.stringify(draft));
+    } catch {
+      // Private window / blocked storage — nothing to fall back to.
+    }
+    setPreview(null);
+    setError(null);
+    setDraftNotice('saved');
+  };
+
+  const discardDraft = () => {
+    if (draftKey) {
+      try {
+        localStorage.removeItem(draftKey);
+      } catch {
+        // ignore
+      }
+    }
+    resetForm();
+    setDraftNotice(null);
+  };
+
+  useEffect(() => {
+    if (!draftKey) return;
+    try {
+      const raw = localStorage.getItem(draftKey);
+      if (!raw) return;
+      const d = JSON.parse(raw);
+      setOriginCity(d.originCity ?? '');
+      setOriginPlace(d.originPlace ?? null);
+      setDestCity(d.destCity ?? '');
+      setDestPlace(d.destPlace ?? null);
+      if (Array.isArray(d.stops) && d.stops.length > 0) setStops(d.stops);
+      // A saved date that has since passed would fail the date field's own
+      // min bound — drop it rather than restore something unpostable.
+      const todayStr = new Date().toISOString().slice(0, 10);
+      setFromDate(d.fromDate && d.fromDate >= todayStr ? d.fromDate : '');
+      setToDate(d.toDate && d.toDate >= todayStr ? d.toDate : '');
+      setPickupTime(d.pickupTime ?? '');
+      setDeliveryTime(d.deliveryTime ?? '');
+      setPickupAddress(d.pickupAddress ?? '');
+      setPriceAmount(d.priceAmount ?? '');
+      setActualBudget(d.actualBudget ?? '');
+      setLoadType(d.loadType ?? 'full');
+      setRequiredTruckType(d.requiredTruckType ?? 'any');
+      setRequiredCapacityTons(d.requiredCapacityTons ?? '');
+      setRequiredLengthFeet(d.requiredLengthFeet ?? '');
+      setOptionalNote(d.optionalNote ?? '');
+      setSelfDeclared(!!d.selfDeclared);
+      setDraftNotice('restored');
+    } catch {
+      // Corrupt draft — ignore it.
+    }
+  }, [draftKey]);
+
+  // Validates and resolves everything, then shows the preview — nothing is
+  // posted until the visitor confirms there. Typed-but-never-selected
+  // origin/destination text is accepted (a typo the dropdown can't suggest
+  // shouldn't block a real load): for a shipper the city text is only a
+  // display label since the real coordinates come from the street address;
+  // for a carrier it's geocoded here, and only fails if that can't find it.
+  const handlePreview = async () => {
     if (!session) return;
     setError(null);
     const isShipper = session.userType === 'shipper';
 
-    // The city dropdowns are resolved to coordinates at selection time
-    // (autocomplete) — a typed-but-never-selected city name leaves
-    // originPlace/destPlace/stop.place null. Previously this only blocked
-    // submission via a silently disabled button with zero explanation —
-    // now it's a specific, visible error either way.
-    if (!originPlace) {
-      setError(t('postings.selectFromDropdown', { field: t('postings.originCity') }));
-      return;
-    }
-    if (isShipper && stops.some((s) => !s.place)) {
-      setError(t('postings.selectFromDropdown', { field: t('postings.destinationCity') }));
-      return;
-    }
-    if (!isShipper && !destPlace) {
-      setError(t('postings.selectFromDropdown', { field: t('postings.destinationCity') }));
-      return;
-    }
-
     const missing: string[] = [];
+    if (!originPlace && !originCity.trim()) missing.push(t('postings.originCity'));
+    if (isShipper) {
+      stops.forEach((s, i) => {
+        if (!s.place && !s.city.trim()) {
+          missing.push(stops.length > 1 ? t('postings.stopNumber', { number: i + 1 }) : t('postings.destinationCity'));
+        }
+      });
+    } else if (!destPlace && !destCity.trim()) {
+      missing.push(t('postings.destinationCity'));
+    }
     if (!fromDate) missing.push(t('postings.pickupDate'));
     if (!toDate) missing.push(t('postings.deliveryDate'));
     if (!priceAmount) missing.push(isShipper ? t('postings.minimumBudget') : t('postings.priceAmount'));
@@ -204,75 +302,214 @@ export default function NewPostingPage() {
 
     setLoading(true);
     try {
-      // The precise pickup/delivery address the shipper actually typed is
-      // what drives real coordinates — the city dropdowns above only
-      // provide the friendly city label. Always resolved via Google (see
-      // GoogleAddressResolver): MapTiler/Nominatim ranked the correct
-      // result low or missed it entirely on real addresses we tested.
-      let originResolved: { lat: number; lng: number; label: string } | null = null;
-      let destResolved: ({ lat: number; lng: number; label: string } | null)[] = [];
+      const geocode = async (text: string) => {
+        const r = await api.geocodeResolve(session.accessToken, text);
+        return r ? { lat: r.lat, lng: r.lng, label: r.label } : null;
+      };
+      const originCityText = originPlace ? cityLabel(originPlace) : originCity.trim();
+
+      let originResolved: { lat: number; lng: number; label: string } | null;
+      let destResolved: ({ lat: number; lng: number; label: string } | null)[];
+      let destCityTexts: string[];
       if (isShipper) {
+        // The precise pickup/delivery address the shipper typed is what
+        // drives real coordinates (always via Google — see
+        // GoogleAddressResolver); the city fields only supply the label.
         [originResolved, ...destResolved] = await Promise.all([
-          api.geocodeResolve(session.accessToken, pickupAddress),
-          ...stops.map((s) => api.geocodeResolve(session.accessToken, s.address)),
+          geocode(pickupAddress),
+          ...stops.map((s) => geocode(s.address)),
         ]);
         if (!originResolved) {
           setError(t('postings.addressNotResolved', { field: t('postings.pickupLocation') }));
-          setLoading(false);
           return;
         }
         if (destResolved.some((r) => !r)) {
           setError(t('postings.addressNotResolved', { field: t('postings.deliveryLocation') }));
-          setLoading(false);
           return;
         }
+        destCityTexts = stops.map((s) => (s.place ? cityLabel(s.place) : s.city.trim()));
+      } else {
+        originResolved = originPlace
+          ? { lat: originPlace.lat, lng: originPlace.lng, label: originPlace.label }
+          : await geocode(originCity.trim());
+        const carrierDest = destPlace
+          ? { lat: destPlace.lat, lng: destPlace.lng, label: destPlace.label }
+          : await geocode(destCity.trim());
+        if (!originResolved) {
+          setError(t('postings.addressNotResolved', { field: t('postings.originCity') }));
+          return;
+        }
+        if (!carrierDest) {
+          setError(t('postings.addressNotResolved', { field: t('postings.destinationCity') }));
+          return;
+        }
+        destResolved = [carrierDest];
+        destCityTexts = [destPlace ? cityLabel(destPlace) : destCity.trim()];
       }
 
-      const destinations = isShipper
-        ? stops.map((s, i) => ({
-            lat: destResolved[i]!.lat,
-            lng: destResolved[i]!.lng,
-            label: destResolved[i]!.label,
-            cityLabel: cityLabel(s.place),
-          }))
-        : [
-            {
-              lat: destPlace!.lat,
-              lng: destPlace!.lng,
-              label: destPlace!.label,
-              cityLabel: cityLabel(destPlace),
-            },
-          ];
-      const posting = await api.createPosting(session.accessToken, {
-        originLat: isShipper ? originResolved!.lat : originPlace.lat,
-        originLng: isShipper ? originResolved!.lng : originPlace.lng,
-        originLabel: isShipper ? originResolved!.label : originPlace.label,
-        originCityLabel: cityLabel(originPlace),
+      const destinations = destResolved.map((r, i) => ({
+        lat: r!.lat,
+        lng: r!.lng,
+        label: r!.label,
+        cityLabel: destCityTexts[i],
+      }));
+      const payload: PostingPayload = {
+        originLat: originResolved!.lat,
+        originLng: originResolved!.lng,
+        originLabel: originResolved!.label,
+        originCityLabel: originCityText,
         destinations,
         availableFromDate: new Date(pickupTime ? `${fromDate}T${pickupTime}:00` : fromDate).toISOString(),
         availableToDate: new Date(deliveryTime ? `${toDate}T${deliveryTime}:00` : toDate).toISOString(),
         priceType,
         priceAmount,
-        priceMax: session.userType === 'shipper' ? actualBudget : undefined,
+        priceMax: isShipper ? actualBudget : undefined,
         loadType,
         optionalNote: optionalNote || undefined,
-        requiredTruckType:
-          session.userType === 'shipper' && requiredTruckType !== 'any' ? requiredTruckType : undefined,
-        requiredCapacityTons:
-          session.userType === 'shipper' && requiredCapacityTons ? requiredCapacityTons : undefined,
-        requiredLengthFeet:
-          session.userType === 'shipper' && requiredLengthFeet ? requiredLengthFeet : undefined,
+        requiredTruckType: isShipper && requiredTruckType !== 'any' ? requiredTruckType : undefined,
+        requiredCapacityTons: isShipper && requiredCapacityTons ? requiredCapacityTons : undefined,
+        requiredLengthFeet: isShipper && requiredLengthFeet ? requiredLengthFeet : undefined,
         selfDeclared: session.userType === 'carrier' ? selfDeclared : undefined,
-      });
-      router.push(
-        session.userType === 'shipper' ? `/postings/${posting.id}/find-carriers` : `/postings/${posting.id}`,
-      );
+      };
+
+      const rows: { label: string; value: string }[] = [
+        { label: t('postings.loadType'), value: loadType === 'full' ? t('postings.loadTypeFtl') : t('postings.loadTypePtl') },
+      ];
+      if (isShipper) {
+        rows.push({
+          label: t('postings.truckType'),
+          value: requiredTruckType === 'any' ? t('postings.notSelected') : truckTypeLabel(requiredTruckType),
+        });
+        rows.push({ label: t('postings.minimumBudget'), value: `₹${priceAmount}` });
+        rows.push({ label: t('postings.actualBudget'), value: `₹${actualBudget}` });
+        if (requiredCapacityTons) rows.push({ label: t('postings.weight'), value: `${requiredCapacityTons} ${t('postings.summaryTons')}` });
+        if (requiredLengthFeet) rows.push({ label: t('postings.preferredLength'), value: `${requiredLengthFeet} ft` });
+      } else {
+        rows.push({ label: t('postings.priceAmount'), value: `₹${priceAmount}` });
+      }
+      rows.push({ label: t('postings.summaryPickup'), value: `${fromDate}${pickupTime ? ` ${pickupTime}` : ''}` });
+      rows.push({ label: t('postings.summaryDelivery'), value: `${toDate}${deliveryTime ? ` ${deliveryTime}` : ''}` });
+      if (optionalNote) rows.push({ label: t('postings.note'), value: optionalNote });
+
+      const route: PreviewData['route'] = [
+        {
+          kind: 'origin',
+          title: originCityText,
+          detail: isShipper ? `${pickupAddress.trim()} → ${originResolved!.label}` : originResolved!.label,
+        },
+        ...destinations.map((d, i) => ({
+          kind: 'destination' as const,
+          title: d.cityLabel,
+          detail: isShipper ? `${stops[i].address.trim()} → ${d.label}` : d.label,
+        })),
+      ];
+
+      setPreviewError(null);
+      setPreview({ payload, rows, route });
     } catch (e) {
       setError(e instanceof ApiError ? e.message : t('errors.generic'));
     } finally {
       setLoading(false);
     }
   };
+
+  const confirmPost = async () => {
+    if (!session || !preview) return;
+    setPreviewError(null);
+    setLoading(true);
+    try {
+      const posting = await api.createPosting(session.accessToken, preview.payload);
+      if (draftKey) {
+        try {
+          localStorage.removeItem(draftKey);
+        } catch {
+          // ignore
+        }
+      }
+      router.push(
+        session.userType === 'shipper' ? `/postings/${posting.id}/find-carriers` : `/postings/${posting.id}`,
+      );
+    } catch (e) {
+      setPreviewError(e instanceof ApiError ? e.message : t('errors.generic'));
+      setLoading(false);
+    }
+  };
+
+  const previewDialog = (
+    <Modal
+      open={!!preview}
+      onClose={() => setPreview(null)}
+      title={t('postings.previewTitle')}
+      closeLabel={t('postings.previewClose')}
+      footer={
+        <>
+          <Button type="button" variant="outline" onClick={() => setPreview(null)} disabled={loading}>
+            {t('postings.previewEdit')}
+          </Button>
+          <Button type="button" variant="outline" onClick={saveDraft} disabled={loading}>
+            {t('postings.saveDraft')}
+          </Button>
+          <Button type="button" onClick={confirmPost} disabled={loading}>
+            <TruckIcon className="size-4" />
+            {t('postings.previewPost')}
+          </Button>
+        </>
+      }
+    >
+      {preview && (
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-muted-foreground">{t('postings.previewSubtitle')}</p>
+          {previewError && (
+            <Alert variant="destructive">
+              <AlertDescription>{previewError}</AlertDescription>
+            </Alert>
+          )}
+          <div className="flex flex-col">
+            {preview.route.map((stop, i) => (
+              <div key={i} className="flex items-start gap-3">
+                <div className="flex flex-col items-center">
+                  <span className={cn('mt-1 size-2.5 shrink-0 rounded-full', stop.kind === 'origin' ? 'bg-primary' : 'bg-emerald-500')} />
+                  {i < preview.route.length - 1 && <span className="h-8 w-px bg-border" />}
+                </div>
+                <div className={i < preview.route.length - 1 ? 'pb-3' : ''}>
+                  <p className="text-xs text-muted-foreground">
+                    {stop.kind === 'origin'
+                      ? t('postings.summaryOrigin')
+                      : preview.route.length > 2
+                        ? t('postings.stopNumber', { number: i })
+                        : t('postings.destination')}
+                  </p>
+                  <p className="text-sm font-medium">{stop.title}</p>
+                  <p className="text-xs text-muted-foreground">{stop.detail}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex flex-col gap-2 border-t pt-3">
+            {preview.rows.map((row) => (
+              <div key={row.label} className="flex items-start justify-between gap-4 text-sm">
+                <span className="text-muted-foreground">{row.label}</span>
+                <span className="text-right font-medium break-words">{row.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </Modal>
+  );
+
+  const draftAlert = draftNotice && (
+    <Alert>
+      <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
+        <span>{draftNotice === 'restored' ? t('postings.draftRestored') : t('postings.draftSaved')}</span>
+        {draftNotice === 'restored' && (
+          <Button type="button" variant="outline" size="sm" onClick={discardDraft}>
+            {t('postings.discardDraft')}
+          </Button>
+        )}
+      </AlertDescription>
+    </Alert>
+  );
 
   if (!session) return null;
 
@@ -288,6 +525,8 @@ export default function NewPostingPage() {
           <h1 className="font-heading text-2xl font-bold">{t('postings.postAsShipperLoad')}</h1>
           <p className="text-sm text-muted-foreground">{t('postings.postLoadSubtitle')}</p>
         </div>
+
+        {draftAlert}
 
         {error && (
           <Alert variant="destructive">
@@ -477,10 +716,10 @@ export default function NewPostingPage() {
             </Card>
 
             <div className="flex justify-end gap-3">
-              <Button type="button" variant="outline" disabled title={t('postings.saveDraftComingSoon')}>
+              <Button type="button" variant="outline" onClick={saveDraft}>
                 {t('postings.saveDraft')}
               </Button>
-              <Button onClick={handleSubmit} disabled={shipperDisabled}>
+              <Button onClick={handlePreview} disabled={shipperDisabled}>
                 <TruckIcon className="size-4" />
                 {t('postings.postLoadButton')}
               </Button>
@@ -499,7 +738,7 @@ export default function NewPostingPage() {
                     </div>
                     <div className="pb-3">
                       <p className="text-xs text-muted-foreground">{t('postings.summaryOrigin')}</p>
-                      <p className="text-sm font-medium">{originPlace?.label || t('postings.notSelected')}</p>
+                      <p className="text-sm font-medium">{originPlace?.label || originCity.trim() || t('postings.notSelected')}</p>
                     </div>
                   </div>
                   {stops.map((stop, i) => (
@@ -512,7 +751,7 @@ export default function NewPostingPage() {
                         <p className="text-xs text-muted-foreground">
                           {stops.length > 1 ? t('postings.stopNumber', { number: i + 1 }) : t('postings.destination')}
                         </p>
-                        <p className="text-sm font-medium">{stop.place?.label || t('postings.notSelected')}</p>
+                        <p className="text-sm font-medium">{stop.place?.label || stop.city.trim() || t('postings.notSelected')}</p>
                       </div>
                     </div>
                   ))}
@@ -580,6 +819,7 @@ export default function NewPostingPage() {
             </Card>
           </div>
         </div>
+        {previewDialog}
       </main>
     );
   }
@@ -593,6 +833,7 @@ export default function NewPostingPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
+          {draftAlert}
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
@@ -675,13 +916,14 @@ export default function NewPostingPage() {
           </div>
 
           <Button
-            onClick={handleSubmit}
+            onClick={handlePreview}
             disabled={loading}
           >
             {t('postings.create')}
           </Button>
         </CardContent>
       </Card>
+      {previewDialog}
     </main>
   );
 }
