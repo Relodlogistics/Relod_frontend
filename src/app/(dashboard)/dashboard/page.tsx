@@ -459,7 +459,7 @@ export default function DashboardPage() {
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardContent className="py-4">
-            <div className="mb-3 flex items-center gap-5 border-b">
+            <div className="mb-3 flex items-center gap-8 border-b">
                 {DASHBOARD_TABS.map((tab) => (
                   <button
                     key={tab}
