@@ -803,9 +803,8 @@ export const api = {
   createGuestSupportTicket: (data: {
     name: string;
     phone: string;
-    email?: string;
+    email: string;
     question: string;
-    turnstileToken?: string;
   }) =>
     request<{ ticketId: string }>('/support-tickets/guest', {
       method: 'POST',

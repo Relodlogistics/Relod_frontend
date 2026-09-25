@@ -236,7 +236,7 @@ export function MarketingChatWidget() {
       await api.createGuestSupportTicket({
         name: ticketName.trim(),
         phone: ticketPhone.trim(),
-        email: ticketEmail.trim() || undefined,
+        email: ticketEmail.trim(),
         question:
           lastUnansweredQuestion ||
           input.trim() ||
@@ -446,10 +446,11 @@ export function MarketingChatWidget() {
                           />
                         </div>
                         <div className="flex flex-col gap-1">
-                          <Label htmlFor="ticketEmail" className="text-xs">{t('marketing.chatWidget.yourEmailOptional')}</Label>
+                          <Label htmlFor="ticketEmail" className="text-xs">{t('marketing.chatWidget.yourEmail')}</Label>
                           <Input
                             id="ticketEmail"
                             type="email"
+                            required
                             value={ticketEmail}
                             onChange={(e) => setTicketEmail(e.target.value)}
                             className="h-8 text-sm"

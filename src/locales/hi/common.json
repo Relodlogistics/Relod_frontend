@@ -1492,7 +1492,7 @@
       "askTeamHint": "अपना विवरण छोड़ें, हम सीधे आपसे संपर्क करेंगे।",
       "yourName": "आपका नाम",
       "yourPhone": "आपका फ़ोन नंबर",
-      "yourEmailOptional": "ईमेल (वैकल्पिक)",
+      "yourEmail": "आपका ईमेल",
       "submitQuestion": "हमारी टीम को भेजें",
       "ticketSubmittedTitle": "संदेश मिल गया!",
       "ticketSubmittedBody": "हमारी टीम जल्द ही आपसे संपर्क करेगी। आप {{email}} पर भी कभी भी हमसे संपर्क कर सकते हैं।",

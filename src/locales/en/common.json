@@ -1492,7 +1492,7 @@
       "askTeamHint": "Leave your details and we'll get back to you directly.",
       "yourName": "Your name",
       "yourPhone": "Your phone number",
-      "yourEmailOptional": "Email (optional)",
+      "yourEmail": "Your email",
       "submitQuestion": "Send to our team",
       "ticketSubmittedTitle": "Message received!",
       "ticketSubmittedBody": "Our team will reach out to you shortly. You can also reach us anytime at {{email}}.",
