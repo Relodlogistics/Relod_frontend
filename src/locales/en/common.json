@@ -687,6 +687,7 @@
     "addressNotResolved": "Couldn't find that {{field}} — try adding more detail (street, landmark, area).",
     "noPlaceMatches": "No matches — you can keep what you typed, or check the spelling.",
     "placeSearchUnavailable": "Place search is unavailable right now — you can still type your city and continue.",
+    "approximateLocation": "We couldn’t find that exact address, so this is the closest match. Press Edit to make it more specific.",
     "missingRequiredFields": "Please fill in: {{fields}}",
     "budgetBelowMinimum": "Actual budget must be at least the minimum budget.",
     "fromDate": "Available from",

@@ -44,7 +44,7 @@ type PostingPayload = Parameters<typeof api.createPosting>[1];
 type PreviewData = {
   payload: PostingPayload;
   rows: { label: string; value: string }[];
-  route: { kind: 'origin' | 'destination'; title: string; detail: string }[];
+  route: { kind: 'origin' | 'destination'; title: string; detail: string; approximate?: boolean }[];
 };
 
 function SectionHeading({ step, title }: { step: number; title: string }) {
@@ -307,17 +307,39 @@ export default function NewPostingPage() {
         return r ? { lat: r.lat, lng: r.lng, label: r.label } : null;
       };
       const originCityText = originPlace ? cityLabel(originPlace) : originCity.trim();
+      // A very specific address (door number, landmark, small locality) often
+      // has no exact match in the geocoder. Rather than block the post, retry
+      // with progressively simpler versions — number-free, then the last few
+      // parts, then just the city — and flag the result as approximate so the
+      // preview can say so and the shipper can Edit.
+      const looseGeocode = async (address: string, cityHint: string) => {
+        const parts = address.split(/[,\n]/).map((x) => x.trim()).filter(Boolean);
+        const tries = [
+          address.trim(),
+          address.replace(/\b\d[\d/-]*\b/g, ' ').replace(/\s+/g, ' ').trim(),
+          parts.slice(-3).join(', '),
+          parts.slice(-2).join(', '),
+          cityHint,
+        ].filter((v, i, a) => v && a.indexOf(v) === i);
+        for (let i = 0; i < tries.length; i++) {
+          const r = await geocode(tries[i]);
+          if (r) return { ...r, approximate: i > 0 };
+        }
+        return null;
+      };
 
-      let originResolved: { lat: number; lng: number; label: string } | null;
-      let destResolved: ({ lat: number; lng: number; label: string } | null)[];
+      type Resolved = { lat: number; lng: number; label: string; approximate?: boolean };
+      let originResolved: Resolved | null;
+      let destResolved: (Resolved | null)[];
       let destCityTexts: string[];
       if (isShipper) {
         // The precise pickup/delivery address the shipper typed is what
         // drives real coordinates (always via Google — see
         // GoogleAddressResolver); the city fields only supply the label.
+        destCityTexts = stops.map((s) => (s.place ? cityLabel(s.place) : s.city.trim()));
         [originResolved, ...destResolved] = await Promise.all([
-          geocode(pickupAddress),
-          ...stops.map((s) => geocode(s.address)),
+          looseGeocode(pickupAddress, originCityText),
+          ...stops.map((s, i) => looseGeocode(s.address, destCityTexts[i])),
         ]);
         if (!originResolved) {
           setError(t('postings.addressNotResolved', { field: t('postings.pickupLocation') }));
@@ -327,7 +349,6 @@ export default function NewPostingPage() {
           setError(t('postings.addressNotResolved', { field: t('postings.deliveryLocation') }));
           return;
         }
-        destCityTexts = stops.map((s) => (s.place ? cityLabel(s.place) : s.city.trim()));
       } else {
         originResolved = originPlace
           ? { lat: originPlace.lat, lng: originPlace.lng, label: originPlace.label }
@@ -396,11 +417,13 @@ export default function NewPostingPage() {
           kind: 'origin',
           title: originCityText,
           detail: isShipper ? `${pickupAddress.trim()} → ${originResolved!.label}` : originResolved!.label,
+          approximate: originResolved!.approximate,
         },
         ...destinations.map((d, i) => ({
           kind: 'destination' as const,
           title: d.cityLabel,
           detail: isShipper ? `${stops[i].address.trim()} → ${d.label}` : d.label,
+          approximate: destResolved[i]!.approximate,
         })),
       ];
 
@@ -481,6 +504,9 @@ export default function NewPostingPage() {
                   </p>
                   <p className="text-sm font-medium">{stop.title}</p>
                   <p className="text-xs text-muted-foreground">{stop.detail}</p>
+                  {stop.approximate && (
+                    <p className="text-xs text-amber-600">{t('postings.approximateLocation')}</p>
+                  )}
                 </div>
               </div>
             ))}

@@ -87,7 +87,10 @@ async function request<T>(
     throw new ApiError(body.message ?? 'Request failed', res.status, body.code);
   }
 
-  return res.json() as Promise<T>;
+  // A handler that returns null (e.g. an address lookup with no match) sends
+  // an empty 200 body, which res.json() throws on — treat empty as null.
+  const text = await res.text();
+  return (text ? JSON.parse(text) : null) as T;
 }
 
 export const api = {
