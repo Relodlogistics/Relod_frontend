@@ -10,7 +10,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { TurnstileWidget } from '@/components/TurnstileWidget';
 import { api, ApiError } from '@/lib/api';
 
 const CONTACT_EMAIL = 'team@relod.in';
@@ -155,7 +154,6 @@ export function MarketingChatWidget() {
   const [ticketName, setTicketName] = useState('');
   const [ticketPhone, setTicketPhone] = useState('');
   const [ticketEmail, setTicketEmail] = useState('');
-  const [turnstileToken, setTurnstileToken] = useState('');
   const [ticketSubmitting, setTicketSubmitting] = useState(false);
   const [ticketFormError, setTicketFormError] = useState<string | null>(null);
 
@@ -244,7 +242,6 @@ export function MarketingChatWidget() {
           input.trim() ||
           [...messages].reverse().find((m) => m.from === 'user')?.text ||
           '',
-        turnstileToken: turnstileToken || undefined,
       });
       setTicketFormOpen(false);
       setTicketSubmitted(true);
@@ -458,7 +455,6 @@ export function MarketingChatWidget() {
                             className="h-8 text-sm"
                           />
                         </div>
-                        <TurnstileWidget onVerify={setTurnstileToken} />
                         <Button type="submit" size="sm" className="w-fit" disabled={ticketSubmitting}>
                           {t('marketing.chatWidget.submitQuestion')}
                         </Button>
