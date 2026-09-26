@@ -604,10 +604,10 @@ function PostingsSearchContent() {
               {tab === 'near_you' && <SelectItem value="nearest">{t('postings.sortNearest')}</SelectItem>}
             </SelectContent>
           </Select>
-          {/* All three always shown, on every screen width; the Sort-by label
+          {/* All three always shown, pushed to the right edge; the Sort-by label
               and select shrink on a phone so the Map button isn't pushed
               off-screen. */}
-          <div className="flex shrink-0 rounded-lg border">
+          <div className="ml-auto flex shrink-0 rounded-lg border">
             <button
               aria-label={t('postings.viewList')}
               onClick={() => setView('list')}
@@ -653,50 +653,12 @@ function PostingsSearchContent() {
         <LoadBoardMap pins={mapPins} center={tab === 'near_you' ? geoCoords : null} />
       ) : view === 'list' ? (
         <>
-          {/* A 7-column table can't fit a phone screen readably — below sm,
-              List becomes compact one-line-per-load rows (Grid keeps the full
-              cards), so the two toggles show something different on a phone.
-              Desktop/tablet keep the table exactly as before. */}
-          <div className="grid gap-2 sm:hidden">
-            {displayedItems.map((posting) => {
-              const bookedLbl = bookedLabel(posting);
-              const isBooked = bookedLbl !== null;
-              return (
-                <div key={posting.id} className="rounded-xl border bg-card p-3">
-                  <div className="flex items-center gap-1.5 text-sm font-medium">
-                    <MapPin className="size-3.5 shrink-0 text-violet-600" />
-                    <span className="truncate">{boardLocation(posting.originCityLabel, posting.originLabel)}</span>
-                    <ArrowRight className="size-3.5 shrink-0 text-muted-foreground" />
-                    <span className="truncate">
-                      {boardLocation(posting.destinations[0]?.cityLabel, posting.destinations[0]?.label)}
-                    </span>
-                  </div>
-                  <div className="mt-2 flex items-center gap-2">
-                    <p className="font-semibold">
-                      {posting.priceAmount ? formatMoney(Number(posting.priceAmount)) : t('postings.notSpecified')}
-                    </p>
-                    <Badge variant="outline">
-                      {posting.loadType === 'full' ? t('postings.loadFull') : t('postings.loadPartOk')}
-                    </Badge>
-                    <span className="ml-auto flex items-center gap-1.5">
-                      <Link href={`/postings/${posting.id}`}>
-                        <Button size="sm" variant="outline">
-                          {t('dashboard.viewDetails')}
-                        </Button>
-                      </Link>
-                      <Button size="sm" disabled={isBooked || bookingId === posting.id} onClick={() => handleBook(posting.id)}>
-                        {bookedLbl ?? t('postings.book')}
-                      </Button>
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <Card className="hidden sm:block">
-          <CardContent className="overflow-x-auto py-2">
-            <table className="w-full text-sm">
+          {/* The full table on every screen width — on a phone it scrolls
+              sideways, with a scrollbar that stays visible (WebView scrollbars
+              otherwise fade out and hide that the table scrolls at all). */}
+          <Card>
+          <CardContent className="overflow-x-auto py-2 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-muted-foreground/40 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-muted">
+            <table className="w-full min-w-[960px] text-sm">
               <thead>
                 <tr className="border-b text-left text-xs text-muted-foreground">
                   <th className="w-8 py-2 pr-1">
