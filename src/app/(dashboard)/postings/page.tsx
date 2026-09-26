@@ -9,6 +9,7 @@ import {
   ArrowRight,
   ArrowLeftRight,
   SlidersHorizontal,
+  X,
   CalendarDays,
   Truck,
   Package,
@@ -40,6 +41,7 @@ import { useSession } from '@/lib/session-context';
 import { boardLocation, boardLocationParts, formatMoney, timeAgo, cn } from '@/lib/utils';
 import { truckTypeLabel } from '@/lib/truck-types';
 import { TruckTypeCombobox } from '@/components/TruckTypeCombobox';
+import { Modal } from '@/components/Modal';
 import LoadBoardMap, { LoadBoardMapPin } from '@/components/LoadBoardMap';
 
 type TabKey = 'all' | 'book_now' | 'near_you' | 'saved';
@@ -109,6 +111,8 @@ function PostingsSearchContent() {
   // open to offers/negotiation — Posting.priceType, not yet exposed as a filter.
   const [bookingFilter, setBookingFilter] = useState<'all' | 'fixed' | 'open_to_offers'>('all');
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+  // Phone only: the filters below the origin/destination fields live in a sheet.
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   // Opens on Near You by default (the common case: "what loads are close to
   // me right now") — falls back to All automatically if location isn't
@@ -408,6 +412,30 @@ function PostingsSearchContent() {
   const rangeFrom = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const rangeTo = Math.min(total, page * pageSize);
 
+  const weightLabel = (value: string) => {
+    const opt = WEIGHT_FILTER_OPTIONS.find((o) => o.value === value);
+    return opt?.tons != null ? `${t('postings.weightTon', { count: opt.tons })}+` : t('postings.weightUnder500kg');
+  };
+  const loadTypeLabel = (v: string) => (v === 'full' ? t('postings.loadFull') : t('postings.loadPartOk'));
+  // Each active filter, with how to show it and how to switch it off — drives
+  // the count on the Filter button and the chips under it on a phone.
+  const activeFilters: { key: string; label: string; clear: () => void }[] = [
+    ...(loadType !== 'any' ? [{ key: 'loadType', label: loadTypeLabel(loadType), clear: () => setLoadType('any') }] : []),
+    ...(truckType !== 'any' ? [{ key: 'truckType', label: truckTypeLabel(truckType), clear: () => setTruckType('any') }] : []),
+    ...(minLength ? [{ key: 'length', label: `${t('postings.length')}: ${t('postings.lengthFt', { count: Number(minLength) })}+`, clear: () => setMinLength('') }] : []),
+    ...(weightFilter !== 'all' ? [{ key: 'weight', label: `${t('postings.weight')}: ${weightLabel(weightFilter)}`, clear: () => setWeightFilter('all') }] : []),
+    ...(bookingFilter !== 'all'
+      ? [{ key: 'booking', label: bookingFilter === 'fixed' ? t('postings.bookingFixed') : t('postings.bookingOpen'), clear: () => setBookingFilter('all') }]
+      : []),
+  ];
+  const handleClearSheetFilters = () => {
+    setLoadType('any');
+    setTruckType('any');
+    setWeightFilter('all');
+    setMinLength('');
+    setBookingFilter('all');
+  };
+
   const TABS: { key: TabKey; label: string }[] = [
     { key: 'all', label: t('postings.tabAll') },
     { key: 'book_now', label: t('postings.tabBookNow') },
@@ -465,7 +493,7 @@ function PostingsSearchContent() {
                 </div>
               </div>
             </div>
-            <div className="flex flex-col gap-1.5">
+            <div className="hidden flex-col gap-1.5 sm:flex">
               <Label className="text-xs">{t('postings.loadType')}</Label>
               <Select value={loadType} onValueChange={(v) => v && setLoadType(v as typeof loadType)}>
                 <SelectTrigger className="w-full sm:w-36">
@@ -478,7 +506,7 @@ function PostingsSearchContent() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex flex-col gap-1.5">
+            <div className="hidden flex-col gap-1.5 sm:flex">
               <Label className="text-xs">{t('postings.truckType')}</Label>
               <TruckTypeCombobox
                 className="sm:w-40"
@@ -487,12 +515,44 @@ function PostingsSearchContent() {
                 anyOption={{ value: 'any', label: t('postings.filterAny') }}
               />
             </div>
-            <Button onClick={handleSearch} disabled={loading} className="w-full sm:w-auto">
-              {isShipper ? t('dashboard.searchCarrier') : t('dashboard.searchLoad')}
-            </Button>
+            <div className="flex gap-2 sm:contents">
+              <Button onClick={handleSearch} disabled={loading} className="flex-1 sm:flex-none">
+                {isShipper ? t('dashboard.searchCarrier') : t('dashboard.searchLoad')}
+              </Button>
+              <Button variant="outline" type="button" onClick={() => setFiltersOpen(true)} className="gap-1.5 sm:hidden">
+                <SlidersHorizontal className="size-4" />
+                {t('postings.filterButton')}
+                {activeFilters.length > 0 && (
+                  <span className="flex size-5 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+                    {activeFilters.length}
+                  </span>
+                )}
+              </Button>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 border-t pt-3">
+          {activeFilters.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 sm:hidden">
+              {activeFilters.map((f) => (
+                <button
+                  key={f.key}
+                  type="button"
+                  onClick={() => {
+                    f.clear();
+                    // loadType is the only chip whose value the search itself
+                    // uses — re-run so removing it takes effect straight away.
+                    if (f.key === 'loadType') setAppliedFilters({ origin, destination, loadType: 'any' });
+                  }}
+                  className="flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary"
+                >
+                  {f.label}
+                  <X className="size-3" />
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="hidden flex-wrap items-center gap-2 border-t pt-3 sm:flex">
             <span className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
               <SlidersHorizontal className="size-4" />
               {t('postings.moreFilters')}
@@ -563,6 +623,97 @@ function PostingsSearchContent() {
           </div>
         </CardContent>
       </Card>
+
+      <Modal
+        open={filtersOpen}
+        onClose={() => setFiltersOpen(false)}
+        title={t('postings.filters')}
+        closeLabel={t('postings.closeFilters')}
+        sheetOnPhone
+        footer={
+          <>
+            <Button variant="outline" type="button" onClick={handleClearSheetFilters}>
+              {t('postings.clearAll')}
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                handleSearch();
+                setFiltersOpen(false);
+              }}
+            >
+              {t('postings.applyFilters')}
+            </Button>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <Label className="text-xs">{t('postings.truckType')}</Label>
+            <TruckTypeCombobox
+              value={truckType}
+              onValueChange={setTruckType}
+              anyOption={{ value: 'any', label: t('postings.filterAny') }}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label className="text-xs">{t('postings.length')}</Label>
+            <Select value={minLength || 'all'} onValueChange={(v) => v && setMinLength(v === 'all' ? '' : v)}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('postings.filterAny')}</SelectItem>
+                <SelectItem value="14">{t('postings.lengthFt', { count: 14 })}+</SelectItem>
+                <SelectItem value="20">{t('postings.lengthFt', { count: 20 })}+</SelectItem>
+                <SelectItem value="32">{t('postings.lengthFt', { count: 32 })}+</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label className="text-xs">{t('postings.weight')}</Label>
+            <Select value={weightFilter} onValueChange={(v) => v && setWeightFilter(v)}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('postings.filterAny')}</SelectItem>
+                {WEIGHT_FILTER_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {weightLabel(opt.value)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label className="text-xs">{t('postings.fullPart')}</Label>
+            <Select value={loadType} onValueChange={(v) => v && setLoadType(v as typeof loadType)}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="any">{t('postings.filterAny')}</SelectItem>
+                <SelectItem value="full">{t('postings.loadFull')}</SelectItem>
+                <SelectItem value="part_load_ok">{t('postings.loadPartOk')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label className="text-xs">{t('postings.booking')}</Label>
+            <Select value={bookingFilter} onValueChange={(v) => v && setBookingFilter(v as typeof bookingFilter)}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('postings.filterAny')}</SelectItem>
+                <SelectItem value="fixed">{t('postings.bookingFixed')}</SelectItem>
+                <SelectItem value="open_to_offers">{t('postings.bookingOpen')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </Modal>
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-b">
         <div className="flex items-center gap-5">

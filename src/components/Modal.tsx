@@ -3,6 +3,7 @@
 import { useEffect, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 /**
  * Minimal centred dialog: dimmed backdrop, X in the top-right, Esc and a
@@ -16,6 +17,7 @@ export function Modal({
   closeLabel,
   children,
   footer,
+  sheetOnPhone = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -23,6 +25,8 @@ export function Modal({
   closeLabel: string;
   children: ReactNode;
   footer?: ReactNode;
+  /** Below sm: slides up from the bottom edge instead of floating centred. */
+  sheetOnPhone?: boolean;
 }) {
   useEffect(() => {
     if (!open) return;
@@ -42,7 +46,10 @@ export function Modal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      className={cn(
+        'fixed inset-0 z-50 flex justify-center bg-black/50',
+        sheetOnPhone ? 'items-end sm:items-center sm:p-4' : 'items-center p-4',
+      )}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -51,7 +58,10 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-xl border bg-card shadow-xl"
+        className={cn(
+          'flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden border bg-card shadow-xl',
+          sheetOnPhone ? 'rounded-t-2xl sm:rounded-xl' : 'rounded-xl',
+        )}
       >
         <div className="flex items-start justify-between gap-3 border-b px-5 py-4">
           <h2 className="font-heading text-lg font-semibold">{title}</h2>
