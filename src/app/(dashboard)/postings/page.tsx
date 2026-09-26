@@ -591,7 +591,7 @@ function PostingsSearchContent() {
           ))}
         </div>
 
-        <div className="flex items-center gap-2 overflow-x-auto pb-2.5">
+        <div className="flex w-full items-center justify-between gap-2 overflow-x-auto pb-2.5 sm:justify-start">
           <Label className="hidden shrink-0 text-xs text-muted-foreground sm:block">{t('postings.sortBy')}</Label>
           <Select value={sort} onValueChange={(v) => v && setSort(v as SortKey)}>
             <SelectTrigger className="w-36 shrink-0 sm:w-44">
