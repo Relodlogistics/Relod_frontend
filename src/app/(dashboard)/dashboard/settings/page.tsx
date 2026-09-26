@@ -14,6 +14,7 @@ import {
   Truck,
   Phone,
   History,
+  LogOut,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -200,7 +201,8 @@ export default function SettingsPage() {
         </Link>
       </p>
 
-      <Button variant="destructive" onClick={handleLogout} className="w-fit">
+      <Button variant="outline" onClick={handleLogout} className="w-fit gap-2 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive">
+        <LogOut className="size-4" />
         {t('settingsPage.logout')}
       </Button>
     </div>

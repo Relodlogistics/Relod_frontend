@@ -285,6 +285,17 @@
     "usernameMismatch": "यूज़रनेम मेल नहीं खाते।"
   },
   "nav": {
+    "allBookings": "सभी बुकिंग",
+    "liveTracking": "लाइव ट्रैकिंग",
+    "money": "पैसे",
+    "paymentHistory": "भुगतान इतिहास",
+    "help": "मदद",
+    "home": "होम",
+    "trucks": "ट्रक",
+    "loads": "लोड",
+    "post": "पोस्ट",
+    "more": "और",
+    "mainNavigation": "मुख्य नेविगेशन",
     "dashboard": "डैशबोर्ड",
     "myPostings": "मेरी पोस्टिंग",
     "myLoads": "मेरे लोड",

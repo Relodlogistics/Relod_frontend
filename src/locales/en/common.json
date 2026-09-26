@@ -285,6 +285,17 @@
     "usernameMismatch": "Usernames do not match."
   },
   "nav": {
+    "allBookings": "All bookings",
+    "liveTracking": "Live tracking",
+    "money": "Money",
+    "paymentHistory": "Payment history",
+    "help": "Help",
+    "home": "Home",
+    "trucks": "Trucks",
+    "loads": "Loads",
+    "post": "Post",
+    "more": "More",
+    "mainNavigation": "Main navigation",
     "dashboard": "Dashboard",
     "myPostings": "My Postings",
     "myLoads": "My Loads",
