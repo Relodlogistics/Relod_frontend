@@ -83,12 +83,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       <WalletTopupResultPopup />
       <ReverificationPopup />
 
-      {/* Phone / app: the sidebar below is replaced by the bottom bar, so the
-          logo sits top-left where the old menu button was (GlobalTopBar's
-          language switcher and notification bell occupy top-right). */}
-      <Link href="/dashboard" className="fixed top-3 left-3 z-40 flex items-center gap-2 md:hidden">
-        <Image src="/logo.png" alt="" width={28} height={28} className="shrink-0" />
-        <span className="font-heading text-base font-bold">{t('appName')}</span>
+      {/* Phone / app: the sidebar below is replaced by the bottom bar. A solid
+          header strip keeps scrolling content from showing through behind the
+          logo (top-left) and GlobalTopBar's chips (top-right), and the white
+          strip also hides the logo image's square white edges. */}
+      <div className="fixed inset-x-0 top-0 z-30 h-14 border-b bg-card md:hidden" aria-hidden="true" />
+      <Link href="/dashboard" aria-label={t('appName')} className="fixed top-2.5 left-3 z-40 md:hidden">
+        <Image src="/logo.png" alt="" width={34} height={34} />
       </Link>
       <MobileBottomBar userType={session.userType} />
 

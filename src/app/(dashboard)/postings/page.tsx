@@ -592,9 +592,9 @@ function PostingsSearchContent() {
         </div>
 
         <div className="flex items-center gap-2 overflow-x-auto pb-2.5">
-          <Label className="shrink-0 text-xs text-muted-foreground">{t('postings.sortBy')}</Label>
+          <Label className="hidden shrink-0 text-xs text-muted-foreground sm:block">{t('postings.sortBy')}</Label>
           <Select value={sort} onValueChange={(v) => v && setSort(v as SortKey)}>
-            <SelectTrigger className="w-44 shrink-0">
+            <SelectTrigger className="w-36 shrink-0 sm:w-44">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -604,12 +604,9 @@ function PostingsSearchContent() {
               {tab === 'near_you' && <SelectItem value="nearest">{t('postings.sortNearest')}</SelectItem>}
             </SelectContent>
           </Select>
-          {/* All three always shown, on every screen width — List and Grid
-              render identically on a phone (both fall back to the same
-              single-column cards), but shown anyway so the toggle itself
-              stays a familiar, findable control; the row scrolls
-              horizontally instead of wrapping/clipping if it ever runs out
-              of width. */}
+          {/* All three always shown, on every screen width; the Sort-by label
+              and select shrink on a phone so the Map button isn't pushed
+              off-screen. */}
           <div className="flex shrink-0 rounded-lg border">
             <button
               aria-label={t('postings.viewList')}
@@ -656,86 +653,43 @@ function PostingsSearchContent() {
         <LoadBoardMap pins={mapPins} center={tab === 'near_you' ? geoCoords : null} />
       ) : view === 'list' ? (
         <>
-          {/* A 7-column table can't fit a phone screen readably no matter how
-              it's scrolled — below sm, show the same cards the grid view uses
-              instead, regardless of the list/grid toggle. Desktop/tablet keep
-              the table exactly as before. */}
-          <div className="grid gap-3 sm:hidden">
+          {/* A 7-column table can't fit a phone screen readably — below sm,
+              List becomes compact one-line-per-load rows (Grid keeps the full
+              cards), so the two toggles show something different on a phone.
+              Desktop/tablet keep the table exactly as before. */}
+          <div className="grid gap-2 sm:hidden">
             {displayedItems.map((posting) => {
               const bookedLbl = bookedLabel(posting);
               const isBooked = bookedLbl !== null;
               return (
-                <Card key={posting.id} className="flex flex-col">
-                  <CardContent className="flex flex-1 flex-col gap-3 py-4">
-                    <div className="flex items-center gap-1.5 text-sm font-medium">
-                      <MapPin className="size-3.5 shrink-0 text-violet-600" />
-                      <span className="truncate">{boardLocation(posting.originCityLabel, posting.originLabel)}</span>
-                      <ArrowRight className="size-3.5 shrink-0 text-muted-foreground" />
-                      <span className="truncate">
-                        {boardLocation(posting.destinations[0]?.cityLabel, posting.destinations[0]?.label)}
-                      </span>
-                    </div>
-
-                    <p className="text-lg font-semibold">
+                <div key={posting.id} className="rounded-xl border bg-card p-3">
+                  <div className="flex items-center gap-1.5 text-sm font-medium">
+                    <MapPin className="size-3.5 shrink-0 text-violet-600" />
+                    <span className="truncate">{boardLocation(posting.originCityLabel, posting.originLabel)}</span>
+                    <ArrowRight className="size-3.5 shrink-0 text-muted-foreground" />
+                    <span className="truncate">
+                      {boardLocation(posting.destinations[0]?.cityLabel, posting.destinations[0]?.label)}
+                    </span>
+                  </div>
+                  <div className="mt-2 flex items-center gap-2">
+                    <p className="font-semibold">
                       {posting.priceAmount ? formatMoney(Number(posting.priceAmount)) : t('postings.notSpecified')}
                     </p>
-
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <Badge variant="outline">
-                        {posting.loadType === 'full' ? t('postings.loadFull') : t('postings.loadPartOk')}
-                      </Badge>
-                      {posting.distanceKm != null && (
-                        <Badge variant="secondary">{t('postings.distanceAway', { distance: posting.distanceKm.toFixed(1) })}</Badge>
-                      )}
-                      {posting.deadheadKm != null && (
-                        <Badge variant="outline" className="text-amber-600">
-                          {posting.deadheadIsLive
-                            ? t('postings.deadhead', { km: Math.round(posting.deadheadKm) })
-                            : t('postings.deadheadFromBase', { km: Math.round(posting.deadheadKm) })}
-                        </Badge>
-                      )}
-                      <button
-                        aria-label={posting.savedByMe ? t('postings.saved') : t('postings.save')}
-                        onClick={() => handleToggleSave(posting)}
-                        className="ml-auto text-muted-foreground hover:text-foreground"
-                      >
-                        {posting.savedByMe ? (
-                          <BookmarkCheck className="size-4 text-primary" />
-                        ) : (
-                          <Bookmark className="size-4" />
-                        )}
-                      </button>
-                    </div>
-
-                    {posting.postedBy && (
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        {posting.postedBy.name}
-                        {posting.postedBy.verified && <BadgeCheck className="size-3.5 text-primary" />}
-                        {posting.postedBy.ratingCount > 0 && (
-                          <span className="ml-1 flex items-center gap-0.5">
-                            <Star className="size-3 fill-amber-400 text-amber-400" />
-                            {posting.postedBy.rating?.toFixed(1)}
-                          </span>
-                        )}
-                      </div>
-                    )}
-
-                    <div className="mt-auto flex gap-2 pt-2">
-                      <Link href={`/postings/${posting.id}`} className="flex-1">
-                        <Button variant="outline" className="w-full">
+                    <Badge variant="outline">
+                      {posting.loadType === 'full' ? t('postings.loadFull') : t('postings.loadPartOk')}
+                    </Badge>
+                    <span className="ml-auto flex items-center gap-1.5">
+                      <Link href={`/postings/${posting.id}`}>
+                        <Button size="sm" variant="outline">
                           {t('dashboard.viewDetails')}
                         </Button>
                       </Link>
-                      <Button
-                        className="flex-1"
-                        disabled={isBooked || bookingId === posting.id}
-                        onClick={() => handleBook(posting.id)}
-                      >
+                      <Button size="sm" disabled={isBooked || bookingId === posting.id} onClick={() => handleBook(posting.id)}>
                         {bookedLbl ?? t('postings.book')}
                       </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </span>
+                  </div>
+                </div>
               );
             })}
           </div>
