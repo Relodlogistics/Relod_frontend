@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Paperclip, FileText, X, Check, CheckCheck } from 'lucide-react';
+import { ArrowLeft, Paperclip, FileText, X, Check, CheckCheck, Mail, Phone, User } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -181,16 +181,54 @@ export default function AdminSupportTicketDetailPage() {
       <Card>
         <CardHeader className="flex flex-row items-start justify-between gap-2">
           <div>
-            <CardTitle className="text-base">{ticket.raiser?.fullName ?? '—'}</CardTitle>
-            <p className="text-xs text-muted-foreground">
-              {t(`admin.role_${ticket.raiserType}`)} · {ticket.raiser?.phone ?? '—'}
-              {ticket.guestEmail ? ` · ${ticket.guestEmail}` : ''} · {timeAgo(ticket.createdAt)}
-            </p>
+            <CardTitle className="text-base">{t(`admin.role_${ticket.raiserType}`)}</CardTitle>
+            <p className="text-xs text-muted-foreground">{timeAgo(ticket.createdAt)}</p>
           </div>
           <Badge variant={statusVariant(ticket.status)}>{t(`admin.ticketStatus_${ticket.status}`)}</Badge>
         </CardHeader>
-        <CardContent>
-          <p className="text-sm">{ticket.issueSummary}</p>
+        <CardContent className="flex flex-col gap-4">
+          <div className="grid gap-3 rounded-lg border bg-muted/40 p-4 sm:grid-cols-3">
+            <div className="flex items-start gap-2.5">
+              <User className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground">{t('admin.contactName')}</p>
+                <p className="truncate text-sm font-medium">{ticket.raiser?.fullName ?? '—'}</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-2.5">
+              <Phone className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground">{t('admin.contactPhone')}</p>
+                {ticket.raiser?.phone ? (
+                  <a href={`tel:${ticket.raiser.phone}`} className="text-sm font-medium text-primary hover:underline">
+                    {ticket.raiser.phone}
+                  </a>
+                ) : (
+                  <p className="text-sm font-medium">—</p>
+                )}
+              </div>
+            </div>
+            {ticket.raiserType === 'guest' && (
+              <div className="flex items-start gap-2.5">
+                <Mail className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground">{t('admin.contactEmail')}</p>
+                  {ticket.guestEmail ? (
+                    <a href={`mailto:${ticket.guestEmail}`} className="block truncate text-sm font-medium text-primary hover:underline">
+                      {ticket.guestEmail}
+                    </a>
+                  ) : (
+                    <p className="text-sm font-medium text-muted-foreground">{t('admin.noEmailOnTicket')}</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <p className="mb-1 text-xs text-muted-foreground">{t('admin.visitorQuestion')}</p>
+            <p className="rounded-lg bg-background p-3 text-sm whitespace-pre-wrap">{ticket.issueSummary}</p>
+          </div>
         </CardContent>
       </Card>
 
@@ -262,6 +300,14 @@ export default function AdminSupportTicketDetailPage() {
               <Paperclip className="size-4" />
             </Button>
           </div>
+          {ticket.raiserType === 'guest' && (
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Mail className="size-3.5 shrink-0" />
+              {ticket.guestEmail
+                ? t('admin.replyEmailedTo', { email: ticket.guestEmail })
+                : t('admin.replyNoEmail')}
+            </p>
+          )}
           <Button
             size="sm"
             className="w-fit"
