@@ -920,6 +920,17 @@ export const api = {
       token,
     }),
 
+  // Platform fee bands — ceo/cto only, see AdminFeeSettingsController.
+  adminListFeeBands: (token: string) =>
+    request<PlatformFeeBand[]>('/admin/fee-settings', { token }),
+
+  adminUpdateFeeBand: (token: string, id: string, dto: { baseFee?: number; gainSharePercent?: number }) =>
+    request<PlatformFeeBand>(`/admin/fee-settings/${id}`, {
+      method: 'PATCH',
+      token,
+      body: JSON.stringify(dto),
+    }),
+
   // Wallet — shipper-facing
   getMyWallet: (token: string) => request<Wallet>('/wallet/mine', { token }),
 
@@ -1709,6 +1720,15 @@ export interface AdminBooking extends Booking {
   posting: Posting;
   carrier: { id: string; fullName: string; phone: string } | null;
   shipper: { id: string; fullName: string; phone: string } | null;
+}
+
+export interface PlatformFeeBand {
+  id: string;
+  minAmount: string;
+  maxAmount: string | null;
+  baseFee: string;
+  gainSharePercent: string;
+  updatedAt: string;
 }
 
 export interface AdminPaymentTrackingLog {

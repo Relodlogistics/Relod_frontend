@@ -16,6 +16,7 @@ import {
   ClipboardCheck,
   LogOut,
   RefreshCcw,
+  Percent,
 } from 'lucide-react';
 import { useAdminSession } from '@/lib/admin-session-context';
 import { cn } from '@/lib/utils';
@@ -36,6 +37,7 @@ const NAV_ITEMS = [
   // Rarely opened day-to-day, so it sits last among the always-visible items.
   { href: '/admin/accounts', labelKey: 'admin.navAccounts', icon: Users },
   { href: '/admin/employees', labelKey: 'admin.navEmployees', icon: ShieldCheck, execOnly: true },
+  { href: '/admin/fee-settings', labelKey: 'admin.navFeeSettings', icon: Percent, execOnly: true },
 ];
 
 export function AdminShell({ children }: { children: React.ReactNode }) {

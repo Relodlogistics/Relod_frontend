@@ -97,16 +97,20 @@ export default function AdminPaymentDetailPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">{t('admin.advanceSection')}</CardTitle>
+          <p className="text-xs text-muted-foreground">{t('admin.advanceSectionHint', { percent: 30 })}</p>
         </CardHeader>
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {/* The shipper's full payment is collected upfront via the wallet
+              debit the moment the booking is accepted — this box just
+              confirms that, it's not something the team enters. The rare
+              booking with no agreedPrice at accept time still needs it typed
+              in by hand (see PaymentTrackingService.createForBooking). */}
           <div className="flex flex-col gap-2 rounded-lg border p-3">
             <p className="text-sm font-medium">{t('admin.receivedFromShipper')}</p>
             {log.advanceReceivedAt ? (
               <div className="text-sm text-muted-foreground">
-                <p>
-                  {t('admin.amount')}: {formatMoney(Number(log.advanceAmount))}
-                </p>
-                <p>UTR: {log.advanceReceivedUtr}</p>
+                <p className="text-lg font-semibold text-foreground">{formatMoney(Number(log.advanceAmount))}</p>
+                {log.advanceReceivedUtr && <p>UTR: {log.advanceReceivedUtr}</p>}
               </div>
             ) : (
               <>
@@ -142,19 +146,21 @@ export default function AdminPaymentDetailPage() {
             )}
           </div>
 
-          <div className="flex flex-col gap-2 rounded-lg border p-3">
+          <div className="flex flex-col gap-2 rounded-lg border-2 border-primary/30 bg-primary/5 p-3">
             <p className="text-sm font-medium">{t('admin.paidToCarrier')}</p>
             {log.advancePaidAt ? (
               <p className="text-sm text-muted-foreground">UTR: {log.advancePaidUtr}</p>
             ) : (
               <>
+                <p className="text-lg font-semibold">
+                  {log.advanceAmount ? t('admin.sendAmountNow', { amount: formatMoney(Number(log.advanceAmount)) }) : ''}
+                </p>
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="advPaidUtr">{t('admin.utr')}</Label>
                   <Input id="advPaidUtr" value={advancePaidUtr} onChange={(e) => setAdvancePaidUtr(e.target.value)} />
                 </div>
                 <Button
                   size="sm"
-                  variant="outline"
                   disabled={busy || !advancePaidUtr}
                   onClick={() =>
                     runAction(() => api.adminMarkAdvancePaid(adminSession!.accessToken, log.id, advancePaidUtr))
@@ -171,16 +177,15 @@ export default function AdminPaymentDetailPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">{t('admin.balanceSection')}</CardTitle>
+          <p className="text-xs text-muted-foreground">{t('admin.balanceSectionHint', { percent: 70 })}</p>
         </CardHeader>
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-2 rounded-lg border p-3">
             <p className="text-sm font-medium">{t('admin.receivedFromShipper')}</p>
             {log.balanceReceivedAt ? (
               <div className="text-sm text-muted-foreground">
-                <p>
-                  {t('admin.amount')}: {formatMoney(Number(log.balanceAmount))}
-                </p>
-                <p>UTR: {log.balanceReceivedUtr}</p>
+                <p className="text-lg font-semibold text-foreground">{formatMoney(Number(log.balanceAmount))}</p>
+                {log.balanceReceivedUtr && <p>UTR: {log.balanceReceivedUtr}</p>}
               </div>
             ) : (
               <>
@@ -216,19 +221,23 @@ export default function AdminPaymentDetailPage() {
             )}
           </div>
 
-          <div className="flex flex-col gap-2 rounded-lg border p-3">
+          <div className="flex flex-col gap-2 rounded-lg border-2 border-primary/30 bg-primary/5 p-3">
             <p className="text-sm font-medium">{t('admin.paidToCarrier')}</p>
-            {log.balancePaidAt ? (
+            {!log.advancePaidAt ? (
+              <p className="text-sm text-muted-foreground">{t('admin.payAdvanceFirst')}</p>
+            ) : log.balancePaidAt ? (
               <p className="text-sm text-muted-foreground">UTR: {log.balancePaidUtr}</p>
             ) : (
               <>
+                <p className="text-lg font-semibold">
+                  {log.balanceAmount ? t('admin.sendAmountNow', { amount: formatMoney(Number(log.balanceAmount)) }) : ''}
+                </p>
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="balPaidUtr">{t('admin.utr')}</Label>
                   <Input id="balPaidUtr" value={balancePaidUtr} onChange={(e) => setBalancePaidUtr(e.target.value)} />
                 </div>
                 <Button
                   size="sm"
-                  variant="outline"
                   disabled={busy || !balancePaidUtr}
                   onClick={() =>
                     runAction(() => api.adminMarkBalancePaid(adminSession!.accessToken, log.id, balancePaidUtr))
