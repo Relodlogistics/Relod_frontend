@@ -27,6 +27,7 @@ import { Logo } from '@/components/Logo';
 import { OTHER_TRUCK_TYPE, TRUCK_TYPES } from '@/lib/truck-types';
 import { TruckTypeCombobox } from '@/components/TruckTypeCombobox';
 import { LENGTH_PRESETS, PresetChipField, TONNAGE_PRESETS } from '@/components/PresetChipField';
+import { FormErrorPopup } from '@/components/FormErrorPopup';
 
 const CARGO_TYPES: { value: CargoType; labelKey: string }[] = [
   { value: 'general', labelKey: 'vehicle.cargoTypeGeneral' },
@@ -73,6 +74,10 @@ export default function VehiclePage() {
     { origin: '', destination: '' },
   ]);
   const [error, setError] = useState<string | null>(null);
+  // Separate from `error` so a second submit that fails with the SAME
+  // message (e.g. the reg number still isn't fixed) re-opens the popup —
+  // `error` not changing wouldn't otherwise re-trigger it.
+  const [errorPopupOpen, setErrorPopupOpen] = useState(false);
   const [showLoginLink, setShowLoginLink] = useState(false);
   const [loading, setLoading] = useState(false);
   const [vehicleId, setVehicleId] = useState<string | null>(null);
@@ -227,6 +232,7 @@ export default function VehiclePage() {
       } else {
         setError(e instanceof ApiError ? e.message : t('errors.generic'));
       }
+      setErrorPopupOpen(true);
     } finally {
       setLoading(false);
     }
@@ -286,6 +292,10 @@ export default function VehiclePage() {
       imageSrc="/auth/register-bg.png"
       imageAlt="A truck following a winding road toward Mumbai"
     >
+      <FormErrorPopup
+        message={errorPopupOpen ? error : null}
+        onClose={() => setErrorPopupOpen(false)}
+      />
       <div className="w-full max-w-md">
         <Logo variant="auth" className="mb-6 justify-center" />
         <RegistrationStepper

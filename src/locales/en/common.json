@@ -517,6 +517,10 @@
     "reason": "Reason",
     "close": "Close"
   },
+  "formErrorPopup": {
+    "close": "Close",
+    "gotIt": "Got it"
+  },
   "driverLogin": {
     "title": "Driver login",
     "subtitle": "Enter the phone number your truck owner registered you with",
