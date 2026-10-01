@@ -49,7 +49,7 @@ export function DocumentUploadField({
   }, []);
 
   const handleUpload = async () => {
-    if (!file) return;
+    if (!file || (needsExpiry && !expiryDate)) return;
     setStatus('uploading');
     setErrorMsg(null);
     try {
@@ -88,7 +88,10 @@ export function DocumentUploadField({
           />
           {needsExpiry && (
             <div className="flex flex-col gap-1.5">
-              <Label className="text-xs text-muted-foreground">{t('vehicle.expiryDate')}</Label>
+              <Label className="text-xs text-muted-foreground">
+                {t('vehicle.expiryDate')}
+                <span className="text-destructive"> *</span>
+              </Label>
               <Input type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} />
             </div>
           )}
@@ -96,7 +99,7 @@ export function DocumentUploadField({
           <Button
             size="sm"
             variant={status === 'error' ? 'destructive' : 'outline'}
-            disabled={!file || status === 'uploading'}
+            disabled={!file || status === 'uploading' || (needsExpiry && !expiryDate)}
             onClick={handleUpload}
           >
             {status === 'error' ? t('vehicle.retry') : t('vehicle.upload')}
