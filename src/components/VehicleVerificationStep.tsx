@@ -35,11 +35,22 @@ export function VehicleVerificationStep({
   const [rcLoading, setRcLoading] = useState(false);
   const [rcError, setRcError] = useState<string | null>(null);
   const [uploadedDocs, setUploadedDocs] = useState<Set<string>>(new Set());
+  // Shown one category at a time instead of both at once — a long flat list
+  // of ~11 upload fields was overwhelming; this breaks it into two shorter
+  // steps. Starts on 'document' even when recovering an in-progress truck —
+  // whichever's incomplete is more useful to land on than always resetting
+  // to the first step, but that'd need per-category completeness tracked
+  // before mount, which isn't worth it for a rarely-hit refresh-recovery case.
+  const [activeCategory, setActiveCategory] = useState<'document' | 'media'>('document');
 
   const documents = includeDriverDocs ? [...VEHICLE_DOCUMENTS, ...DRIVER_DOCUMENTS] : VEHICLE_DOCUMENTS;
   const requiredDocTypes = documents.filter((d) => d.required).map((d) => d.docType);
   const allRequiredUploaded = requiredDocTypes.every((d) => uploadedDocs.has(d));
   const complete = rcVerified && allRequiredUploaded;
+
+  const requiredInCategory = (category: 'document' | 'media') =>
+    documents.filter((d) => d.category === category && d.required).map((d) => d.docType);
+  const documentStepComplete = requiredInCategory('document').every((d) => uploadedDocs.has(d));
 
   useEffect(() => {
     onComplete(complete);
@@ -59,7 +70,10 @@ export function VehicleVerificationStep({
     }
   };
 
-  const remaining = requiredDocTypes.filter((d) => !uploadedDocs.has(d)).length;
+  const remainingInActiveCategory = requiredInCategory(activeCategory).filter(
+    (d) => !uploadedDocs.has(d),
+  ).length;
+  const mediaCategoryExists = documents.some((d) => d.category === 'media');
 
   return (
     <div className="flex flex-col gap-3">
@@ -84,39 +98,56 @@ export function VehicleVerificationStep({
       </div>
 
       <p className="text-xs font-medium text-muted-foreground">
-        {remaining > 0
-          ? t('vehicle.requiredDocsRemaining', { count: remaining })
+        {remainingInActiveCategory > 0
+          ? t('vehicle.requiredDocsRemaining', { count: remainingInActiveCategory })
           : t('vehicle.requiredDocsComplete')}
       </p>
 
-      {(['document', 'media'] as const).map((category) => {
-        const inCategory = documents.filter((d) => d.category === category);
-        if (inCategory.length === 0) return null;
-        return (
-          <div key={category} className="flex flex-col gap-3">
-            <p className="text-sm font-semibold text-foreground">
-              {t(category === 'document' ? 'vehicle.categoryDocuments' : 'vehicle.categoryMedia')}
-            </p>
-            {inCategory.map((doc) => {
-              const field = DOC_FIELD_MAP[doc.docType];
-              const alreadyUploaded = field ? !!existingVehicle?.[field] : false;
-              return (
-                <DocumentUploadField
-                  key={doc.docType}
-                  docType={doc.docType}
-                  labelKey={doc.labelKey}
-                  accept={doc.accept}
-                  required={doc.required}
-                  token={token}
-                  vehicleId={vehicleId}
-                  alreadyUploaded={alreadyUploaded}
-                  onUploaded={() => setUploadedDocs((prev) => new Set(prev).add(doc.docType))}
-                />
-              );
-            })}
-          </div>
-        );
-      })}
+      <div className="flex flex-col gap-3">
+        <p className="text-sm font-semibold text-foreground">
+          {t(activeCategory === 'document' ? 'vehicle.categoryDocuments' : 'vehicle.categoryMedia')}
+        </p>
+        {documents
+          .filter((d) => d.category === activeCategory)
+          .map((doc) => {
+            const field = DOC_FIELD_MAP[doc.docType];
+            const alreadyUploaded = field ? !!existingVehicle?.[field] : false;
+            return (
+              <DocumentUploadField
+                key={doc.docType}
+                docType={doc.docType}
+                labelKey={doc.labelKey}
+                accept={doc.accept}
+                required={doc.required}
+                token={token}
+                vehicleId={vehicleId}
+                alreadyUploaded={alreadyUploaded}
+                onUploaded={() => setUploadedDocs((prev) => new Set(prev).add(doc.docType))}
+              />
+            );
+          })}
+
+        {activeCategory === 'document' && mediaCategoryExists && (
+          <Button
+            type="button"
+            className="self-end"
+            disabled={!documentStepComplete}
+            onClick={() => setActiveCategory('media')}
+          >
+            {t('vehicle.continueToImages')}
+          </Button>
+        )}
+        {activeCategory === 'media' && (
+          <Button
+            type="button"
+            variant="outline"
+            className="self-start"
+            onClick={() => setActiveCategory('document')}
+          >
+            {t('vehicle.backToDocuments')}
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

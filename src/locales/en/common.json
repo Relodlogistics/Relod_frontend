@@ -150,6 +150,8 @@
     "requiredDocsComplete": "All required items done",
     "categoryDocuments": "Vehicle documents",
     "categoryMedia": "Vehicle images",
+    "continueToImages": "Continue to vehicle images",
+    "backToDocuments": "Back to vehicle documents",
     "finishHint": "Verify RC and upload every item marked * to continue",
     "rc": "RC (Registration Certificate)",
     "insurance": "Insurance certificate",

@@ -150,6 +150,8 @@
     "requiredDocsComplete": "सभी ज़रूरी आइटम पूरे हो गए",
     "categoryDocuments": "वाहन दस्तावेज़",
     "categoryMedia": "वाहन तस्वीरें",
+    "continueToImages": "वाहन तस्वीरों पर जाएं",
+    "backToDocuments": "वाहन दस्तावेज़ पर वापस जाएं",
     "finishHint": "जारी रखने के लिए RC सत्यापित करें और * चिह्नित हर आइटम अपलोड करें",
     "rc": "आरसी (पंजीकरण प्रमाणपत्र)",
     "insurance": "बीमा प्रमाणपत्र",
