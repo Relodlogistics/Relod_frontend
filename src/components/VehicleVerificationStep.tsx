@@ -89,21 +89,32 @@ export function VehicleVerificationStep({
           : t('vehicle.requiredDocsComplete')}
       </p>
 
-      {documents.map((doc) => {
-        const field = DOC_FIELD_MAP[doc.docType];
-        const alreadyUploaded = field ? !!existingVehicle?.[field] : false;
+      {(['document', 'media'] as const).map((category) => {
+        const inCategory = documents.filter((d) => d.category === category);
+        if (inCategory.length === 0) return null;
         return (
-          <DocumentUploadField
-            key={doc.docType}
-            docType={doc.docType}
-            labelKey={doc.labelKey}
-            accept={doc.accept}
-            required={doc.required}
-            token={token}
-            vehicleId={vehicleId}
-            alreadyUploaded={alreadyUploaded}
-            onUploaded={() => setUploadedDocs((prev) => new Set(prev).add(doc.docType))}
-          />
+          <div key={category} className="flex flex-col gap-3">
+            <p className="text-sm font-semibold text-foreground">
+              {t(category === 'document' ? 'vehicle.categoryDocuments' : 'vehicle.categoryMedia')}
+            </p>
+            {inCategory.map((doc) => {
+              const field = DOC_FIELD_MAP[doc.docType];
+              const alreadyUploaded = field ? !!existingVehicle?.[field] : false;
+              return (
+                <DocumentUploadField
+                  key={doc.docType}
+                  docType={doc.docType}
+                  labelKey={doc.labelKey}
+                  accept={doc.accept}
+                  required={doc.required}
+                  token={token}
+                  vehicleId={vehicleId}
+                  alreadyUploaded={alreadyUploaded}
+                  onUploaded={() => setUploadedDocs((prev) => new Set(prev).add(doc.docType))}
+                />
+              );
+            })}
+          </div>
         );
       })}
     </div>

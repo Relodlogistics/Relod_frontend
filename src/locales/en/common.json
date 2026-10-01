@@ -148,6 +148,8 @@
     "documentsSubtitle": "Items marked * are required before this truck is fully onboarded — the rest unlock higher verification tiers and can be added later",
     "requiredDocsRemaining": "{{count}} required item(s) left",
     "requiredDocsComplete": "All required items done",
+    "categoryDocuments": "Vehicle documents",
+    "categoryMedia": "Vehicle images",
     "finishHint": "Verify RC and upload every item marked * to continue",
     "rc": "RC (Registration Certificate)",
     "insurance": "Insurance certificate",
