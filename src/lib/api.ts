@@ -931,6 +931,16 @@ export const api = {
       body: JSON.stringify(dto),
     }),
 
+  adminGetAdvanceSplit: (token: string) =>
+    request<AdvanceSplitSetting>('/admin/fee-settings/advance-split', { token }),
+
+  adminUpdateAdvanceSplit: (token: string, advancePercent: number) =>
+    request<AdvanceSplitSetting>('/admin/fee-settings/advance-split', {
+      method: 'PATCH',
+      token,
+      body: JSON.stringify({ advancePercent }),
+    }),
+
   // Wallet — shipper-facing
   getMyWallet: (token: string) => request<Wallet>('/wallet/mine', { token }),
 
@@ -1728,6 +1738,12 @@ export interface PlatformFeeBand {
   maxAmount: string | null;
   baseFee: string;
   gainSharePercent: string;
+  updatedAt: string;
+}
+
+export interface AdvanceSplitSetting {
+  id: string;
+  advancePercent: string;
   updatedAt: string;
 }
 

@@ -6,13 +6,102 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { api, ApiError, PlatformFeeBand } from '@/lib/api';
+import { api, ApiError, AdvanceSplitSetting, PlatformFeeBand } from '@/lib/api';
 import { useAdminSession } from '@/lib/admin-session-context';
 import { formatMoney } from '@/lib/utils';
 
 function bandLabel(band: PlatformFeeBand) {
   const min = formatMoney(Number(band.minAmount));
   return band.maxAmount ? `${min} – ${formatMoney(Number(band.maxAmount))}` : `${min}+`;
+}
+
+function AdvanceSplitCard() {
+  const { t } = useTranslation();
+  const { adminSession } = useAdminSession();
+
+  const [setting, setSetting] = useState<AdvanceSplitSetting | null>(null);
+  const [draft, setDraft] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!adminSession) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoading(true);
+    api
+      .adminGetAdvanceSplit(adminSession.accessToken)
+      .then((res) => {
+        setSetting(res);
+        setDraft(res.advancePercent);
+      })
+      .catch((e) => setError(e instanceof ApiError ? e.message : t('errors.generic')))
+      .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adminSession]);
+
+  const dirty = !!setting && draft !== setting.advancePercent;
+
+  const handleSave = async () => {
+    if (!adminSession) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const updated = await api.adminUpdateAdvanceSplit(adminSession.accessToken, Number(draft));
+      setSetting(updated);
+      setDraft(updated.advancePercent);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : t('errors.generic'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">{t('admin.advanceSplitTitle')}</CardTitle>
+        <p className="text-xs text-muted-foreground">{t('admin.advanceSplitHint')}</p>
+      </CardHeader>
+      <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
+        {loading ? (
+          <p className="text-sm text-muted-foreground">{t('admin.loading')}</p>
+        ) : (
+          <>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="advance-percent">{t('admin.advancePercentLabel')}</Label>
+              <Input
+                id="advance-percent"
+                type="number"
+                min={0}
+                max={100}
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+              />
+              {setting && (
+                <p className="text-xs text-muted-foreground">
+                  {t('admin.advanceSplitExample', {
+                    advance: formatMoney((10000 * (Number(draft) || 0)) / 100),
+                    balance: formatMoney(10000 - (10000 * (Number(draft) || 0)) / 100),
+                  })}
+                </p>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button size="sm" disabled={!dirty || saving} onClick={handleSave}>
+                {saving ? t('admin.saving') : t('admin.save')}
+              </Button>
+              {saved && <span className="text-xs text-muted-foreground">{t('admin.saved')}</span>}
+            </div>
+          </>
+        )}
+        {error && <p className="text-sm text-destructive sm:col-span-2">{error}</p>}
+      </CardContent>
+    </Card>
+  );
 }
 
 export default function AdminFeeSettingsPage() {
@@ -85,6 +174,8 @@ export default function AdminFeeSettingsPage() {
         <h1 className="font-heading text-xl font-bold">{t('admin.navFeeSettings')}</h1>
         <p className="text-sm text-muted-foreground">{t('admin.feeSettingsSubtitle')}</p>
       </div>
+
+      <AdvanceSplitCard />
 
       {error && <p className="text-sm text-destructive">{error}</p>}
       {loading && <p className="text-sm text-muted-foreground">{t('admin.loading')}</p>}
