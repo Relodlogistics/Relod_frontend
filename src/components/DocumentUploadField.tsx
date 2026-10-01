@@ -69,7 +69,11 @@ export function DocumentUploadField({
           {t(labelKey)}
           {required && status !== 'uploaded' && <span className="text-destructive"> *</span>}
         </Label>
-        {status === 'uploaded' && <Badge>{t('vehicle.uploaded')}</Badge>}
+        {status === 'uploaded' && (
+          <Badge className="bg-emerald-600 text-white dark:bg-emerald-500/90">
+            {t('vehicle.uploaded')}
+          </Badge>
+        )}
       </div>
 
       {status !== 'uploaded' && (
